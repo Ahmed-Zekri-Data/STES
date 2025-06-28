@@ -58,8 +58,9 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/admin/categories', require('./routes/adminCategories'));
 app.use('/api/admin/brands', require('./routes/adminBrands'));
 app.use('/api/admin/customers', require('./routes/adminCustomers'));
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/customers', require('./routes/customers'));
+app.use('/api/auth', require('./routes/auth')); // Admin auth
+app.use('/api/customer/auth', require('./routes/customerAuth')); // Customer auth, profile, orders
+app.use('/api/customers', require('./routes/customers')); // Admin managing customers
 app.use('/api/addresses', require('./routes/addresses'));
 app.use('/api/wishlist', require('./routes/wishlist'));
 app.use('/api/customer-orders', require('./routes/customerOrders'));
