@@ -1,0 +1,20 @@
+{
+  "name": "stes-ecommerce",
+  "version": "1.0.0",
+  "description": "Swimming Pool Supply and Installation E-commerce Website for Tunisia",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install"
+  },
+  "keywords": ["ecommerce", "swimming-pool", "tunisia", "react", "nodejs"],
+  "author": "STES Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

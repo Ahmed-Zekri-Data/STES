@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🔧 STES Backend Connection Test</h1>
+    
+    <div id="results"></div>
+    
+    <button onclick="testHealth()">Test Health Endpoint</button>
+    <button onclick="testRegistration()">Test Registration</button>
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="clearResults()">Clear Results</button>
+
+    <script>
+        const results = document.getElementById('results');
+
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            results.appendChild(div);
+        }
+
+        async function testHealth() {
+            addResult('Testing backend health endpoint...', 'info');
+            try {
+                const response = await fetch('http://localhost:5000/api/health');
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(`✅ Backend is running! Status: ${data.status}`, 'success');
+                    addResult(`📊 Response: ${JSON.stringify(data, null, 2)}`, 'info');
+                } else {
+                    addResult(`❌ Backend responded with status: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Cannot connect to backend: ${error.message}`, 'error');
+                addResult('💡 Make sure backend server is running on port 5000', 'info');
+            }
+        }
+
+        async function testRegistration() {
+            addResult('Testing customer registration...', 'info');
+            const testData = {
+                email: 'test@example.com',
+                password: 'password123',
+                firstName: 'Test',
+                lastName: 'User'
+            };
+
+            try {
+                const response = await fetch('http://localhost:5000/api/customers/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult('✅ Registration endpoint is working!', 'success');
+                    addResult(`📊 Response: ${JSON.stringify(data, null, 2)}`, 'info');
+                } else {
+                    addResult(`⚠️ Registration failed: ${data.message}`, 'error');
+                    addResult(`📊 Response: ${JSON.stringify(data, null, 2)}`, 'info');
+                }
+            } catch (error) {
+                addResult(`❌ Registration request failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLogin() {
+            addResult('Testing customer login...', 'info');
+            const testData = {
+                email: 'test@example.com',
+                password: 'password123'
+            };
+
+            try {
+                const response = await fetch('http://localhost:5000/api/customers/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult('✅ Login endpoint is working!', 'success');
+                    addResult(`📊 Response: ${JSON.stringify(data, null, 2)}`, 'info');
+                } else {
+                    addResult(`⚠️ Login failed: ${data.message}`, 'error');
+                    addResult(`📊 Response: ${JSON.stringify(data, null, 2)}`, 'info');
+                }
+            } catch (error) {
+                addResult(`❌ Login request failed: ${error.message}`, 'error');
+            }
+        }
+
+        function clearResults() {
+            results.innerHTML = '';
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            addResult('🚀 Backend Connection Test Started', 'info');
+            addResult('Click "Test Health Endpoint" to check if backend is running', 'info');
+        };
+    </script>
+</body>
+</html>
