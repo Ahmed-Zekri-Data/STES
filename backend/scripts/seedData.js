@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Admin = require('../models/Admin');
-require('dotenv').config();
+require('../config/env');
 
 const products = [
   {

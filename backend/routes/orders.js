@@ -115,8 +115,8 @@ router.post('/', optionalCustomerAuth, [
 
     // Find or create customer
     let customerId = null;
-    if (req.customer && req.customer._id) { // Check if req.customer and its _id exists
-      customerId = req.customer._id; // Use _id from the customer object attached by middleware
+    if (req.customer) {
+      customerId = req.customer.customerId;
     } else {
       // Check if customer exists by email
       const existingCustomer = await Customer.findOne({ email: customer.email.toLowerCase() }); // Ensure email is lowercased for lookup

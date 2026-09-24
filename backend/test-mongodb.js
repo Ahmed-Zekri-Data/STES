@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-require('dotenv').config();
+require('./config/env');
 
 console.log('Testing MongoDB connection...');
 console.log('MongoDB URI:', process.env.MONGODB_URI || 'mongodb://localhost:27017/stes-ecommerce');

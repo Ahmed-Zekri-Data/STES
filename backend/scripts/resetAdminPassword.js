@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Admin = require('../models/Admin');
-require('dotenv').config();
+require('../config/env');
 
 const resetPassword = async () => {
   try {

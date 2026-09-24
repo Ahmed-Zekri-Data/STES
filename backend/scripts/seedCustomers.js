@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Customer = require('../models/Customer');
-require('dotenv').config();
+require('../config/env');
 
 const sampleCustomers = [
   {

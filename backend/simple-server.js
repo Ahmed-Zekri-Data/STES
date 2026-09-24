@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
+require('./config/env');
 
 const app = express();
 
@@ -73,7 +73,7 @@ app.use('*', (req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 9000;
 
 app.listen(PORT, () => {
   console.log(`🚀 Simple backend server running on port ${PORT}`);

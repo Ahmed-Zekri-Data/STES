@@ -65,7 +65,7 @@ MONGODB_URI=mongodb://localhost:27017/stes-ecommerce
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 
 # Server Configuration
-PORT=5000
+PORT=9000
 NODE_ENV=development
 
 # Frontend URL (for CORS)
@@ -93,7 +93,7 @@ npm run dev
 
 This will start:
 - Frontend: http://localhost:5173
-- Backend: http://localhost:5000
+- Backend: http://localhost:9000
 
 ## 📁 Project Structure
 

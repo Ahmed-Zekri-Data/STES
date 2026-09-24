@@ -3,7 +3,12 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-require('dotenv').config();
+require('./config/env');
+
+if (!process.env.JWT_SECRET) {
+  console.error('❌ JWT_SECRET is not set. Copy .env.example to .env at the repository root and set it.');
+  process.exit(1);
+}
 
 const app = express();
 
@@ -59,8 +64,7 @@ app.use('/api/admin/categories', require('./routes/adminCategories'));
 app.use('/api/admin/brands', require('./routes/adminBrands'));
 app.use('/api/admin/customers', require('./routes/adminCustomers'));
 app.use('/api/auth', require('./routes/auth')); // Admin auth
-app.use('/api/customer/auth', require('./routes/customerAuth')); // Customer auth, profile, orders
-app.use('/api/customers', require('./routes/customers')); // Admin managing customers
+app.use('/api/customers', require('./routes/customers')); // Customer auth and profile
 app.use('/api/addresses', require('./routes/addresses'));
 app.use('/api/wishlist', require('./routes/wishlist'));
 app.use('/api/customer-orders', require('./routes/customerOrders'));

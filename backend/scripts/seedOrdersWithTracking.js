@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Customer = require('../models/Customer');
 const Product = require('../models/Product');
-require('dotenv').config();
+require('../config/env');
 
 const sampleOrders = [
   {

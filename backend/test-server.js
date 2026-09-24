@@ -1,5 +1,5 @@
 // Simple test script to check if server starts without errors
-require('dotenv').config();
+require('./config/env');
 
 console.log('🧪 Testing server startup...');
 

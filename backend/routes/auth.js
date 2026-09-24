@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
+const { signAdminToken } = require('../config/jwt');
 const { body, validationResult } = require('express-validator');
 const Admin = require('../models/Admin');
 const { auth } = require('../middleware/auth');
@@ -22,15 +22,7 @@ router.post('/login', [
     const admin = await Admin.findByCredentials(username, password);
 
     // Generate JWT token
-    const token = jwt.sign(
-      { 
-        adminId: admin._id,
-        username: admin.username,
-        role: admin.role
-      },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
-    );
+    const token = signAdminToken(admin);
 
     // Update last login
     admin.lastLogin = new Date();
