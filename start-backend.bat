@@ -19,18 +19,17 @@ npm install
 
 echo.
 echo Testing MongoDB connection...
-node test-mongodb.js
+node scripts\checkMongo.js
 if %errorlevel% neq 0 (
     echo.
     echo MongoDB connection failed. Please set up MongoDB first.
-    echo See setup-mongodb.md for instructions.
-    echo.
-    echo Starting simple server without MongoDB for testing...
-    node simple-server.js
-) else (
-    echo.
-    echo Starting full backend server...
-    npm run dev
+    echo See docs\setup-mongodb.md for instructions.
+    pause
+    exit /b 1
 )
+
+echo.
+echo Starting backend server...
+npm run dev
 
 pause

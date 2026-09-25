@@ -56,32 +56,20 @@ cd ..
 ```
 
 5. **Environment Setup**
-Create a `.env` file in the root directory:
-```env
-# Database
-MONGODB_URI=mongodb://localhost:27017/stes-ecommerce
-
-# JWT Secret
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-
-# Server Configuration
-PORT=9000
-NODE_ENV=development
-
-# Frontend URL (for CORS)
-FRONTEND_URL=http://localhost:5173
-
-# Admin Configuration
-DEFAULT_ADMIN_USERNAME=admin
-DEFAULT_ADMIN_EMAIL=admin@piscinefacile.tn
-DEFAULT_ADMIN_PASSWORD=admin123456
+Copy the template to `.env` in the root directory and fill in the values:
+```bash
+cp .env.example .env
 ```
+At minimum set `JWT_SECRET` (the server refuses to start without it) and
+`MONGODB_URI`. For push notifications, generate VAPID keys with
+`cd backend && npm run generate-vapid`. `.env` is ignored by git; never commit it.
 
 6. **Database Setup**
 Start MongoDB and run the seed script:
 ```bash
 # Make sure MongoDB is running
 cd backend
+npm run check:db
 npm run seed
 ```
 
@@ -111,9 +99,12 @@ STES/
 │   ├── models/              # MongoDB models
 │   ├── routes/              # API routes
 │   ├── middleware/          # Custom middleware
-│   ├── scripts/             # Utility scripts
+│   ├── services/            # Business logic (orders, payments, notifications)
+│   ├── scripts/             # Seed and maintenance scripts
+│   │   └── manual/          # Ad-hoc API scripts
 │   └── package.json
-├── .env                     # Environment variables
+├── docs/                    # Guides and implementation notes
+├── .env.example             # Environment template (copy to .env)
 └── package.json            # Root package.json
 ```
 
@@ -130,6 +121,9 @@ STES/
 - `npm start` - Start production server
 - `npm run dev` - Start development server with nodemon
 - `npm run seed` - Seed database with sample data
+- `npm run check:db` - Check the MongoDB connection
+- `npm run init:pages` - Create the default CMS pages
+- `npm run generate-vapid` - Generate push notification keys
 
 ### Frontend
 - `npm run dev` - Start development server
