@@ -136,7 +136,7 @@ class PaymentService {
 
     try {
       const paymentData = {
-        amount: Math.round(payment.amount * 1000), // Paymee expects amount in millimes
+        amount: this.toGatewayAmount('paymee', payment.amount),
         note: `Commande ${payment.orderNumber}`,
         first_name: customerInfo.firstName,
         last_name: customerInfo.lastName,
@@ -159,10 +159,8 @@ class PaymentService {
         }
       );
 
-      await payment.updateStatus('processing', {
-        gatewayTransactionId: response.data.payment_id,
-        gatewayResponse: response.data
-      });
+      payment.gatewayTransactionId = response.data.payment_id;
+      await payment.updateStatus('processing', response.data);
 
       return {
         success: true,
@@ -189,7 +187,7 @@ class PaymentService {
       const paymentData = {
         app_token: this.gateways.flouci.appToken,
         app_secret: this.gateways.flouci.appSecret,
-        amount: payment.amount,
+        amount: this.toGatewayAmount('flouci', payment.amount),
         accept_url: `${process.env.FRONTEND_URL}/payment/success`,
         cancel_url: `${process.env.FRONTEND_URL}/payment/cancel`,
         decline_url: `${process.env.FRONTEND_URL}/payment/failed`,
@@ -204,10 +202,8 @@ class PaymentService {
       );
 
       if (response.data.result.success) {
-        await payment.updateStatus('processing', {
-          gatewayTransactionId: response.data.result.payment_id,
-          gatewayResponse: response.data
-        });
+        payment.gatewayTransactionId = response.data.result.payment_id;
+        await payment.updateStatus('processing', response.data);
 
         return {
           success: true,
@@ -256,10 +252,8 @@ class PaymentService {
         paymentData
       );
 
-      await payment.updateStatus('processing', {
-        gatewayTransactionId: response.data.transaction_id,
-        gatewayResponse: response.data
-      });
+      payment.gatewayTransactionId = response.data.transaction_id;
+      await payment.updateStatus('processing', response.data);
 
       return {
         success: true,
@@ -309,10 +303,8 @@ class PaymentService {
         paymentData
       );
 
-      await payment.updateStatus('processing', {
-        gatewayTransactionId: response.data.paymentRef,
-        gatewayResponse: response.data
-      });
+      payment.gatewayTransactionId = response.data.paymentRef;
+      await payment.updateStatus('processing', response.data);
 
       return {
         success: true,
@@ -338,26 +330,107 @@ class PaymentService {
       .digest('hex');
   }
 
-  // Verify payment status
+  // Amount in the unit each gateway's API uses; the same conversion is used
+  // when creating the payment and when checking what the gateway collected.
+  toGatewayAmount(gateway, amount) {
+    switch (gateway) {
+      case 'paymee':
+        return Math.round(amount * 1000); // millimes
+      default:
+        return amount;
+    }
+  }
+
+  // Verify payment status by asking the gateway directly. This is the only
+  // path that marks a payment as completed: webhook bodies and browser
+  // redirects are unauthenticated and only trigger this check.
   async verifyPayment(paymentReference) {
-    const payment = await Payment.findByReference(paymentReference);
+    const payment = await Payment.findByReference(String(paymentReference));
     if (!payment) {
       throw new Error('Payment not found');
     }
 
-    // Verify with gateway based on payment method
+    if (payment.status === 'completed' || !payment.gatewayTransactionId) {
+      return payment;
+    }
+
+    let result;
     switch (payment.paymentGateway) {
       case 'paymee':
-        return this.verifyPaymeePayment(payment);
+        result = await this.fetchPaymeeStatus(payment);
+        break;
       case 'flouci':
-        return this.verifyFlouciPayment(payment);
-      case 'd17':
-        return this.verifyD17Payment(payment);
-      case 'konnect':
-        return this.verifyKonnectPayment(payment);
+        result = await this.fetchFlouciStatus(payment);
+        break;
       default:
+        // Internal methods are settled by an admin; D17 and Konnect have no
+        // verification yet, so they are never marked paid automatically.
         return payment;
     }
+
+    return this.applyGatewayResult(payment, result);
+  }
+
+  async fetchPaymeeStatus(payment) {
+    const response = await axios.get(
+      `${this.gateways.paymee.baseUrl}/payments/${encodeURIComponent(payment.gatewayTransactionId)}/check`,
+      { headers: { 'Authorization': `Token ${this.gateways.paymee.apiKey}` } }
+    );
+    const data = response.data?.data || {};
+
+    return {
+      paid: data.payment_status === true,
+      amount: Number(data.amount),
+      raw: response.data
+    };
+  }
+
+  async fetchFlouciStatus(payment) {
+    const response = await axios.get(
+      `${this.gateways.flouci.baseUrl}/verify_payment/${encodeURIComponent(payment.gatewayTransactionId)}`,
+      {
+        headers: {
+          'apppublic': this.gateways.flouci.appToken,
+          'appsecret': this.gateways.flouci.appSecret
+        }
+      }
+    );
+    const result = response.data?.result || {};
+
+    return {
+      paid: response.data?.success === true && result.status === 'SUCCESS',
+      amount: Number(result.amount),
+      raw: response.data
+    };
+  }
+
+  async applyGatewayResult(payment, result) {
+    if (!result.paid) {
+      return payment;
+    }
+
+    const expectedAmount = this.toGatewayAmount(payment.paymentGateway, payment.amount);
+    if (!(Math.abs(result.amount - expectedAmount) < 0.001)) {
+      console.error(
+        `Payment ${payment.paymentReference}: gateway reports ${result.amount}, expected ${expectedAmount}. Not marking as paid.`
+      );
+      payment.gatewayMessage = `Amount mismatch: gateway reported ${result.amount}, expected ${expectedAmount}`;
+      await payment.save();
+      return payment;
+    }
+
+    await payment.updateStatus('completed', result.raw);
+
+    const order = await Order.findById(payment.orderId);
+    if (order) {
+      order.paymentStatus = 'paid';
+      if (order.status === 'pending') {
+        order.status = 'confirmed';
+      }
+      await order.save();
+    }
+
+    return payment;
   }
 
   // Get available payment methods

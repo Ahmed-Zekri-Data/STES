@@ -191,7 +191,7 @@ export const CheckoutProvider = ({ children }) => {
       // First create the order
       const orderData = {
         items: cartItems.map(item => ({
-          productId: item.id,
+          productId: item._id,
           name: item.name,
           price: item.price,
           quantity: item.quantity,

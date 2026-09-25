@@ -6,6 +6,7 @@ const Order = require('../models/Order');
 const Customer = require('../models/Customer');
 const paymentService = require('../services/paymentService');
 const { customerAuth, optionalCustomerAuth } = require('../middleware/customerAuth');
+const { auth } = require('../middleware/auth');
 
 // GET /api/payments/methods - Get available payment methods
 router.get('/methods', async (req, res) => {
@@ -249,97 +250,43 @@ router.post('/:paymentId/refund', customerAuth, [
   }
 });
 
-// Webhook endpoints for payment gateways
-// POST /api/payments/webhook/paymee - Paymee webhook
-router.post('/webhook/paymee', async (req, res) => {
+// Webhook endpoints for payment gateways.
+// Webhook bodies are unauthenticated, so the reported status is never trusted:
+// the webhook only identifies the payment, and its status is then fetched
+// from the gateway by paymentService.verifyPayment.
+const handleGatewayWebhook = (gateway, getReference) => async (req, res) => {
   try {
-    const { payment_id, status, order_id } = req.body;
-
-    const payment = await Payment.findOne({
-      paymentReference: order_id,
-      gatewayTransactionId: payment_id
+    const reference = getReference(req.body || {});
+    const payment = reference && await Payment.findOne({
+      paymentReference: String(reference),
+      paymentGateway: gateway
     });
 
     if (!payment) {
       return res.status(404).json({ message: 'Payment not found' });
     }
 
-    // Update payment status based on Paymee status
-    let newStatus = 'pending';
-    if (status === 'paid') {
-      newStatus = 'completed';
-    } else if (status === 'failed' || status === 'cancelled') {
-      newStatus = 'failed';
-    }
-
-    await payment.updateStatus(newStatus, req.body);
     payment.webhookReceived = true;
     payment.webhookData = req.body;
     await payment.save();
 
-    // Update order status if payment completed
-    if (newStatus === 'completed') {
-      const order = await Order.findById(payment.orderId);
-      if (order) {
-        order.paymentStatus = 'paid';
-        order.status = 'confirmed';
-        await order.save();
-      }
-    }
+    const verified = await paymentService.verifyPayment(payment.paymentReference);
 
-    res.json({ message: 'Webhook processed successfully' });
+    res.json({ message: 'Webhook processed successfully', status: verified.status });
   } catch (error) {
-    console.error('Paymee webhook error:', error);
+    console.error(`${gateway} webhook error:`, error);
     res.status(500).json({ message: 'Webhook processing failed' });
   }
-});
+};
+
+// POST /api/payments/webhook/paymee - Paymee webhook
+router.post('/webhook/paymee', handleGatewayWebhook('paymee', body => body.order_id));
 
 // POST /api/payments/webhook/flouci - Flouci webhook
-router.post('/webhook/flouci', async (req, res) => {
-  try {
-    const { payment_id, status, developer_tracking_id } = req.body;
-
-    const payment = await Payment.findOne({
-      paymentReference: developer_tracking_id,
-      gatewayTransactionId: payment_id
-    });
-
-    if (!payment) {
-      return res.status(404).json({ message: 'Payment not found' });
-    }
-
-    // Update payment status based on Flouci status
-    let newStatus = 'pending';
-    if (status === 'SUCCESS') {
-      newStatus = 'completed';
-    } else if (status === 'FAILED' || status === 'CANCELLED') {
-      newStatus = 'failed';
-    }
-
-    await payment.updateStatus(newStatus, req.body);
-    payment.webhookReceived = true;
-    payment.webhookData = req.body;
-    await payment.save();
-
-    // Update order status if payment completed
-    if (newStatus === 'completed') {
-      const order = await Order.findById(payment.orderId);
-      if (order) {
-        order.paymentStatus = 'paid';
-        order.status = 'confirmed';
-        await order.save();
-      }
-    }
-
-    res.json({ message: 'Webhook processed successfully' });
-  } catch (error) {
-    console.error('Flouci webhook error:', error);
-    res.status(500).json({ message: 'Webhook processing failed' });
-  }
-});
+router.post('/webhook/flouci', handleGatewayWebhook('flouci', body => body.developer_tracking_id));
 
 // GET /api/payments/stats - Get payment statistics (admin only)
-router.get('/stats', async (req, res) => {
+router.get('/stats', auth, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
