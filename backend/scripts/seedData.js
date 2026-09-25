@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Admin = require('../models/Admin');
+const adminCredentials = require('./adminCredentials');
 require('../config/env');
 
 const products = [
@@ -182,10 +183,11 @@ const seedDatabase = async () => {
     console.log(`Inserted ${products.length} products`);
 
     // Create default admin user
+    const { username, email, password } = adminCredentials();
     const defaultAdmin = new Admin({
-      username: process.env.DEFAULT_ADMIN_USERNAME || 'admin',
-      email: process.env.DEFAULT_ADMIN_EMAIL || 'admin@piscinefacile.tn',
-      password: process.env.DEFAULT_ADMIN_PASSWORD || 'admin123456',
+      username,
+      email,
+      password,
       firstName: 'Admin',
       lastName: 'User',
       role: 'super_admin',
@@ -196,7 +198,6 @@ const seedDatabase = async () => {
     console.log('Created default admin user');
     console.log(`Username: ${defaultAdmin.username}`);
     console.log(`Email: ${defaultAdmin.email}`);
-    console.log(`Password: ${process.env.DEFAULT_ADMIN_PASSWORD || 'admin123456'}`);
 
     console.log('Database seeded successfully!');
     process.exit(0);

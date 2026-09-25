@@ -11,7 +11,9 @@
     "seed:orders": "node scripts/seedOrdersWithTracking.js",
     "generate-vapid": "node scripts/generateVapidKeys.js",
     "check:db": "node scripts/checkMongo.js",
-    "init:pages": "node scripts/initPages.js"
+    "init:pages": "node scripts/initPages.js",
+    "create-admin": "node scripts/createAdmin.js",
+    "reset-admin-password": "node scripts/resetAdminPassword.js"
   },
   "keywords": [
     "ecommerce",

@@ -124,6 +124,8 @@ STES/
 - `npm run check:db` - Check the MongoDB connection
 - `npm run init:pages` - Create the default CMS pages
 - `npm run generate-vapid` - Generate push notification keys
+- `npm run create-admin` - Create the admin account from `DEFAULT_ADMIN_*` in `.env`
+- `npm run reset-admin-password` - Reset that admin's password to `DEFAULT_ADMIN_PASSWORD`
 
 ### Frontend
 - `npm run dev` - Start development server
@@ -157,10 +159,11 @@ STES/
 
 ## 👤 Admin Access
 
-### Default Admin Credentials
-- **Username**: admin
-- **Password**: admin123456
-- **Access URL**: http://localhost:5173/admin
+### Creating the Admin Account
+Set `DEFAULT_ADMIN_USERNAME`, `DEFAULT_ADMIN_EMAIL` and `DEFAULT_ADMIN_PASSWORD`
+(at least 12 characters) in `.env`, then run `cd backend && npm run create-admin`.
+Sign in at http://localhost:5173/admin. To reset the password later, change
+`DEFAULT_ADMIN_PASSWORD` and run `npm run reset-admin-password`.
 
 ### Admin Features
 - Dashboard with statistics

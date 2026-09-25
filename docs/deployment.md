@@ -93,7 +93,7 @@ NODE_ENV=development
 FRONTEND_URL=http://localhost:5173
 DEFAULT_ADMIN_USERNAME=admin
 DEFAULT_ADMIN_EMAIL=admin@piscinefacile.tn
-DEFAULT_ADMIN_PASSWORD=admin123456
+DEFAULT_ADMIN_PASSWORD=use-a-strong-password
 ```
 
 ### 4. Database Setup
@@ -119,9 +119,9 @@ npm run dev
 - **Backend API**: http://localhost:9000
 - **Admin Panel**: http://localhost:5173/admin
 
-## 🔐 Admin Credentials
-- **Username**: admin
-- **Password**: admin123456
+## 🔐 Admin Account
+Create it with `cd backend && npm run create-admin`, using the `DEFAULT_ADMIN_*`
+values from `.env` (the password must be at least 12 characters).
 
 ## 📱 Demo Features You Can Test
 

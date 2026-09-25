@@ -1,4 +1,5 @@
 const axios = require('axios');
+require('../../config/env');
 
 async function testAPI() {
   try {
@@ -6,8 +7,8 @@ async function testAPI() {
 
     // Test admin login first
     const loginResponse = await axios.post('http://localhost:9000/api/auth/login', {
-      username: 'ahmedzekri143@gmail.com',
-      password: 'admin123456'
+      username: process.env.DEFAULT_ADMIN_EMAIL,
+      password: process.env.DEFAULT_ADMIN_PASSWORD
     });
     console.log('✅ Admin login working');
     console.log('Admin:', loginResponse.data.admin.username);
