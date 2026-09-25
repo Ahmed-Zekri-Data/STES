@@ -188,7 +188,7 @@ router.get('/search/suggestions', [
 
     // Get category suggestions
     const categoryMatches = Object.entries(productCategories)
-      .filter(([key, category]) =>
+      .filter(([, category]) =>
         category.name.toLowerCase().includes(q.toLowerCase()) ||
         category.nameEn.toLowerCase().includes(q.toLowerCase())
       )
@@ -409,16 +409,17 @@ router.get('/:id/reviews', [
     // Sort reviews
     let reviews = [...product.reviews];
     reviews.sort((a, b) => {
-      let comparison = 0;
+      let comparison;
       switch (sortBy) {
         case 'rating':
           comparison = a.rating - b.rating;
           break;
-        case 'helpful':
+        case 'helpful': {
           const aHelpful = a.helpful.filter(h => h.isHelpful).length;
           const bHelpful = b.helpful.filter(h => h.isHelpful).length;
           comparison = aHelpful - bHelpful;
           break;
+        }
         default:
           comparison = new Date(a.createdAt) - new Date(b.createdAt);
       }

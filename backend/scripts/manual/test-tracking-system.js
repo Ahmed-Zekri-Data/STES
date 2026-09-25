@@ -6,7 +6,7 @@ async function testTrackingSystem() {
   try {
     // Test 1: Vérifier que le serveur backend fonctionne
     console.log('1️⃣ Test de connexion au serveur backend...');
-    const healthResponse = await axios.get('http://localhost:9000/api/health');
+    await axios.get('http://localhost:9000/api/health');
     console.log('✅ Serveur backend opérationnel\n');
 
     // Test 2: Tester l'API de tracking public
@@ -51,7 +51,7 @@ async function testTrackingSystem() {
     // Test 5: Vérifier les routes frontend
     console.log('\n5️⃣ Test des routes frontend...');
     try {
-      const frontendResponse = await axios.get('http://localhost:5173');
+      await axios.get('http://localhost:5173');
       console.log('✅ Serveur frontend opérationnel');
     } catch (error) {
       console.log('❌ Serveur frontend non accessible:', error.message);

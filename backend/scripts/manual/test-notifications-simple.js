@@ -11,9 +11,9 @@ async function testNotificationSystem() {
     // Test 1: Check server health
     console.log('1️⃣ Testing server health...');
     try {
-      const healthResponse = await axios.get(`${BASE_URL}/api/health`);
+      await axios.get(`${BASE_URL}/api/health`);
       console.log('✅ Server is running');
-    } catch (error) {
+    } catch {
       console.log('❌ Server not accessible. Please start the backend server:');
       console.log('   cd backend && npm run dev');
       return;
@@ -42,7 +42,7 @@ async function testNotificationSystem() {
     console.log('\n3️⃣ Testing notification routes...');
     try {
       // This should return 401 (unauthorized) which means the route exists
-      const prefsResponse = await axios.get(`${BASE_URL}/api/notifications/preferences`);
+      await axios.get(`${BASE_URL}/api/notifications/preferences`);
       console.log('✅ Notification preferences endpoint accessible');
     } catch (error) {
       if (error.response?.status === 401) {

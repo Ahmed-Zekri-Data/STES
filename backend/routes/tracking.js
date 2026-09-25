@@ -1,8 +1,9 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const { body, param, validationResult } = require('express-validator');
 const Order = require('../models/Order');
-const { customerAuth, optionalCustomerAuth } = require('../middleware/customerAuth');
+const { customerAuth } = require('../middleware/customerAuth');
 
 // GET /api/tracking/:identifier - Public order tracking (by order number or tracking code)
 router.get('/:identifier', [

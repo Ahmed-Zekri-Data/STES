@@ -444,7 +444,7 @@ router.post('/admin', auth, [
     let existingCustomer = null;
     try {
       existingCustomer = await Customer.findOne({ email: customer.email });
-    } catch (error) {
+    } catch {
       // Customer model might not be available, continue without it
     }
 

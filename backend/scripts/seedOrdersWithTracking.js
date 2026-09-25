@@ -154,7 +154,7 @@ async function seedOrdersWithTracking() {
       await order.save();
 
       // Add realistic status history based on current status
-      await addRealisticStatusHistory(order, orderData.daysAgo);
+      await addRealisticStatusHistory(order);
 
       createdOrders.push(order);
       console.log(`✅ Created order ${order.orderNumber} for ${customer.fullName}`);
@@ -191,7 +191,7 @@ async function seedOrdersWithTracking() {
   }
 }
 
-async function addRealisticStatusHistory(order, daysAgo) {
+async function addRealisticStatusHistory(order) {
   const statusProgression = {
     'pending': ['pending'],
     'confirmed': ['pending', 'confirmed'],

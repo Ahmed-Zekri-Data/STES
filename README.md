@@ -124,6 +124,9 @@ STES/
 - `npm run check:db` - Check the MongoDB connection
 - `npm run init:pages` - Create the default CMS pages
 - `npm run generate-vapid` - Generate push notification keys
+
+- `npm test` - Run the API tests
+- `npm run lint` - Lint the backend
 - `npm run create-admin` - Create the admin account from `DEFAULT_ADMIN_*` in `.env`
 - `npm run reset-admin-password` - Reset that admin's password to `DEFAULT_ADMIN_PASSWORD`
 
@@ -131,6 +134,24 @@ STES/
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
+
+## 🧪 Testing
+
+The backend has API tests (Node's test runner, supertest and an in-memory
+MongoDB) covering authentication, order pricing and stock, and payments:
+
+```bash
+cd backend
+npm test
+npm run lint
+```
+
+The first run downloads a MongoDB binary. If that download is blocked, point
+the tests at an installed `mongod` with `MONGOMS_SYSTEM_BINARY=/path/to/mongod`.
+
+GitHub Actions (`.github/workflows/ci.yml`) runs the lint and tests, starts
+the server against MongoDB and checks it connects, and builds the frontend on
+every push and pull request.
 
 ## 🛠 API Endpoints
 

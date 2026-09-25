@@ -208,8 +208,9 @@ class SMSService {
       };
     }
 
-    // Truncate message if too long
+    // Truncate message if too long (used once a provider is wired up below)
     const maxLength = 160;
+    // eslint-disable-next-line no-unused-vars
     const truncatedMessage = message.length > maxLength 
       ? message.substring(0, maxLength - 3) + '...'
       : message;

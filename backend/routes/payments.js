@@ -3,9 +3,8 @@ const router = express.Router();
 const { body, param, validationResult } = require('express-validator');
 const Payment = require('../models/Payment');
 const Order = require('../models/Order');
-const Customer = require('../models/Customer');
 const paymentService = require('../services/paymentService');
-const { customerAuth, optionalCustomerAuth } = require('../middleware/customerAuth');
+const { customerAuth } = require('../middleware/customerAuth');
 const { auth } = require('../middleware/auth');
 
 // GET /api/payments/methods - Get available payment methods

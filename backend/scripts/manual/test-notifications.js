@@ -38,7 +38,7 @@ async function testNotificationSystem() {
     console.log('\n3️⃣ Testing database models...');
     try {
       // This would require authentication, so we'll just check if the endpoint exists
-      const response = await axios.get(`${BASE_URL}/api/products?limit=1`);
+      await axios.get(`${BASE_URL}/api/products?limit=1`);
       console.log('✅ Database models accessible');
     } catch (error) {
       console.log('⚠️ Database models check failed:', error.message);

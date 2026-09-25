@@ -8,7 +8,7 @@ async function testTrackingAPI() {
     console.log('📦 Récupération des commandes...');
     
     try {
-      const ordersResponse = await axios.get('http://localhost:9000/api/orders');
+      await axios.get('http://localhost:9000/api/orders');
       console.log('❌ L\'API des commandes nécessite une authentification');
     } catch (error) {
       if (error.response?.status === 401) {
@@ -35,7 +35,7 @@ async function testTrackingAPI() {
     
     try {
       const searchResponse = await axios.post('http://localhost:9000/api/tracking/search', {
-        email: 'ahmedzekri143@gmail.com'
+        email: 'customer@example.com'
       });
       console.log('✅ Commandes trouvées:', searchResponse.data);
     } catch (error) {
@@ -99,8 +99,10 @@ async function testSpecificTracking(trackingCode) {
   }
 }
 
-// Exécuter le test
-testTrackingAPI();
-
-// Si vous voulez tester un code spécifique, décommentez la ligne suivante et remplacez par votre code
-// testSpecificTracking('TRK-1735659516825-ABC123');
+// Exécuter le test, ou tester un code précis :
+//   node backend/scripts/manual/test-tracking-api.js TRK-1735659516825-ABC123
+if (process.argv[2]) {
+  testSpecificTracking(process.argv[2]);
+} else {
+  testTrackingAPI();
+}

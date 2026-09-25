@@ -20,14 +20,14 @@ class EmailNotificationService {
   }
 
   // Send order status update email
-  async sendOrderStatusUpdate(order, previousStatus = null) {
+  async sendOrderStatusUpdate(order) {
     if (!order.emailNotifications?.enabled || !order.emailNotifications?.statusUpdates) {
       console.log(`Email notifications disabled for order ${order.orderNumber}`);
       return { success: false, reason: 'notifications_disabled' };
     }
 
     try {
-      const emailContent = this.generateStatusUpdateEmail(order, previousStatus);
+      const emailContent = this.generateStatusUpdateEmail(order);
       
       const mailOptions = {
         from: `"STES Piscines" <${process.env.EMAIL_USER}>`,
@@ -86,7 +86,7 @@ class EmailNotificationService {
   }
 
   // Generate status update email content
-  generateStatusUpdateEmail(order, previousStatus) {
+  generateStatusUpdateEmail(order) {
     const statusLabels = {
       pending: 'En attente',
       confirmed: 'Confirmée',

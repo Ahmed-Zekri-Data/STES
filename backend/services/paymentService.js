@@ -63,7 +63,7 @@ class PaymentService {
         case 'paymee':
           return this.processPaymeePayment(payment, customerInfo);
         case 'flouci':
-          return this.processFlouciPayment(payment, customerInfo);
+          return this.processFlouciPayment(payment);
         case 'd17':
           return this.processD17Payment(payment, customerInfo);
         case 'konnect':
@@ -173,12 +173,12 @@ class PaymentService {
       };
     } catch (error) {
       await payment.updateStatus('failed', { error: error.message });
-      throw new Error(`Paymee payment failed: ${error.message}`);
+      throw new Error(`Paymee payment failed: ${error.message}`, { cause: error });
     }
   }
 
   // Process Flouci Payment
-  async processFlouciPayment(payment, customerInfo) {
+  async processFlouciPayment(payment) {
     if (!this.gateways.flouci.enabled) {
       throw new Error('Flouci gateway is not enabled');
     }
@@ -219,7 +219,7 @@ class PaymentService {
       }
     } catch (error) {
       await payment.updateStatus('failed', { error: error.message });
-      throw new Error(`Flouci payment failed: ${error.message}`);
+      throw new Error(`Flouci payment failed: ${error.message}`, { cause: error });
     }
   }
 
@@ -266,7 +266,7 @@ class PaymentService {
       };
     } catch (error) {
       await payment.updateStatus('failed', { error: error.message });
-      throw new Error(`D17 payment failed: ${error.message}`);
+      throw new Error(`D17 payment failed: ${error.message}`, { cause: error });
     }
   }
 
@@ -317,7 +317,7 @@ class PaymentService {
       };
     } catch (error) {
       await payment.updateStatus('failed', { error: error.message });
-      throw new Error(`Konnect payment failed: ${error.message}`);
+      throw new Error(`Konnect payment failed: ${error.message}`, { cause: error });
     }
   }
 

@@ -4,7 +4,7 @@ const { signCustomerToken } = require('../config/jwt');
 const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const Customer = require('../models/Customer');
-const { customerAuth, optionalCustomerAuth, requireEmailVerification } = require('../middleware/customerAuth');
+const { customerAuth } = require('../middleware/customerAuth');
 
 // POST /api/customers/register - Customer registration
 router.post('/register', [

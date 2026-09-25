@@ -82,7 +82,7 @@ const optionalCustomerAuth = async (req, res, next) => {
         req.customer = toRequestCustomer(customer);
       }
     }
-  } catch (error) {
+  } catch {
     // Invalid or expired token: continue as a guest
   }
 
