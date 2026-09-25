@@ -223,6 +223,7 @@ async function seedCustomers() {
 
   } catch (error) {
     console.error('❌ Error seeding customers:', error);
+    process.exitCode = 1;
   } finally {
     // Close the connection
     await mongoose.connection.close();

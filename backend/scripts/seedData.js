@@ -9,7 +9,7 @@ const products = [
     name: 'Moteur de Piscine 1.5HP',
     description: 'Moteur haute performance pour piscines résidentielles. Efficace et silencieux, parfait pour la circulation de l\'eau.',
     price: 850,
-    category: 'motors',
+    category: 'pumps-motors',
     image: '/api/placeholder/300/200',
     specifications: {
       'Puissance': '1.5 HP',
@@ -25,7 +25,7 @@ const products = [
     name: 'Moteur de Piscine 2HP',
     description: 'Moteur puissant pour grandes piscines et spas. Conçu pour un usage intensif avec une excellente durabilité.',
     price: 1200,
-    category: 'motors',
+    category: 'pumps-motors',
     image: '/api/placeholder/300/200',
     specifications: {
       'Puissance': '2 HP',
@@ -41,7 +41,7 @@ const products = [
     name: 'Pompe à Chaleur 12kW',
     description: 'Système de chauffage efficace pour maintenir la température idéale de votre piscine toute l\'année.',
     price: 2500,
-    category: 'motors',
+    category: 'pumps-motors',
     image: '/api/placeholder/300/200',
     specifications: {
       'Puissance': '12 kW',
@@ -168,6 +168,9 @@ const products = [
 ];
 
 const seedDatabase = async () => {
+  // Checked first: seeding deletes the existing admins
+  const { username, email, password } = adminCredentials();
+
   try {
     // Connect to MongoDB
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/stes-ecommerce');
@@ -183,7 +186,6 @@ const seedDatabase = async () => {
     console.log(`Inserted ${products.length} products`);
 
     // Create default admin user
-    const { username, email, password } = adminCredentials();
     const defaultAdmin = new Admin({
       username,
       email,

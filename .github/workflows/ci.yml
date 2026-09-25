@@ -32,12 +32,22 @@ jobs:
       - run: npm run lint
 
       # mongodb-memory-server downloads a MongoDB binary on first use
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: ~/.cache/mongodb-binaries
           key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('backend/package-lock.json') }}
 
       - run: npm test
+
+      - name: Seed the database
+        env:
+          MONGODB_URI: mongodb://localhost:27017/stes-ci
+          DEFAULT_ADMIN_EMAIL: admin@example.com
+          DEFAULT_ADMIN_PASSWORD: ci-admin-password
+        run: |
+          npm run seed
+          npm run seed:customers
+          npm run seed:orders
 
       - name: Start the server and check it connects to MongoDB
         env:
