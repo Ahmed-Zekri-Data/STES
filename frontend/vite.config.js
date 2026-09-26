@@ -13,6 +13,19 @@ export default defineConfig({
       }
     }
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Libraries change rarely, so they get their own file that stays
+        // cached across deploys (the app code changes more often). One file
+        // for all of them: splitting them further made one library run
+        // before React, which it depends on.
+        manualChunks(id) {
+          return id.includes('node_modules') ? 'vendor' : undefined;
+        }
+      }
+    }
+  },
   test: {
     environment: 'jsdom',
     include: ['src/**/*.test.{js,jsx}'],

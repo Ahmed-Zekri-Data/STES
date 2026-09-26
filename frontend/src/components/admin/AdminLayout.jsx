@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAdmin } from '../../context/AdminContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Breadcrumb from './Breadcrumb';
 import ErrorBoundary from '../ErrorBoundary';
+import PageLoader from '../PageLoader';
 import QuickActions from './QuickActions';
 import AdminSearch from './AdminSearch';
 import NotificationsMenu from './NotificationsMenu';
@@ -279,7 +280,9 @@ const AdminLayout = () => {
           >
             {/* Keeps the admin menu usable when a page fails */}
             <ErrorBoundary homePath="/admin/dashboard" homeLabel="Retour au tableau de bord">
-              <Outlet />
+              <Suspense fallback={<PageLoader />}>
+                <Outlet />
+              </Suspense>
             </ErrorBoundary>
           </motion.div>
         </main>
