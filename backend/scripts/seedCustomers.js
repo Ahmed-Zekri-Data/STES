@@ -198,7 +198,8 @@ async function seedCustomers() {
     console.log('Cleared existing customers');
 
     // Insert sample customers
-    const customers = await Customer.insertMany(sampleCustomers);
+    // create() runs the save hooks, so passwords are hashed (insertMany skips them)
+    const customers = await Customer.create(sampleCustomers);
     console.log(`✅ Successfully seeded ${customers.length} customers`);
 
     // Display created customers

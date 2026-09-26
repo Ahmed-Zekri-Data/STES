@@ -56,16 +56,26 @@ jobs:
           PORT: 9000
         run: |
           node server.js > server.log 2>&1 &
+          healthy=false
           for attempt in $(seq 1 30); do
             if curl -fsS http://localhost:9000/api/health | grep -q '"database":"connected"'; then
-              echo "Server is up and connected to MongoDB"
-              exit 0
+              healthy=true
+              break
             fi
             sleep 1
           done
-          echo "Server did not become healthy:"
-          cat server.log
-          exit 1
+          if [ "$healthy" != true ]; then
+            echo "Server did not become healthy:"
+            cat server.log
+            exit 1
+          fi
+          echo "Server is up and connected to MongoDB"
+
+          # Seeded customers must be able to log in (passwords hashed)
+          curl -fsS -o /dev/null -X POST http://localhost:9000/api/customers/login \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"ahmed.ben.ali@email.com","password":"password123"}'
+          echo "Seeded customer can log in"
 
   frontend:
     runs-on: ubuntu-latest
