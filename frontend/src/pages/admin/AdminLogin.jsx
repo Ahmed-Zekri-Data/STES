@@ -4,7 +4,6 @@ import { useAdmin } from '../../context/AdminContext';
 import { Lock, User, Eye, EyeOff, Waves, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FloatingElements from '../../components/FloatingElements';
-import axios from 'axios';
 
 const AdminLogin = () => {
   const navigate = useNavigate();

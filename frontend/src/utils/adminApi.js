@@ -1,9 +1,11 @@
 import axios from 'axios';
 
-// API client for admin pages. It always sends the admin token: the shared
-// client in utils/axios.js prefers a customer token when someone is also
-// signed in to the shop in the same browser.
+// API client for all admin pages. It sends the admin token and nothing
+// else: the shop sets the customer's token as the default for plain axios
+// calls, and one browser can be signed in to both.
 const adminApi = axios.create({ baseURL: '/api', timeout: 15000 });
+
+export const ADMIN_SESSION_EXPIRED = 'admin-session-expired';
 
 adminApi.interceptors.request.use((config) => {
   const token = localStorage.getItem('adminToken');
@@ -12,5 +14,18 @@ adminApi.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// A 401 means the admin token is missing, expired or revoked. AdminContext
+// listens for this and ends the session (a wrong password at login is not a
+// session ending).
+adminApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && error.config?.url !== '/auth/login') {
+      window.dispatchEvent(new Event(ADMIN_SESSION_EXPIRED));
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default adminApi;

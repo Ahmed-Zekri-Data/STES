@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import adminApi, { ADMIN_SESSION_EXPIRED } from '../utils/adminApi';
 
 const AdminContext = createContext();
 
@@ -16,27 +16,13 @@ export const AdminProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Set up axios interceptor for admin token
+  // Admin requests go through adminApi, which sends the admin token itself.
+  // Nothing here touches the shared axios defaults: those carry the shop
+  // customer's token, and one browser can be signed in to both.
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    }
-
-    // Add response interceptor to handle token expiration
-    const interceptor = axios.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        if (error.response?.status === 401) {
-          logout();
-        }
-        return Promise.reject(error);
-      }
-    );
-
-    return () => {
-      axios.interceptors.response.eject(interceptor);
-    };
+    const onExpired = () => logout();
+    window.addEventListener(ADMIN_SESSION_EXPIRED, onExpired);
+    return () => window.removeEventListener(ADMIN_SESSION_EXPIRED, onExpired);
   }, []);
 
   // Check if admin is logged in on app start
@@ -54,7 +40,6 @@ export const AdminProvider = ({ children }) => {
         const parsedAdmin = JSON.parse(adminData);
         setAdmin(parsedAdmin);
         setIsAuthenticated(true);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       }
     } catch (error) {
       console.error('Auth check error:', error);
@@ -67,7 +52,7 @@ export const AdminProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       // Make API call to backend
-      const response = await axios.post('/api/auth/login', {
+      const response = await adminApi.post('/auth/login', {
         username: credentials.username,
         password: credentials.password
       });
@@ -80,7 +65,6 @@ export const AdminProvider = ({ children }) => {
 
       setAdmin(admin);
       setIsAuthenticated(true);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
       return { success: true, admin };
     } catch (error) {
@@ -93,7 +77,6 @@ export const AdminProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminUser');
-    delete axios.defaults.headers.common['Authorization'];
     setAdmin(null);
     setIsAuthenticated(false);
   };

@@ -15,7 +15,7 @@ import {
   AlertCircle,
   XCircle
 } from 'lucide-react';
-import axios from 'axios';
+import adminApi from '../../utils/adminApi';
 import AnimatedCounter from '../../components/AnimatedCounter';
 
 const Dashboard = () => {
@@ -42,9 +42,9 @@ const Dashboard = () => {
 
       // Fetch data from multiple endpoints
       const [productsRes, ordersRes, customersRes] = await Promise.all([
-        axios.get('/api/products'),
-        axios.get('/api/orders'),
-        axios.get('/api/admin/customers').catch(() => ({ data: { customers: [] } }))
+        adminApi.get('/products'),
+        adminApi.get('/orders'),
+        adminApi.get('/admin/customers').catch(() => ({ data: { customers: [] } }))
       ]);
 
       const products = productsRes.data.products || productsRes.data || [];
