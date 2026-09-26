@@ -4,15 +4,16 @@ const { query, validationResult } = require('express-validator');
 const Product = require('../models/Product');
 const { auth, checkPermission } = require('../middleware/auth');
 const { containing } = require('../utils/text');
-const { LOW_STOCK_THRESHOLD } = require('../config/inventory');
+const { getSettings } = require('../services/settingsService');
 const { categoryNames } = require('../services/categoryService');
 
-const STOCK_FILTERS = {
+// "Low" uses the threshold set in Admin → Settings
+const stockFilters = (lowStockThreshold) => ({
   all: {},
   in: { stockQuantity: { $gt: 0 } },
-  low: { stockQuantity: { $gt: 0, $lte: LOW_STOCK_THRESHOLD } },
+  low: { stockQuantity: { $gt: 0, $lte: lowStockThreshold } },
   out: { stockQuantity: { $lte: 0 } }
-};
+});
 
 const SORTS = {
   newest: { createdAt: -1 },
@@ -29,7 +30,7 @@ router.get('/', auth, checkPermission('products'), [
   query('limit').optional().isInt({ min: 1, max: 100 }),
   query('search').optional({ values: 'falsy' }).isString().isLength({ max: 100 }),
   query('category').optional({ values: 'falsy' }).isString().isLength({ max: 100 }),
-  query('stock').optional().isIn(Object.keys(STOCK_FILTERS)),
+  query('stock').optional().isIn(Object.keys(stockFilters(0))),
   query('sort').optional().isIn(Object.keys(SORTS))
 ], async (req, res) => {
   try {
@@ -51,14 +52,16 @@ router.get('/', auth, checkPermission('products'), [
     if (category) {
       base.category = String(category).toLowerCase();
     }
-    const filter = { ...base, ...STOCK_FILTERS[stock] };
+    const { lowStockThreshold } = await getSettings();
+    const filters = stockFilters(lowStockThreshold);
+    const filter = { ...base, ...filters[stock] };
 
     const [products, total, all, low, out, names] = await Promise.all([
       Product.find(filter).sort(SORTS[sort]).skip((page - 1) * limit).limit(limit).lean(),
       Product.countDocuments(filter),
       Product.countDocuments(base),
-      Product.countDocuments({ ...base, ...STOCK_FILTERS.low }),
-      Product.countDocuments({ ...base, ...STOCK_FILTERS.out }),
+      Product.countDocuments({ ...base, ...filters.low }),
+      Product.countDocuments({ ...base, ...filters.out }),
       categoryNames()
     ]);
 
@@ -73,7 +76,7 @@ router.get('/', auth, checkPermission('products'), [
         totalProducts: total
       },
       stockCounts: { all, low, out },
-      lowStockThreshold: LOW_STOCK_THRESHOLD
+      lowStockThreshold
     });
   } catch (error) {
     console.error('Error fetching admin products:', error);

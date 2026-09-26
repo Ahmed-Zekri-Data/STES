@@ -60,14 +60,14 @@ const PageTitle = () => {
         color: 'purple'
       },
       '/admin/users': {
-        title: 'Users',
-        subtitle: 'Manage user accounts',
+        title: 'Admin Users',
+        subtitle: 'Who can open the admin and what they can manage',
         icon: Users,
         color: 'cyan'
       },
       '/admin/settings': {
         title: 'Settings',
-        subtitle: 'Configure your application',
+        subtitle: 'Your account and the shop settings',
         icon: Settings,
         color: 'gray'
       }

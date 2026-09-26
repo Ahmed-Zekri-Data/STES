@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useCart } from '../../context/CartContext';
 import { useCheckout } from '../../context/CheckoutContext';
+import { useShopSettings } from '../../context/shopSettings';
 import { ShoppingBag, Truck, CreditCard, Tag, Shield } from 'lucide-react';
 
 const OrderSummary = () => {
@@ -9,6 +10,7 @@ const OrderSummary = () => {
   const { calculateTotals, checkoutData, quoteError } = useCheckout();
   
   const totals = calculateTotals(cartItems);
+  const { delivery } = useShopSettings();
 
   return (
     <motion.div
@@ -153,7 +155,7 @@ const OrderSummary = () => {
             <span className="font-medium">Livraison gratuite!</span>
           </div>
           <p className="text-xs text-green-600 mt-1">
-            Commande supérieure à 200 TND
+            Commande supérieure à {delivery.freeDeliveryOver} TND
           </p>
         </motion.div>
       )}

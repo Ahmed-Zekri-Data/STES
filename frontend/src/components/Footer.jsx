@@ -2,11 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
+import { useShopSettings, whatsappLink, phoneLink } from '../context/shopSettings';
 import { Phone, Mail, MapPin, MessageCircle } from 'lucide-react';
 
 const Footer = () => {
   const { t, language } = useLanguage();
   const [shopCategories, setShopCategories] = useState({});
+  const { contact } = useShopSettings();
+  const whatsapp = whatsappLink(contact.whatsapp);
 
   // The first categories of the shop, as ordered in Admin → Categories
   useEffect(() => {
@@ -46,16 +49,16 @@ const Footer = () => {
             <p className="text-gray-300 text-sm leading-relaxed">
               {t('aboutDesc')}
             </p>
-            <div className="flex space-x-4">
+            {whatsapp && <div className="flex space-x-4">
               <a
-                href="https://wa.me/21612345678"
+                href={whatsapp}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-green-400 hover:text-green-300 transition-colors"
               >
                 <MessageCircle className="w-6 h-6" />
               </a>
-            </div>
+            </div>}
           </div>
 
           {/* Quick Links */}
@@ -98,29 +101,29 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-primary-400" />
-                <span className="text-gray-300 text-sm">+216 12 345 678</span>
+                <a href={phoneLink(contact.phone)} className="text-gray-300 hover:text-white transition-colors text-sm">{contact.phone}</a>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-primary-400" />
-                <span className="text-gray-300 text-sm">info@stes.tn</span>
+                <a href={`mailto:${contact.email}`} className="text-gray-300 hover:text-white transition-colors text-sm">{contact.email}</a>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="w-5 h-5 text-primary-400" />
                 <span className="text-gray-300 text-sm">
-                  Tunis, Tunisie
+                  {contact.address}
                 </span>
               </div>
-              <div className="flex items-center space-x-3">
+              {whatsapp && <div className="flex items-center space-x-3">
                 <MessageCircle className="w-5 h-5 text-green-400" />
                 <a
-                  href="https://wa.me/21612345678"
+                  href={whatsapp}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-gray-300 hover:text-white transition-colors text-sm"
                 >
-                  {t('whatsapp')}: +216 12 345 678
+                  {t('whatsapp')}: {contact.whatsapp}
                 </a>
-              </div>
+              </div>}
             </div>
           </div>
         </div>

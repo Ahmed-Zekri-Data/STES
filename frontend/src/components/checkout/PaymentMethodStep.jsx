@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCheckout } from '../../context/CheckoutContext';
+import { useShopSettings } from '../../context/shopSettings';
 import {
   CreditCard,
   Building,
@@ -15,6 +16,9 @@ import {
 } from 'lucide-react';
 
 const PaymentMethodStep = () => {
+  // The cash-on-delivery fee is set in Admin → Settings
+  const { delivery } = useShopSettings();
+  const feeFor = (method) => (method.id === 'cash_on_delivery' ? delivery.cashOnDeliveryFee : method.fee);
   const { 
     checkoutData, 
     updateCheckoutData, 
@@ -114,10 +118,10 @@ const PaymentMethodStep = () => {
                         <Clock className="w-4 h-4 mr-1" />
                         {method.processingTime}
                       </div>
-                      {method.fee > 0 && (
+                      {feeFor(method) > 0 && (
                         <div className="flex items-center text-orange-600">
                           <AlertCircle className="w-4 h-4 mr-1" />
-                          +{method.fee} TND
+                          +{feeFor(method)} TND
                         </div>
                       )}
                       {!method.enabled && (

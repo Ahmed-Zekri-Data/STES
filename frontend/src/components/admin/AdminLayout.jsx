@@ -60,9 +60,12 @@ const AdminLayout = () => {
     { name: 'Customers', href: '/admin/customers', icon: Users },
     { name: 'Forms', href: '/admin/forms', icon: FileText },
     { name: 'Pages', href: '/admin/pages', icon: FileText },
-    { name: 'Admin Users', href: '/admin/users', icon: UserCog },
+    // Only super admins manage admin accounts
+    ...(admin?.role === 'super_admin' ? [{ name: 'Admin Users', href: '/admin/users', icon: UserCog }] : []),
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
+
+  const roleLabel = admin?.role === 'super_admin' ? 'Super admin' : 'Admin';
 
   const handleLogout = () => {
     logout();
@@ -201,7 +204,7 @@ const AdminLayout = () => {
                   {admin?.fullName}
                 </p>
                 <p className="text-xs text-gray-500 truncate">
-                  {admin?.role}
+                  {roleLabel}
                 </p>
               </div>
             </div>
@@ -253,6 +256,8 @@ const AdminLayout = () => {
               {/* Profile Dropdown */}
               <div className="relative">
                 <motion.button
+                  onClick={() => navigate('/admin/settings')}
+                  title="My account"
                   className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -262,7 +267,7 @@ const AdminLayout = () => {
                   </div>
                   <div className="hidden md:block text-left">
                     <p className="text-sm font-medium text-gray-700">{admin?.fullName}</p>
-                    <p className="text-xs text-gray-500">{admin?.role}</p>
+                    <p className="text-xs text-gray-500">{roleLabel}</p>
                   </div>
                 </motion.button>
               </div>

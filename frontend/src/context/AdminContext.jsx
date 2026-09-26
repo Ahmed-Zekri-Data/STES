@@ -36,10 +36,14 @@ export const AdminProvider = ({ children }) => {
       const adminData = localStorage.getItem('adminUser');
 
       if (token && adminData) {
-        // For now, use stored data (can be enhanced to verify with backend)
-        const parsedAdmin = JSON.parse(adminData);
-        setAdmin(parsedAdmin);
+        // Show the stored account right away, then refresh it from the
+        // server: a super admin may have changed the role or permissions.
+        // An ended session answers 401, which logs out (see above).
+        setAdmin(JSON.parse(adminData));
         setIsAuthenticated(true);
+        adminApi.get('/auth/me')
+          .then(response => saveAdmin(response.data.admin))
+          .catch(error => console.error('Error refreshing admin account:', error));
       }
     } catch (error) {
       console.error('Auth check error:', error);
@@ -81,17 +85,22 @@ export const AdminProvider = ({ children }) => {
     setIsAuthenticated(false);
   };
 
+  const saveAdmin = (account) => {
+    localStorage.setItem('adminUser', JSON.stringify(account));
+    setAdmin(account);
+  };
+
+  // Settings → My account. Both throw the request error; use errorMessage().
   const updateProfile = async (profileData) => {
-    try {
-      // Mock profile update
-      const updatedAdmin = { ...admin, ...profileData };
-      localStorage.setItem('adminUser', JSON.stringify(updatedAdmin));
-      setAdmin(updatedAdmin);
-      return { success: true, admin: updatedAdmin };
-    } catch (error) {
-      console.error('Profile update error:', error);
-      throw error;
-    }
+    const response = await adminApi.put('/auth/profile', profileData);
+    saveAdmin(response.data.admin);
+    return response.data.admin;
+  };
+
+  // Ends the admin's other sessions; this one continues with a new token
+  const changePassword = async (currentPassword, newPassword) => {
+    const response = await adminApi.put('/auth/password', { currentPassword, newPassword });
+    localStorage.setItem('adminToken', response.data.token);
   };
 
   const hasPermission = (permission) => {
@@ -107,6 +116,7 @@ export const AdminProvider = ({ children }) => {
     login,
     logout,
     updateProfile,
+    changePassword,
     hasPermission,
     checkAuthStatus
   };

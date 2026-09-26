@@ -5,8 +5,10 @@ import { ShoppingBag, Wrench, Star, Users, Award, Clock, Waves, Droplets, Sparkl
 import { motion } from 'framer-motion';
 import { Parallax } from 'react-parallax';
 import AnimatedProductCard from '../components/AnimatedProductCard';
+import { useShopSettings, whatsappLink } from '../context/shopSettings';
 
 const Home = () => {
+  const whatsapp = whatsappLink(useShopSettings().contact.whatsapp);
   const { t } = useLanguage();
 
   // Animation variants
@@ -446,13 +448,13 @@ const Home = () => {
                 </Link>
               </motion.div>
 
-              <motion.div
+              {whatsapp && <motion.div
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
               >
                 <a
-                  href="https://wa.me/21612345678"
+                  href={whatsapp}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group inline-flex items-center justify-center px-8 py-4 border-2 border-white/80 text-white font-semibold rounded-xl backdrop-blur-sm bg-white/10 hover:bg-white hover:text-blue-600 transition-all duration-300 transform"
@@ -466,7 +468,7 @@ const Home = () => {
                     📱
                   </motion.div>
                 </a>
-              </motion.div>
+              </motion.div>}
             </motion.div>
           </motion.div>
         </div>

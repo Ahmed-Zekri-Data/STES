@@ -3,10 +3,13 @@ import { useLanguage } from '../context/LanguageContext';
 import { Phone, Mail, MapPin, Clock, MessageCircle, Send, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 import { submitErrorMessage } from '../utils/forms';
+import { useShopSettings, whatsappLink, phoneLink } from '../context/shopSettings';
 
 const Contact = () => {
   const { t, language } = useLanguage();
   const [pageData, setPageData] = useState(null);
+  const { contact } = useShopSettings();
+  const whatsapp = whatsappLink(contact.whatsapp);
   const [pageLoading, setPageLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
@@ -50,19 +53,19 @@ const Contact = () => {
     {
       icon: <Phone className="w-6 h-6" />,
       title: 'Téléphone',
-      details: ['+216 12 345 678', '+216 98 765 432'],
-      action: 'tel:+21612345678'
+      details: [contact.phone],
+      action: phoneLink(contact.phone)
     },
     {
       icon: <Mail className="w-6 h-6" />,
       title: 'Email',
-      details: ['info@stes.tn', 'support@stes.tn'],
-      action: 'mailto:info@stes.tn'
+      details: [contact.email],
+      action: `mailto:${contact.email}`
     },
     {
       icon: <MapPin className="w-6 h-6" />,
       title: 'Adresse',
-      details: ['123 Avenue Habib Bourguiba', 'Tunis 1000, Tunisie'],
+      details: [contact.address],
       action: null
     },
     {
@@ -298,13 +301,13 @@ const Contact = () => {
                   <div className="text-center text-gray-500">
                     <MapPin className="w-12 h-12 mx-auto mb-2" />
                     <p>Carte interactive</p>
-                    <p className="text-sm">123 Avenue Habib Bourguiba, Tunis</p>
+                    <p className="text-sm">{contact.address}</p>
                   </div>
                 </div>
               </div>
 
               {/* WhatsApp Contact */}
-              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+              {whatsapp && <div className="bg-green-50 border border-green-200 rounded-lg p-6">
                 <div className="flex items-center space-x-3 mb-4">
                   <MessageCircle className="w-8 h-8 text-green-600" />
                   <h3 className="text-lg font-semibold text-green-800">
@@ -315,7 +318,7 @@ const Contact = () => {
                   Pour une réponse rapide, contactez-nous directement sur WhatsApp
                 </p>
                 <a
-                  href="https://wa.me/21612345678"
+                  href={whatsapp}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
@@ -323,7 +326,7 @@ const Contact = () => {
                   <MessageCircle className="w-5 h-5" />
                   <span>Ouvrir WhatsApp</span>
                 </a>
-              </div>
+              </div>}
 
               {/* FAQ Quick Links */}
               <div className="bg-white rounded-lg shadow-md p-6">

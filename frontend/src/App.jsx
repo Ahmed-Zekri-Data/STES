@@ -8,6 +8,7 @@ import { AdminProvider } from './context/AdminContext';
 import { CustomerProvider } from './context/CustomerContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { OrderTrackingProvider } from './context/OrderTrackingContext';
+import { ShopSettingsProvider } from './context/ShopSettingsContext';
 
 // Components
 import Navbar from './components/Navbar';
@@ -46,6 +47,8 @@ const Customers = lazy(() => import('./pages/admin/Customers'));
 const Forms = lazy(() => import('./pages/admin/Forms'));
 const Pages = lazy(() => import('./pages/admin/Pages'));
 const TrackingDashboard = lazy(() => import('./pages/admin/TrackingDashboard'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
 
 // Shop pages share the header and footer; they stay in place while a page
 // that is not loaded yet is being downloaded
@@ -73,6 +76,7 @@ function App() {
     <ThemeProvider>
       <AnimationProvider>
         <LanguageProvider>
+          <ShopSettingsProvider>
           <CartProvider>
             <CustomerProvider>
               <WishlistProvider>
@@ -124,8 +128,8 @@ function App() {
                       <Route path="customers" element={<Customers />} />
                       <Route path="forms" element={<Forms />} />
                       <Route path="pages" element={<Pages />} />
-                      <Route path="users" element={<div className="p-6"><h1 className="text-2xl font-bold">Admin Users Management</h1><p className="text-gray-600">Coming soon...</p></div>} />
-                      <Route path="settings" element={<div className="p-6"><h1 className="text-2xl font-bold">Settings</h1><p className="text-gray-600">Coming soon...</p></div>} />
+                      <Route path="users" element={<AdminUsers />} />
+                      <Route path="settings" element={<AdminSettings />} />
                     </Route>
                   </Routes>
                   </ErrorBoundary>
@@ -135,6 +139,7 @@ function App() {
               </WishlistProvider>
             </CustomerProvider>
           </CartProvider>
+          </ShopSettingsProvider>
         </LanguageProvider>
       </AnimationProvider>
     </ThemeProvider>
