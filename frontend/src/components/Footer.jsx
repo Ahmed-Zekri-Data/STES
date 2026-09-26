@@ -1,10 +1,19 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
 import { Phone, Mail, MapPin, MessageCircle } from 'lucide-react';
 
 const Footer = () => {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
+  const [shopCategories, setShopCategories] = useState({});
+
+  // The first categories of the shop, as ordered in Admin → Categories
+  useEffect(() => {
+    axios.get('/api/products/categories')
+      .then(response => setShopCategories(response.data.categories || {}))
+      .catch(() => setShopCategories({}));
+  }, []);
 
   const quickLinks = [
     { name: t('home'), href: '/' },
@@ -15,11 +24,12 @@ const Footer = () => {
     { name: t('contact'), href: '/contact' },
   ];
 
-  const categories = [
-    { name: t('motors'), href: '/shop?category=pumps-motors' },
-    { name: t('filters'), href: '/shop?category=filters' },
-    { name: t('chemicals'), href: '/shop?category=chemicals' },
-  ];
+  const localName = (category) =>
+    (language === 'en' && category.nameEn) || (language === 'ar' && category.nameAr) || category.name;
+  const categories = Object.entries(shopCategories).slice(0, 4).map(([slug, category]) => ({
+    name: localName(category),
+    href: `/shop?category=${encodeURIComponent(slug)}`
+  }));
 
   return (
     <footer className="bg-gray-900 text-white">

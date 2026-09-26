@@ -10,7 +10,7 @@ const uploadDir = fs.mkdtempSync(path.join(os.tmpdir(), 'stes-uploads-'));
 process.env.UPLOAD_PATH = uploadDir;
 
 const {
-  startDatabase, stopDatabase, clearDatabase, createApp, adminToken, registerCustomer
+  startDatabase, stopDatabase, clearDatabase, createApp, adminToken, registerCustomer, createCategory
 } = require('./helpers');
 
 // A real 1×1 PNG
@@ -107,6 +107,8 @@ describe('product image uploads', () => {
     const product = (image) => ({
       name: 'Pompe', description: 'Test', price: 100, category: 'pumps-motors', stockQuantity: 5, image
     });
+    beforeEach(() => createCategory({ name: 'Pompes et Moteurs', nameEn: 'Pumps & Motors', slug: 'pumps-motors' }));
+
     const create = (image) => request(app)
       .post('/api/products')
       .set('Authorization', `Bearer ${admin}`)

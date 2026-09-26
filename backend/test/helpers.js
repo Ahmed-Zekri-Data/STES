@@ -41,6 +41,12 @@ const createProduct = (overrides = {}) => {
   });
 };
 
+// Categories products can be assigned to (as created in Admin → Categories)
+const createCategory = (overrides = {}) => {
+  const Category = require('../models/Category');
+  return Category.create({ name: 'Filtration', nameEn: 'Filters', slug: 'filters', ...overrides });
+};
+
 const productStock = async (productId) => {
   const Product = require('../models/Product');
   return (await Product.findById(productId).lean()).stockQuantity;
@@ -99,6 +105,7 @@ module.exports = {
   clearDatabase,
   createApp,
   createProduct,
+  createCategory,
   productStock,
   adminToken,
   registerCustomer,

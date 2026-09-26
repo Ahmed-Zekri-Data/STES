@@ -20,8 +20,9 @@ const productSchema = new mongoose.Schema({
   category: {
     type: String,
     required: [true, 'Product category is required'],
-    enum: ['pools', 'pumps-motors', 'filters', 'chemicals', 'cleaning', 'heating', 'lighting', 'accessories', 'maintenance'],
-    lowercase: true
+    // The slug of a category managed in the admin (Category collection)
+    lowercase: true,
+    trim: true
   },
   subcategory: {
     type: String,

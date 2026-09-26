@@ -7,6 +7,7 @@ if (!process.env.JWT_SECRET) {
 }
 
 const createApp = require('./app');
+const { ensureProductCategoriesExist } = require('./services/categoryService');
 
 const app = createApp();
 
@@ -17,6 +18,14 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/stes-ecom
 .then(() => {
   console.log('✅ Successfully connected to MongoDB');
   console.log('📊 Database:', mongoose.connection.name);
+
+  // Shops upgrading from the fixed category list get a category for each
+  // one their products use, so the admin and the shop can show them
+  ensureProductCategoriesExist()
+    .then(created => {
+      if (created.length) console.log(`📂 Created categories used by products: ${created.join(', ')}`);
+    })
+    .catch(error => console.error('Could not check product categories:', error.message));
 })
 .catch((error) => {
   console.error('❌ MongoDB connection error:', error.message);

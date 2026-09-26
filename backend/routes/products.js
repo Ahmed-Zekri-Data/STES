@@ -4,14 +4,29 @@ const { body, validationResult, query } = require('express-validator');
 const Product = require('../models/Product');
 const { auth } = require('../middleware/auth');
 const { customerAuth } = require('../middleware/customerAuth');
-const { productCategories, searchFilters } = require('../config/productCategories');
+const { searchFilters } = require('../config/productCategories');
+const { categoryExists, slugsWithin, categoryNames, shopCategories } = require('../services/categoryService');
 const { containing, isImageLocation } = require('../utils/text');
+
+// Products must belong to a category that exists in the admin
+const existingCategory = async (value) => {
+  if (!(await categoryExists(value))) {
+    throw new Error('Unknown category');
+  }
+  return true;
+};
+
+// Adds the category's name next to its slug, for display
+const withCategoryNames = async (products) => {
+  const names = await categoryNames();
+  return products.map(product => ({ ...product, categoryName: names.get(product.category) || product.category }));
+};
 
 // GET /api/products - Get all products with filtering and pagination
 router.get('/', [
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 100 }),
-  query('category').optional().isIn(Object.keys(productCategories)),
+  query('category').optional({ values: 'falsy' }).isString().isLength({ max: 100 }),
   query('subcategory').optional().custom(value => {
     if (value === '' || value === null || value === undefined) return true;
     return value.length >= 1 && value.length <= 50;
@@ -64,7 +79,8 @@ router.get('/', [
       filter.inStock = true; // Default to in-stock products
     }
 
-    if (category) filter.category = category;
+    // A category includes the categories under it
+    if (category) filter.category = { $in: await slugsWithin(category) };
     if (subcategory) filter.subcategory = subcategory;
     if (featured !== undefined) filter.featured = featured === 'true';
     if (brand) filter.brand = containing(brand);
@@ -128,7 +144,7 @@ router.get('/', [
     const totalPages = Math.ceil(total / parseInt(limit));
 
     res.json({
-      products,
+      products: await withCategoryNames(products),
       pagination: {
         currentPage: parseInt(page),
         totalPages,
@@ -154,12 +170,18 @@ router.get('/featured', async (req, res) => {
   }
 });
 
-// GET /api/products/categories - Get product categories
-router.get('/categories', (req, res) => {
-  res.json({
-    categories: productCategories,
-    filters: searchFilters
-  });
+// GET /api/products/categories - The shop's categories, as managed in the
+// admin, and the other search filters
+router.get('/categories', async (req, res) => {
+  try {
+    res.json({
+      categories: await shopCategories(),
+      filters: searchFilters
+    });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ message: 'Error fetching categories' });
+  }
 });
 
 // GET /api/products/search/suggestions - Get search suggestions
@@ -187,10 +209,10 @@ router.get('/search/suggestions', [
     .limit(10);
 
     // Get category suggestions
-    const categoryMatches = Object.entries(productCategories)
+    const categoryMatches = Object.entries(await shopCategories())
       .filter(([, category]) =>
         category.name.toLowerCase().includes(q.toLowerCase()) ||
-        category.nameEn.toLowerCase().includes(q.toLowerCase())
+        (category.nameEn || '').toLowerCase().includes(q.toLowerCase())
       )
       .map(([key, category]) => ({
         type: 'category',
@@ -231,13 +253,14 @@ router.get('/search/suggestions', [
 // GET /api/products/:id - Get single product
 router.get('/:id', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id).lean();
 
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    res.json(product);
+    const [named] = await withCategoryNames([product]);
+    res.json(named);
   } catch (error) {
     console.error('Error fetching product:', error);
     if (error.name === 'CastError') {
@@ -252,7 +275,7 @@ router.post('/', auth, [
   body('name').trim().isLength({ min: 1, max: 100 }).withMessage('Name is required and must be less than 100 characters'),
   body('description').trim().isLength({ min: 1, max: 1000 }).withMessage('Description is required and must be less than 1000 characters'),
   body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
-  body('category').isIn(Object.keys(productCategories)).withMessage('Invalid category'),
+  body('category').isString().custom(existingCategory).withMessage('Choose a category that exists in Admin → Categories'),
   body('stockQuantity').optional().isInt({ min: 0 }).withMessage('Stock quantity must be a non-negative integer'),
   body('image').optional().custom(isImageLocation).withMessage('Image must be an http(s) URL or an uploaded image'),
   body('featured').optional().isBoolean().withMessage('Featured must be a boolean')
@@ -281,7 +304,7 @@ router.put('/:id', auth, [
   body('name').optional().trim().isLength({ min: 1, max: 100 }),
   body('description').optional().trim().isLength({ min: 1, max: 1000 }),
   body('price').optional().isFloat({ min: 0 }),
-  body('category').optional().isIn(Object.keys(productCategories)),
+  body('category').optional().isString().custom(existingCategory).withMessage('Choose a category that exists in Admin → Categories'),
   body('stockQuantity').optional().isInt({ min: 0 }),
   body('image').optional().custom(isImageLocation).withMessage('Image must be an http(s) URL or an uploaded image'),
   body('featured').optional().isBoolean()

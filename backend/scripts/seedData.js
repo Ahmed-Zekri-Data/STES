@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Admin = require('../models/Admin');
+const { createDefaultCategories } = require('../services/categoryService');
 const adminCredentials = require('./adminCredentials');
 require('../config/env');
 
@@ -180,6 +181,11 @@ const seedDatabase = async () => {
     await Product.deleteMany({});
     await Admin.deleteMany({});
     console.log('Cleared existing data');
+
+    // Categories are kept (they are managed in the admin); only missing
+    // default ones are added
+    const created = await createDefaultCategories();
+    console.log(`Created ${created.length} categories`);
 
     // Insert products
     await Product.insertMany(products);
