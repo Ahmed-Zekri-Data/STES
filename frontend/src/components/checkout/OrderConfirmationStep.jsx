@@ -113,6 +113,11 @@ const OrderConfirmationStep = () => {
         >
           <p className="text-sm text-blue-700 mb-1">Numéro de commande:</p>
           <p className="text-2xl font-bold text-blue-900">{orderConfirmation.orderId}</p>
+          {orderConfirmation.trackingCode && (
+            <p className="text-sm text-blue-700 mt-2">
+              Code de suivi : <span className="font-semibold">{orderConfirmation.trackingCode}</span>
+            </p>
+          )}
         </motion.div>
       </motion.div>
 

@@ -16,7 +16,7 @@ const Footer = () => {
   ];
 
   const categories = [
-    { name: t('motors'), href: '/shop?category=motors' },
+    { name: t('motors'), href: '/shop?category=pumps-motors' },
     { name: t('filters'), href: '/shop?category=filters' },
     { name: t('chemicals'), href: '/shop?category=chemicals' },
   ];

@@ -16,48 +16,37 @@ const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
 
-  // Sample product data (will be replaced with API call)
-  const sampleProduct = {
-    _id: id,
-    name: 'Moteur de Piscine 1.5HP',
-    price: 850,
-    image: '/api/placeholder/600/400',
-    category: 'motors',
-    description: 'Moteur haute performance pour piscines résidentielles. Efficace et silencieux, parfait pour la circulation de l\'eau. Ce moteur est conçu pour offrir une performance optimale tout en maintenant une consommation d\'énergie réduite.',
-    specifications: {
-      'Puissance': '1.5 HP',
-      'Voltage': '220V',
-      'Débit': '15 m³/h',
-      'Garantie': '2 ans',
-      'Poids': '12 kg',
-      'Dimensions': '35 x 25 x 30 cm'
-    },
-    inStock: true,
-    stockQuantity: 15,
-    featured: true
-  };
-
   useEffect(() => {
-    fetchProduct();
-  }, [id]);
+    let cancelled = false;
 
-  const fetchProduct = async () => {
-    setLoading(true);
-    try {
-      // TODO: Replace with actual API call
-      // const response = await axios.get(`/api/products/${id}`);
-      // setProduct(response.data);
-      
-      // For now, use sample data
-      setTimeout(() => {
-        setProduct(sampleProduct);
-        setLoading(false);
-      }, 500);
-    } catch (error) {
-      console.error('Error fetching product:', error);
-      setLoading(false);
-    }
-  };
+    const fetchProduct = async () => {
+      setLoading(true);
+      setQuantity(1);
+      try {
+        const response = await axios.get(`/api/products/${id}`);
+        if (!cancelled) {
+          setProduct(response.data);
+        }
+      } catch (error) {
+        // 404 or an invalid ID: show "product not found"
+        if (!cancelled) {
+          setProduct(null);
+          if (error.response?.status !== 404 && error.response?.status !== 400) {
+            console.error('Error fetching product:', error);
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchProduct();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   const handleAddToCart = () => {
     if (product) {
@@ -110,6 +99,9 @@ const ProductDetails = () => {
     );
   }
 
+  const averageRating = product.ratingStats?.averageRating || 0;
+  const totalReviews = product.ratingStats?.totalReviews || 0;
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -146,10 +138,15 @@ const ProductDetails = () => {
               <div className="flex items-center space-x-2 mb-4">
                 <div className="flex items-center">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                    <Star
+                      key={i}
+                      className={`w-5 h-5 ${i < Math.round(averageRating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                    />
                   ))}
                 </div>
-                <span className="text-gray-600">(4.8)</span>
+                <span className="text-gray-600">
+                  {totalReviews > 0 ? `${averageRating.toFixed(1)} (${totalReviews} avis)` : 'Aucun avis'}
+                </span>
               </div>
               <p className="text-4xl font-bold text-primary-600 mb-4">
                 {product.price} {t('currency')}

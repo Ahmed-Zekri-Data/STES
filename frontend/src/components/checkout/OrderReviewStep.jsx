@@ -22,13 +22,17 @@ const OrderReviewStep = () => {
     calculateTotals, 
     processPayment, 
     isProcessing,
-    updateCheckoutData
+    updateCheckoutData,
+    quote,
+    quoteError
   } = useCheckout();
   
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [orderNotes, setOrderNotes] = useState('');
   
   const totals = calculateTotals(cartItems);
+  // Only order at a price the server has confirmed
+  const canPlaceOrder = agreedToTerms && !isProcessing && Boolean(quote) && !quoteError;
 
   const handlePlaceOrder = async () => {
     if (!agreedToTerms) {
@@ -36,14 +40,14 @@ const OrderReviewStep = () => {
       return;
     }
 
-    // Update order notes
+    // Passed directly: the state update below is not applied until the next render
     updateCheckoutData('order', { notes: orderNotes });
 
     try {
-      await processPayment(cartItems);
+      await processPayment(cartItems, { notes: orderNotes });
     } catch (error) {
       console.error('Error processing payment:', error);
-      alert('Erreur lors du traitement de la commande. Veuillez réessayer.');
+      alert(error.message);
     }
   };
 
@@ -270,6 +274,12 @@ const OrderReviewStep = () => {
         </label>
       </motion.div>
 
+      {quoteError && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          {quoteError}
+        </div>
+      )}
+
       {/* Action Buttons */}
       <motion.div
         className="flex justify-between pt-6"
@@ -290,9 +300,9 @@ const OrderReviewStep = () => {
 
         <motion.button
           onClick={handlePlaceOrder}
-          disabled={!agreedToTerms || isProcessing}
+          disabled={!canPlaceOrder}
           className={`flex items-center px-8 py-3 rounded-lg font-medium transition-all duration-300 ${
-            agreedToTerms && !isProcessing
+            canPlaceOrder
               ? 'bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-xl'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           }`}
