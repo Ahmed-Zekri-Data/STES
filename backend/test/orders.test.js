@@ -49,6 +49,64 @@ describe('orders', () => {
     });
   });
 
+  describe('delivery and quotes', () => {
+    const quote = (items, shipping, extra = {}) => request(app)
+      .post('/api/orders/quote')
+      .send({ items, shipping, ...extra });
+
+    it('charges the governorate rate below 200 TND and nothing above', async () => {
+      const pump = await createProduct({ price: 150 });
+      const filter = await createProduct({ price: 250 });
+
+      const tunis = await quote([{ productId: pump._id, quantity: 1 }], { governorate: 'Tunis' }).expect(200);
+      const tataouine = await quote([{ productId: pump._id, quantity: 1 }], { governorate: 'Tataouine' }).expect(200);
+      const free = await quote([{ productId: filter._id, quantity: 1 }], { governorate: 'Tataouine' }).expect(200);
+
+      assert.equal(tunis.body.pricing.shippingCost, 7);
+      assert.equal(tataouine.body.pricing.shippingCost, 12);
+      assert.equal(free.body.pricing.shippingCost, 0);
+    });
+
+    it('doubles delivery for urgent orders and ignores accents in governorates', async () => {
+      const product = await createProduct({ price: 100 });
+      const items = [{ productId: product._id, quantity: 1 }];
+
+      const gabes = await quote(items, { governorate: 'Gabès' }).expect(200);
+      const urgent = await quote(items, { governorate: 'Gabès' }, { isUrgent: true }).expect(200);
+
+      assert.equal(gabes.body.pricing.shippingCost, 10); // 7 × 1.4, not the 1.3 default
+      assert.equal(urgent.body.pricing.shippingCost, 20);
+    });
+
+    it('quotes exactly what the order is then charged', async () => {
+      const product = await createProduct({ price: 60 });
+      const items = [{ productId: product._id, quantity: 2 }];
+      const shipping = { address: '1 Rue de Sfax', city: 'Sfax', governorate: 'Sfax' };
+
+      const quoted = await quote(items, shipping, { paymentMethod: 'cash_on_delivery' }).expect(200);
+      const order = await placeOrder(items, { extra: { shipping } }).expect(201);
+
+      assert.equal(order.body.order.customer.address.governorate, 'Sfax');
+      const { discountAmount, ...charged } = order.body.order.pricing; // schema default
+      assert.equal(discountAmount, 0);
+      assert.deepEqual(charged, quoted.body.pricing);
+      assert.deepEqual(quoted.body.pricing, {
+        subtotal: 120,
+        shippingCost: 8, // 7 × 1.2
+        taxAmount: 22.8,
+        taxRate: 0.19,
+        paymentFee: 5,
+        totalAmount: 155.8
+      });
+    });
+
+    it('does not take stock when quoting', async () => {
+      const product = await createProduct({ stockQuantity: 2 });
+      await quote([{ productId: product._id, quantity: 2 }], { governorate: 'Tunis' }).expect(200);
+      assert.equal(await productStock(product._id), 2);
+    });
+  });
+
   describe('stock', () => {
     it('takes ordered quantities out of stock', async () => {
       const product = await createProduct({ stockQuantity: 5 });

@@ -60,6 +60,63 @@ const priceOrderItems = async (requestedItems) => {
   return { orderItems, subtotal };
 };
 
+const TAX_RATE = 0.19; // 19% VAT in Tunisia
+const CASH_ON_DELIVERY_FEE = 5;
+const FREE_DELIVERY_OVER = 200; // TND, advertised on the cart page
+const BASE_DELIVERY_COST = 7;
+
+// Delivery cost factor per governorate (keys without accents)
+const GOVERNORATE_RATES = {
+  'tunis': 1, 'ariana': 1, 'ben arous': 1, 'manouba': 1,
+  'sousse': 1.1, 'monastir': 1.1, 'nabeul': 1.1,
+  'sfax': 1.2, 'bizerte': 1.2, 'mahdia': 1.2,
+  'kairouan': 1.3, 'zaghouan': 1.3,
+  'gabes': 1.4, 'beja': 1.4, 'siliana': 1.4, 'sidi bouzid': 1.4,
+  'gafsa': 1.5, 'medenine': 1.5, 'jendouba': 1.5, 'kef': 1.5,
+  'kasserine': 1.6, 'tozeur': 1.6, 'kebili': 1.6,
+  'tataouine': 1.7
+};
+const DEFAULT_RATE = 1.3;
+
+const roundMillimes = (amount) => Math.round(amount * 1000) / 1000;
+
+const normalizePlace = (place) => String(place || '')
+  .normalize('NFD')
+  .replace(/[̀-ͯ]/g, '')
+  .trim()
+  .toLowerCase();
+
+// Free over FREE_DELIVERY_OVER; otherwise the base cost times the
+// governorate's factor, doubled for urgent delivery.
+const deliveryCost = (subtotal, place, isUrgent = false) => {
+  if (subtotal > FREE_DELIVERY_OVER) {
+    return 0;
+  }
+  const rate = GOVERNORATE_RATES[normalizePlace(place)] ?? DEFAULT_RATE;
+  return Math.round(BASE_DELIVERY_COST * rate * (isUrgent ? 2 : 1));
+};
+
+// Prices an order exactly as it will be charged. Used both to create orders
+// and to show the customer the total before they confirm.
+const quoteOrder = async ({ items, place, isUrgent = false, paymentMethod = 'cash_on_delivery' }) => {
+  const { orderItems, subtotal } = await priceOrderItems(items);
+  const shippingCost = deliveryCost(subtotal, place, isUrgent);
+  const taxAmount = roundMillimes(subtotal * TAX_RATE);
+  const paymentFee = paymentMethod === 'cash_on_delivery' ? CASH_ON_DELIVERY_FEE : 0;
+
+  return {
+    orderItems,
+    pricing: {
+      subtotal: roundMillimes(subtotal),
+      shippingCost,
+      taxAmount,
+      taxRate: TAX_RATE,
+      paymentFee,
+      totalAmount: roundMillimes(subtotal + shippingCost + taxAmount + paymentFee)
+    }
+  };
+};
+
 const stockedItems = (items) => items.filter(item => item.product);
 
 const productIds = (items) => items.map(item => item.product._id || item.product);
@@ -148,6 +205,8 @@ const reserveOrderStock = async (order) => {
 module.exports = {
   CheckoutError,
   priceOrderItems,
+  deliveryCost,
+  quoteOrder,
   reserveStock,
   releaseStock,
   reserveOrderStock,
