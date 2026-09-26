@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -25,7 +26,8 @@ const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -51,6 +53,11 @@ const Products = () => {
     { value: 'accessories', label: 'Accessories' },
     { value: 'maintenance', label: 'Maintenance' }
   ];
+
+  // Links from the admin top bar (search results, notifications) set ?search=
+  useEffect(() => {
+    setSearchTerm(searchParams.get('search') || '');
+  }, [searchParams]);
 
   useEffect(() => {
     fetchProducts();

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Package, 
@@ -64,9 +65,10 @@ const OrderManagement = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [searchParams] = useSearchParams();
   const [filters, setFilters] = useState({
-    status: '',
-    search: '',
+    status: searchParams.get('status') || '',
+    search: searchParams.get('search') || '',
     page: 1
   });
   const [pagination, setPagination] = useState({
@@ -75,9 +77,21 @@ const OrderManagement = () => {
     totalOrders: 0
   });
 
+  // Links from the admin top bar (search results, notifications) set
+  // ?search= and ?status=. The search is applied on the server, so fetch again.
+  const [linkedFilters, setLinkedFilters] = useState(searchParams.toString());
+  if (linkedFilters !== searchParams.toString()) {
+    setLinkedFilters(searchParams.toString());
+    setFilters({
+      status: searchParams.get('status') || '',
+      search: searchParams.get('search') || '',
+      page: 1
+    });
+  }
+
   useEffect(() => {
     fetchOrders();
-  }, [filters.status, filters.page]);
+  }, [filters.status, filters.page, linkedFilters]);
 
   const fetchOrders = async () => {
     try {
