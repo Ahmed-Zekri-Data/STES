@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import React, { lazy, Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { LanguageProvider } from './context/LanguageContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AnimationProvider } from './components/animations/AnimationProvider';
@@ -14,34 +14,52 @@ import Navbar from './components/Navbar';
 import ErrorBoundary from './components/ErrorBoundary';
 import Footer from './components/Footer';
 import CartSidebar from './components/CartSidebar';
+import PageLoader from './components/PageLoader';
+import ProtectedRoute from './components/ProtectedRoute';
 
-// Pages
+// Browsing pages are in the main bundle, so the shop opens without waiting
 import Home from './pages/Home';
 import EnhancedShop from './pages/EnhancedShop';
 import ProductDetails from './pages/ProductDetails';
-import Services from './pages/Services';
-import About from './pages/About';
-import Contact from './pages/Contact';
 import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
-import CustomerDashboard from './pages/CustomerDashboard';
-import Wishlist from './pages/Wishlist';
-import OrderTracking from './pages/OrderTracking';
-import PaymentResult from './pages/PaymentResult';
-// Admin Components
-import AdminLogin from './pages/admin/AdminLogin';
-import AdminLayout from './components/admin/AdminLayout';
-import Dashboard from './pages/admin/Dashboard';
-import Products from './pages/admin/Products';
-import Categories from './pages/admin/Categories';
-import Brands from './pages/admin/Brands';
-import Orders from './pages/admin/Orders';
-import Customers from './pages/admin/Customers';
-import Forms from './pages/admin/Forms';
-import Pages from './pages/admin/Pages';
-import TrackingDashboard from './pages/admin/TrackingDashboard';
-import TrackOrder from './pages/TrackOrder';
-import ProtectedRoute from './components/ProtectedRoute';
+
+// Everything else is downloaded when first opened. Shop visitors never
+// download the admin.
+const Services = lazy(() => import('./pages/Services'));
+const About = lazy(() => import('./pages/About'));
+const Contact = lazy(() => import('./pages/Contact'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const CustomerDashboard = lazy(() => import('./pages/CustomerDashboard'));
+const Wishlist = lazy(() => import('./pages/Wishlist'));
+const TrackOrder = lazy(() => import('./pages/TrackOrder'));
+const PaymentResult = lazy(() => import('./pages/PaymentResult'));
+
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
+const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
+const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
+const Products = lazy(() => import('./pages/admin/Products'));
+const Categories = lazy(() => import('./pages/admin/Categories'));
+const Brands = lazy(() => import('./pages/admin/Brands'));
+const Orders = lazy(() => import('./pages/admin/Orders'));
+const Customers = lazy(() => import('./pages/admin/Customers'));
+const Forms = lazy(() => import('./pages/admin/Forms'));
+const Pages = lazy(() => import('./pages/admin/Pages'));
+const TrackingDashboard = lazy(() => import('./pages/admin/TrackingDashboard'));
+
+// Shop pages share the header and footer; they stay in place while a page
+// that is not loaded yet is being downloaded
+const ShopLayout = () => (
+  <div className="min-h-screen flex flex-col">
+    <Navbar />
+    <main className="flex-grow">
+      <Suspense fallback={<PageLoader />}>
+        <Outlet />
+      </Suspense>
+    </main>
+    <Footer />
+    <CartSidebar />
+  </div>
+);
 
 // The shop used to live at /boutique; keep old links (and their filters) working
 const RedirectToShop = () => {
@@ -62,155 +80,36 @@ function App() {
                 <Router>
                   <ErrorBoundary>
                   <Routes>
-                    {/* Public Routes */}
-                    <Route path="/" element={
-                <div className="min-h-screen flex flex-col">
-                  <Navbar />
-                  <main className="flex-grow">
-                    <Home />
-                  </main>
-                  <Footer />
-                  <CartSidebar />
-                </div>
-                    } />
-                    <Route path="/shop" element={
-                      <div className="min-h-screen flex flex-col">
-                        <Navbar />
-                        <main className="flex-grow">
-                          <EnhancedShop />
-                        </main>
-                        <Footer />
-                        <CartSidebar />
-                      </div>
-                    } />
+                    {/* Shop */}
+                    <Route element={<ShopLayout />}>
+                      <Route path="/" element={<Home />} />
+                      <Route path="/shop" element={<EnhancedShop />} />
+                      <Route path="/product/:id" element={<ProductDetails />} />
+                      <Route path="/services" element={<Services />} />
+                      <Route path="/about" element={<About />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/cart" element={<Cart />} />
+                      <Route path="/checkout" element={<Checkout />} />
+                      <Route path="/account" element={<CustomerDashboard />} />
+                      <Route path="/wishlist" element={<Wishlist />} />
+                      <Route path="/track-order" element={<TrackOrder />} />
+                      <Route path="/payment/success" element={<PaymentResult />} />
+                      <Route path="/payment/failed" element={<PaymentResult />} />
+                      <Route path="/payment/cancel" element={<PaymentResult />} />
+                    </Route>
                     <Route path="/boutique" element={<RedirectToShop />} />
-                    <Route path="/product/:id" element={
-                      <div className="min-h-screen flex flex-col">
-                        <Navbar />
-                        <main className="flex-grow">
-                          <ProductDetails />
-                        </main>
-                        <Footer />
-                        <CartSidebar />
-                      </div>
-                    } />
-                    <Route path="/services" element={
-                      <div className="min-h-screen flex flex-col">
-                        <Navbar />
-                        <main className="flex-grow">
-                          <Services />
-                        </main>
-                        <Footer />
-                        <CartSidebar />
-                      </div>
-                    } />
-                    <Route path="/about" element={
-                      <div className="min-h-screen flex flex-col">
-                        <Navbar />
-                        <main className="flex-grow">
-                          <About />
-                        </main>
-                        <Footer />
-                        <CartSidebar />
-                      </div>
-                    } />
-                    <Route path="/contact" element={
-                      <div className="min-h-screen flex flex-col">
-                        <Navbar />
-                        <main className="flex-grow">
-                          <Contact />
-                        </main>
-                        <Footer />
-                        <CartSidebar />
-                      </div>
-                    } />
-                    <Route path="/cart" element={
-                      <div className="min-h-screen flex flex-col">
-                        <Navbar />
-                        <main className="flex-grow">
-                          <Cart />
-                        </main>
-                        <Footer />
-                        <CartSidebar />
-                      </div>
-                    } />
-                    <Route path="/checkout" element={
-                      <div className="min-h-screen flex flex-col">
-                        <Navbar />
-                        <main className="flex-grow">
-                          <Checkout />
-                        </main>
-                        <Footer />
-                        <CartSidebar />
-                      </div>
-                    } />
-                    <Route path="/account" element={
-                      <div className="min-h-screen flex flex-col">
-                        <Navbar />
-                        <main className="flex-grow">
-                          <CustomerDashboard />
-                        </main>
-                        <Footer />
-                        <CartSidebar />
-                      </div>
-                    } />
-                    <Route path="/wishlist" element={
-                      <div className="min-h-screen flex flex-col">
-                        <Navbar />
-                        <main className="flex-grow">
-                          <Wishlist />
-                        </main>
-                        <Footer />
-                        <CartSidebar />
-                      </div>
-                    } />
-                    <Route path="/track-order" element={
-                      <div className="min-h-screen flex flex-col">
-                        <Navbar />
-                        <main className="flex-grow">
-                          <TrackOrder />
-                        </main>
-                        <Footer />
-                        <CartSidebar />
-                      </div>
-                    } />
-                    <Route path="/payment/success" element={
-                      <div className="min-h-screen flex flex-col">
-                        <Navbar />
-                        <main className="flex-grow">
-                          <PaymentResult />
-                        </main>
-                        <Footer />
-                        <CartSidebar />
-                      </div>
-                    } />
-                    <Route path="/payment/failed" element={
-                      <div className="min-h-screen flex flex-col">
-                        <Navbar />
-                        <main className="flex-grow">
-                          <PaymentResult />
-                        </main>
-                        <Footer />
-                        <CartSidebar />
-                      </div>
-                    } />
-                    <Route path="/payment/cancel" element={
-                      <div className="min-h-screen flex flex-col">
-                        <Navbar />
-                        <main className="flex-grow">
-                          <PaymentResult />
-                        </main>
-                        <Footer />
-                        <CartSidebar />
-                      </div>
-                    } />
-
 
                     {/* Admin Routes */}
-                    <Route path="/admin/login" element={<AdminLogin />} />
+                    <Route path="/admin/login" element={
+                      <Suspense fallback={<PageLoader fullScreen />}>
+                        <AdminLogin />
+                      </Suspense>
+                    } />
                     <Route path="/admin" element={
                       <ProtectedRoute>
-                        <AdminLayout />
+                        <Suspense fallback={<PageLoader fullScreen />}>
+                          <AdminLayout />
+                        </Suspense>
                       </ProtectedRoute>
                     }>
                       <Route index element={<Dashboard />} />
