@@ -181,6 +181,67 @@ class EmailNotificationService {
     return { subject, html, text };
   }
 
+  // Send the "choose a new password" link. Never throws: callers don't
+  // wait for it. The link is never logged.
+  async sendPasswordReset(customer, resetToken) {
+    if (!this.isConfigured()) {
+      console.log(`Email not configured (EMAIL_USER / EMAIL_PASS): no password reset email sent to ${customer.email}`);
+      return { success: false, reason: 'email_not_configured' };
+    }
+
+    try {
+      const content = this.generatePasswordResetEmail(customer, resetToken);
+      const result = await this.transporter.sendMail({
+        from: `"STES Piscines" <${process.env.EMAIL_USER}>`,
+        to: customer.email,
+        subject: content.subject,
+        html: content.html,
+        text: content.text
+      });
+
+      console.log(`Password reset email sent to ${customer.email}`);
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error(`Error sending password reset email to ${customer.email}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  generatePasswordResetEmail(customer, resetToken) {
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${encodeURIComponent(resetToken)}`;
+    const subject = 'Réinitialisation de votre mot de passe STES';
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
+        <div style="background: #2563eb; color: #fff; padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 20px;">Réinitialisation du mot de passe</h1>
+        </div>
+        <div style="border: 1px solid #e5e7eb; border-top: 0; padding: 20px; border-radius: 0 0 8px 8px;">
+          <p style="margin: 0 0 12px;">Bonjour ${escapeHtml(customer.firstName)},</p>
+          <p style="margin: 0 0 12px;">Vous avez demandé à changer le mot de passe de votre compte STES Piscines. Cliquez sur le bouton ci-dessous pour en choisir un nouveau.</p>
+          <p style="margin: 20px 0;">
+            <a href="${escapeHtml(resetUrl)}" style="background: #2563eb; color: #fff; padding: 10px 18px; border-radius: 6px; text-decoration: none; display: inline-block;">Choisir un nouveau mot de passe</a>
+          </p>
+          <p style="margin: 0 0 12px;">Ce lien est valable 1 heure et ne peut servir qu'une fois.</p>
+          <p style="color: #6b7280; font-size: 13px; margin: 12px 0 0;">Si vous n'avez pas fait cette demande, ignorez cet email : votre mot de passe reste inchangé.</p>
+          <p style="color: #6b7280; font-size: 13px; margin: 12px 0 0; word-break: break-all;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>${escapeHtml(resetUrl)}</p>
+        </div>
+      </div>`;
+
+    const text = [
+      `Bonjour ${customer.firstName},`,
+      '',
+      'Vous avez demandé à changer le mot de passe de votre compte STES Piscines.',
+      'Ouvrez ce lien pour en choisir un nouveau :',
+      resetUrl,
+      '',
+      "Ce lien est valable 1 heure et ne peut servir qu'une fois.",
+      "Si vous n'avez pas fait cette demande, ignorez cet email : votre mot de passe reste inchangé."
+    ].join('\n');
+
+    return { subject, html, text };
+  }
+
   generateOrderConfirmationEmail(order) {
     const pricing = order.pricing || {};
     const address = order.customer.address || {};

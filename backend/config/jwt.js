@@ -24,7 +24,7 @@ const signAdminToken = (admin) => jwt.sign(
 const verifyAdminToken = (token) => jwt.verify(token, adminSecret());
 
 const signCustomerToken = (customer) => jwt.sign(
-  { customerId: customer._id, email: customer.email },
+  { customerId: customer._id, email: customer.email, v: customer.sessionVersion || 0 },
   customerSecret(),
   { expiresIn: process.env.CUSTOMER_JWT_EXPIRES_IN || '30d' }
 );
