@@ -39,16 +39,6 @@ const PaymentMethodStep = () => {
     });
   };
 
-  const handleBankTransferChange = (e) => {
-    const { name, value } = e.target;
-    updateCheckoutData('payment', {
-      bankTransfer: {
-        ...payment.bankTransfer,
-        [name]: value
-      }
-    });
-  };
-
   const handleNext = () => {
     if (validateStep(3)) {
       nextStep();

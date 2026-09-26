@@ -5,7 +5,7 @@ import { useAnimation } from './AnimationProvider';
 
 const PageTransition = ({ children, className = '' }) => {
   const location = useLocation();
-  const { variants, prefersReducedMotion } = useAnimation();
+  const { variants } = useAnimation();
 
   // Different transition types based on route
   const getTransitionType = (pathname) => {

@@ -48,12 +48,6 @@ const CartSidebar = () => {
     exit: { opacity: 0 }
   };
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
-    exit: { opacity: 0, x: isRTL ? -100 : 100 }
-  };
-
   return (
     <AnimatePresence>
       {isCartOpen && (

@@ -12,7 +12,7 @@ const CustomerLogin = ({ onClose, onSwitchToRegister }) => {
   const navigate = useNavigate();
   const { login } = useCustomer();
   const { login: adminLogin } = useAdmin();
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const [formData, setFormData] = useState({
     email: '',
     password: ''

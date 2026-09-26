@@ -110,20 +110,6 @@ const PaymentResult = () => {
     }
   };
 
-  const getStatusColor = () => {
-    switch (paymentStatus) {
-      case 'success':
-        return 'green';
-      case 'failed':
-      case 'error':
-        return 'red';
-      case 'pending':
-        return 'yellow';
-      default:
-        return 'gray';
-    }
-  };
-
   if (paymentStatus === 'loading') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
