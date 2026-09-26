@@ -1,7 +1,12 @@
 // Case-insensitive "contains" match for text typed by a user. The text is
 // escaped, so characters like "(" or "*" are matched literally instead of
 // breaking the query or making it slow.
-const containing = (text) => new RegExp(String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+const escapeRegex = (text) => String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const containing = (text) => new RegExp(escapeRegex(text), 'i');
+
+// The same text, ignoring upper and lower case ("hayward" matches
+// "Hayward", but not "Hayward Pro")
+const exactly = (text) => new RegExp(`^${escapeRegex(String(text).trim())}$`, 'i');
 
 // Lowercase ASCII address part: "Équipements & Accessoires" becomes
 // "equipements-accessoires". Letters outside a-z (e.g. Arabic) are dropped,
@@ -27,4 +32,4 @@ const isImageLocation = (value) => {
   }
 };
 
-module.exports = { containing, slugify, isImageLocation };
+module.exports = { containing, exactly, slugify, isImageLocation };

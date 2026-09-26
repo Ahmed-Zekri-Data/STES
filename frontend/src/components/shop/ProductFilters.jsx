@@ -22,6 +22,8 @@ const ProductFilters = ({
   onViewModeChange
 }) => {
   const [categories, setCategories] = useState({});
+  // Narrows the list of brands; choosing one filters the products
+  const [brandQuery, setBrandQuery] = useState('');
   const [searchFilters, setSearchFilters] = useState({});
   const [expandedSections, setExpandedSections] = useState({
     categories: true,
@@ -254,26 +256,48 @@ const ProductFilters = ({
       onToggle={() => toggleSection('brand')}
     >
       <div className="space-y-2">
-        <input
-          type="text"
-          placeholder="Rechercher une marque..."
-          value={filters.brand || ''}
-          onChange={(e) => handleFilterChange('brand', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-        {searchFilters.brands?.slice(0, 8).map((brand, index) => (
-          <label key={index} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors">
+        {searchFilters.brands?.length > 6 && (
+          <input
+            type="text"
+            placeholder="Rechercher une marque..."
+            value={brandQuery}
+            onChange={(e) => setBrandQuery(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        )}
+        {!searchFilters.brands?.length && (
+          <p className="text-sm text-gray-500 p-2">Aucune marque</p>
+        )}
+        {searchFilters.brands?.length > 0 && (
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors">
             <input
               type="radio"
               name="brand"
-              value={brand}
-              checked={filters.brand === brand}
-              onChange={(e) => handleFilterChange('brand', e.target.value)}
+              value=""
+              checked={!filters.brand}
+              onChange={() => handleFilterChange('brand', '')}
               className="text-blue-600 focus:ring-blue-500"
             />
-            <span className="text-sm text-gray-700">{brand}</span>
+            <span className="text-sm text-gray-700">Toutes les marques</span>
           </label>
-        ))}
+        )}
+        <div className="max-h-64 overflow-y-auto space-y-2">
+          {searchFilters.brands
+            ?.filter(brand => brand.toLowerCase().includes(brandQuery.trim().toLowerCase()))
+            .map(brand => (
+              <label key={brand} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors">
+                <input
+                  type="radio"
+                  name="brand"
+                  value={brand}
+                  checked={filters.brand === brand}
+                  onChange={(e) => handleFilterChange('brand', e.target.value)}
+                  className="text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">{brand}</span>
+              </label>
+            ))}
+        </div>
       </div>
     </FilterSection>
   );

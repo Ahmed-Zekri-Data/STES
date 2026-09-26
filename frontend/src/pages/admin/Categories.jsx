@@ -66,16 +66,12 @@ const Categories = () => {
       };
 
       if (editingCategory) {
-        // Update existing category
-        const response = await adminApi.put(`/admin/categories/${editingCategory._id}`, categoryData);
-        setCategories(prev => prev.map(cat =>
-          cat._id === editingCategory._id ? response.data : cat
-        ));
+        await adminApi.put(`/admin/categories/${editingCategory._id}`, categoryData);
       } else {
-        // Add new category
-        const response = await adminApi.post('/admin/categories', categoryData);
-        setCategories(prev => [response.data, ...prev]);
+        await adminApi.post('/admin/categories', categoryData);
       }
+      // Reload: the list shows live product counts, which a save does not return
+      fetchCategories();
 
       resetForm();
       setShowAddModal(false);

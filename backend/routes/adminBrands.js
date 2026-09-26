@@ -2,8 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult, query } = require('express-validator');
 const Brand = require('../models/Brand');
+const Product = require('../models/Product');
+const { productCountsByBrand } = require('../services/brandService');
 const { auth, checkPermission } = require('../middleware/auth');
-const { containing, isImageLocation } = require('../utils/text');
+const { containing, exactly, isImageLocation } = require('../utils/text');
 
 // Fields the admin can set. Anything else in the request (slug, product
 // count) is ignored.
@@ -77,8 +79,14 @@ router.get('/', auth, checkPermission('products'), [
       Brand.countDocuments(filter)
     ]);
 
+    // Count products live: the stored productCount was never kept up to date
+    const counts = await productCountsByBrand(brands.map(b => b.name));
+
     res.json({
-      brands,
+      brands: brands.map(brand => ({
+        ...brand.toJSON(),
+        productCount: counts.get(brand.name.toLowerCase()) || 0
+      })),
       pagination: {
         currentPage: parseInt(page),
         totalPages: Math.ceil(total / limit),
@@ -166,14 +174,20 @@ router.put('/:id', auth, checkPermission('products'), [
       return res.status(400).json({ errors: errors.array() });
     }
 
+    const before = await Brand.findById(req.params.id).lean();
+    if (!before) {
+      return res.status(404).json({ message: 'Brand not found' });
+    }
+
     const brand = await Brand.findByIdAndUpdate(
       req.params.id,
       brandFields(req.body),
       { new: true, runValidators: true }
     );
 
-    if (!brand) {
-      return res.status(404).json({ message: 'Brand not found' });
+    // Products store the brand's name, so a rename carries over to them
+    if (brand.name !== before.name) {
+      await Product.updateMany({ brand: exactly(before.name) }, { brand: brand.name });
     }
 
     res.json(brand);
@@ -198,8 +212,7 @@ router.delete('/:id', auth, checkPermission('products'), async (req, res) => {
     }
 
     // Check if brand has products
-    const Product = require('../models/Product');
-    const productCount = await Product.countDocuments({ brand: brand.name });
+    const productCount = await Product.countDocuments({ brand: exactly(brand.name) });
     if (productCount > 0) {
       return res.status(400).json({ 
         message: `Cannot delete brand. It has ${productCount} products associated with it.` 
