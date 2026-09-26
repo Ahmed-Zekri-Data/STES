@@ -8,6 +8,7 @@ if (!process.env.JWT_SECRET) {
 
 const createApp = require('./app');
 const { ensureProductCategoriesExist } = require('./services/categoryService');
+const { ensureProductBrandsExist } = require('./services/brandService');
 
 const app = createApp();
 
@@ -26,6 +27,13 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/stes-ecom
       if (created.length) console.log(`📂 Created categories used by products: ${created.join(', ')}`);
     })
     .catch(error => console.error('Could not check product categories:', error.message));
+
+  // Likewise for the brands products already name
+  ensureProductBrandsExist()
+    .then(created => {
+      if (created.length) console.log(`🏷️  Created brands used by products: ${created.join(', ')}`);
+    })
+    .catch(error => console.error('Could not check product brands:', error.message));
 })
 .catch((error) => {
   console.error('❌ MongoDB connection error:', error.message);

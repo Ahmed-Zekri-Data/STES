@@ -60,6 +60,7 @@ const Products = () => {
     description: '',
     price: '',
     category: '',
+    brand: '',
     image: '',
     stock: '',
     featured: false
@@ -67,6 +68,8 @@ const Products = () => {
 
   // Categories come from Admin → Categories; products store their slug
   const [categoryList, setCategoryList] = useState([]);
+  // Brands come from Admin → Brands; products store the brand's name
+  const [brandList, setBrandList] = useState([]);
   const categories = [
     { value: '', label: 'All Categories' },
     ...categoryList.map(category => ({
@@ -101,7 +104,17 @@ const Products = () => {
 
   useEffect(() => {
     fetchCategories();
+    fetchBrands();
   }, []);
+
+  const fetchBrands = async () => {
+    try {
+      const response = await api.get('/admin/brands', { params: { limit: 100, sortBy: 'name' } });
+      setBrandList(response.data.brands);
+    } catch (error) {
+      console.error('Error fetching brands:', error);
+    }
+  };
 
   const fetchCategories = async () => {
     try {
@@ -203,6 +216,7 @@ const Products = () => {
         description: formData.description,
         price: parseFloat(formData.price),
         category: formData.category,
+        brand: formData.brand,
         stockQuantity: parseInt(formData.stock),
         inStock: parseInt(formData.stock) > 0,
         featured: formData.featured,
@@ -236,6 +250,7 @@ const Products = () => {
       description: product.description,
       price: product.price.toString(),
       category: product.category,
+      brand: product.brand || '',
       image: product.image,
       stock: (product.stockQuantity || product.stock || 0).toString(),
       featured: product.featured || false
@@ -262,6 +277,7 @@ const Products = () => {
       description: '',
       price: '',
       category: '',
+      brand: '',
       image: '',
       stock: '',
       featured: false
@@ -448,6 +464,11 @@ const Products = () => {
                     <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
                       {getCategoryLabel(product)}
                     </span>
+                    {product.brand && (
+                      <span className="inline-block ml-2 bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
+                        {product.brand}
+                      </span>
+                    )}
                   </div>
                 </div>
                 
@@ -598,6 +619,28 @@ const Products = () => {
                         No categories yet. Create one in <Link to="/admin/categories" className="text-blue-600 underline">Categories</Link> first.
                       </p>
                     )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Brand
+                    </label>
+                    <select
+                      name="brand"
+                      value={formData.brand}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">No brand</option>
+                      {brandList.map(brand => (
+                        <option key={brand._id} value={brand.name}>
+                          {brand.isActive ? brand.name : `${brand.name} (hidden in shop)`}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-2 text-sm text-gray-500">
+                      Manage brands in <Link to="/admin/brands" className="text-blue-600 underline">Brands</Link>.
+                    </p>
                   </div>
 
                   <div>

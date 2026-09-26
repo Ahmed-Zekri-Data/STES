@@ -184,10 +184,6 @@ const searchFilters = {
     { label: '500 - 1000 TND', min: 500, max: 1000 },
     { label: 'Plus de 1000 TND', min: 1000, max: null }
   ],
-  brands: [
-    'Hayward', 'Pentair', 'Zodiac', 'Intex', 'Bestway', 'Maytronics', 
-    'Dolphin', 'Polaris', 'Jandy', 'Sta-Rite', 'Waterway', 'Balboa'
-  ],
   ratings: [
     { label: '4 étoiles et plus', min: 4 },
     { label: '3 étoiles et plus', min: 3 },

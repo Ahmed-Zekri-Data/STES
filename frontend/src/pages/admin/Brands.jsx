@@ -70,16 +70,12 @@ const Brands = () => {
       };
 
       if (editingBrand) {
-        // Update existing brand
-        const response = await adminApi.put(`/admin/brands/${editingBrand._id}`, brandData);
-        setBrands(prev => prev.map(brand =>
-          brand._id === editingBrand._id ? response.data : brand
-        ));
+        await adminApi.put(`/admin/brands/${editingBrand._id}`, brandData);
       } else {
-        // Add new brand
-        const response = await adminApi.post('/admin/brands', brandData);
-        setBrands(prev => [response.data, ...prev]);
+        await adminApi.post('/admin/brands', brandData);
       }
+      // Reload: the list shows live product counts, which a save does not return
+      fetchBrands();
 
       resetForm();
       setShowAddModal(false);
@@ -116,20 +112,29 @@ const Brands = () => {
     }
   };
 
+  // These only changed the screen before; they now save
   const handleToggleStatus = async (brandId) => {
-    setBrands(prev => prev.map(brand => 
-      brand._id === brandId 
-        ? { ...brand, isActive: !brand.isActive }
-        : brand
-    ));
+    try {
+      await adminApi.put(`/admin/brands/${brandId}/toggle-status`);
+      setBrands(prev => prev.map(brand =>
+        brand._id === brandId ? { ...brand, isActive: !brand.isActive } : brand
+      ));
+    } catch (error) {
+      console.error('Error updating brand status:', error);
+      alert('Error updating brand status: ' + errorMessage(error));
+    }
   };
 
   const handleToggleFeatured = async (brandId) => {
-    setBrands(prev => prev.map(brand => 
-      brand._id === brandId 
-        ? { ...brand, isFeatured: !brand.isFeatured }
-        : brand
-    ));
+    try {
+      await adminApi.put(`/admin/brands/${brandId}/toggle-featured`);
+      setBrands(prev => prev.map(brand =>
+        brand._id === brandId ? { ...brand, isFeatured: !brand.isFeatured } : brand
+      ));
+    } catch (error) {
+      console.error('Error updating featured brand:', error);
+      alert('Error updating featured brand: ' + errorMessage(error));
+    }
   };
 
   const resetForm = () => {

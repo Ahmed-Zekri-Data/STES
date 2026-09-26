@@ -6,7 +6,8 @@ const { auth, checkPermission } = require('../middleware/auth');
 const { customerAuth } = require('../middleware/customerAuth');
 const { searchFilters } = require('../config/productCategories');
 const { categoryExists, slugsWithin, categoryNames, shopCategories } = require('../services/categoryService');
-const { containing, isImageLocation } = require('../utils/text');
+const { findBrand, shopBrands } = require('../services/brandService');
+const { containing, exactly, isImageLocation } = require('../utils/text');
 
 // Products must belong to a category that exists in the admin
 const existingCategory = async (value) => {
@@ -15,6 +16,20 @@ const existingCategory = async (value) => {
   }
   return true;
 };
+
+// A product's brand must exist in Admin → Brands (or be left empty). It is
+// saved as spelled there.
+const brandRule = () => body('brand')
+  .optional({ values: 'falsy' })
+  .isString()
+  .custom(async (value) => {
+    if (!(await findBrand(value))) {
+      throw new Error('Unknown brand');
+    }
+    return true;
+  })
+  .withMessage('Choose a brand that exists in Admin → Brands')
+  .customSanitizer(async (value) => (await findBrand(value))?.name || value);
 
 // Adds the category's name next to its slug, for display
 const withCategoryNames = async (products) => {
@@ -83,7 +98,8 @@ router.get('/', [
     if (category) filter.category = { $in: await slugsWithin(category) };
     if (subcategory) filter.subcategory = subcategory;
     if (featured !== undefined) filter.featured = featured === 'true';
-    if (brand) filter.brand = containing(brand);
+    // The brand chosen in the shop's filter, not every brand containing it
+    if (brand) filter.brand = exactly(brand);
 
     // Price range filter
     if (minPrice || maxPrice) {
@@ -174,9 +190,11 @@ router.get('/featured', async (req, res) => {
 // admin, and the other search filters
 router.get('/categories', async (req, res) => {
   try {
+    const [categories, brands] = await Promise.all([shopCategories(), shopBrands()]);
     res.json({
-      categories: await shopCategories(),
-      filters: searchFilters
+      categories,
+      // Brands managed in the admin that products use
+      filters: { ...searchFilters, brands }
     });
   } catch (error) {
     console.error('Error fetching categories:', error);
@@ -276,6 +294,7 @@ router.post('/', auth, checkPermission('products'), [
   body('description').trim().isLength({ min: 1, max: 1000 }).withMessage('Description is required and must be less than 1000 characters'),
   body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
   body('category').isString().custom(existingCategory).withMessage('Choose a category that exists in Admin → Categories'),
+  brandRule(),
   body('stockQuantity').optional().isInt({ min: 0 }).withMessage('Stock quantity must be a non-negative integer'),
   body('image').optional().custom(isImageLocation).withMessage('Image must be an http(s) URL or an uploaded image'),
   body('featured').optional().isBoolean().withMessage('Featured must be a boolean')
@@ -305,6 +324,7 @@ router.put('/:id', auth, checkPermission('products'), [
   body('description').optional().trim().isLength({ min: 1, max: 1000 }),
   body('price').optional().isFloat({ min: 0 }),
   body('category').optional().isString().custom(existingCategory).withMessage('Choose a category that exists in Admin → Categories'),
+  brandRule(),
   body('stockQuantity').optional().isInt({ min: 0 }),
   body('image').optional().custom(isImageLocation).withMessage('Image must be an http(s) URL or an uploaded image'),
   body('featured').optional().isBoolean()
