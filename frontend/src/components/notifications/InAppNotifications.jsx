@@ -155,7 +155,7 @@ const InAppNotifications = () => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+              className="fixed inset-x-2 top-16 sm:absolute sm:inset-x-auto sm:top-auto sm:end-0 mt-2 sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
             >
               {/* Header */}
               <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
