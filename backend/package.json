@@ -12,6 +12,7 @@
     "generate-vapid": "node scripts/generateVapidKeys.js",
     "check:db": "node scripts/checkMongo.js",
     "init:pages": "node scripts/initPages.js",
+    "pretest": "node test/download-mongodb.js",
     "test": "node --test \"test/**/*.test.js\"",
     "lint": "eslint .",
     "create-admin": "node scripts/createAdmin.js",
