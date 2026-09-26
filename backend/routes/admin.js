@@ -109,8 +109,8 @@ router.get('/dashboard', auth, async (req, res) => {
 });
 
 // GET /api/admin/notifications - What needs attention: orders waiting to be
-// handled and products running out. Each part is only sent to admins with
-// the matching permission.
+// handled, products running out and unread contact or quote requests. Each
+// part is only sent to admins with the matching permission.
 router.get('/notifications', auth, async (req, res) => {
   try {
     const result = {};
@@ -154,6 +154,30 @@ router.get('/notifications', auth, async (req, res) => {
           id: product._id,
           name: product.name,
           stockQuantity: product.stockQuantity
+        }))
+      };
+    }
+
+    if (can(req.admin, 'forms')) {
+      // Newsletter sign-ups need no answer, so they are left out
+      const filter = { status: 'new', type: { $in: ['contact', 'quote'] } };
+      const [count, latest] = await Promise.all([
+        FormSubmission.countDocuments(filter),
+        FormSubmission.find(filter)
+          .sort({ createdAt: -1 })
+          .limit(5)
+          .select('type name email subject createdAt')
+          .lean()
+      ]);
+      result.newMessages = {
+        count,
+        latest: latest.map(message => ({
+          id: message._id,
+          type: message.type,
+          name: message.name,
+          email: message.email,
+          subject: message.subject,
+          createdAt: message.createdAt
         }))
       };
     }
