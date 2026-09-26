@@ -4,6 +4,7 @@ const { body, validationResult, query } = require('express-validator');
 const FormSubmission = require('../models/FormSubmission');
 const { auth, checkPermission } = require('../middleware/auth');
 const { containing } = require('../utils/text');
+const emailNotificationService = require('../services/emailNotificationService');
 
 // Reading and managing submissions needs the forms permission
 const formsAdmin = [auth, checkPermission('forms')];
@@ -37,6 +38,10 @@ router.post('/contact', [
     });
 
     await submission.save();
+
+    // In the background: a slow or failing mail server must not hold up the
+    // visitor. Failures are logged by the service.
+    emailNotificationService.sendNewRequestToAdmins(submission);
 
     res.status(201).json({
       message: 'Message envoyé avec succès. Nous vous répondrons dans les plus brefs délais.',
@@ -77,6 +82,9 @@ router.post('/quote', [
     });
 
     await submission.save();
+
+    // In the background, as for contact messages
+    emailNotificationService.sendNewRequestToAdmins(submission);
 
     res.status(201).json({
       message: 'Demande de devis envoyée avec succès. Nous vous contacterons sous 24h.',

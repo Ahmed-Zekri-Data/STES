@@ -75,6 +75,112 @@ class EmailNotificationService {
     }
   }
 
+  // Who hears about new contact and quote requests: the addresses in
+  // ADMIN_NOTIFICATION_EMAIL (comma-separated) when set, otherwise every
+  // active admin allowed to manage forms
+  async adminRecipients() {
+    const configured = (process.env.ADMIN_NOTIFICATION_EMAIL || '')
+      .split(',')
+      .map(address => address.trim())
+      .filter(Boolean);
+    if (configured.length) {
+      return configured;
+    }
+    const Admin = require('../models/Admin');
+    const admins = await Admin.find({
+      isActive: true,
+      $or: [{ role: 'super_admin' }, { permissions: 'forms' }]
+    }).select('email').lean();
+    return [...new Set(admins.map(admin => admin.email).filter(Boolean))];
+  }
+
+  // Tell the admins about a new contact or quote request. Replying to the
+  // email answers the customer. Never throws: callers don't wait for it.
+  async sendNewRequestToAdmins(submission) {
+    if (!this.isConfigured()) {
+      console.log(`Email not configured (EMAIL_USER / EMAIL_PASS): admins not emailed about ${submission.type} request ${submission._id}`);
+      return { success: false, reason: 'email_not_configured' };
+    }
+
+    try {
+      const to = await this.adminRecipients();
+      if (!to.length) {
+        console.log(`No admin email address: nobody emailed about ${submission.type} request ${submission._id}`);
+        return { success: false, reason: 'no_recipients' };
+      }
+
+      const content = this.generateNewRequestEmail(submission);
+      const result = await this.transporter.sendMail({
+        from: `"STES Piscines" <${process.env.EMAIL_USER}>`,
+        to: to.join(', '),
+        replyTo: { name: submission.name, address: submission.email },
+        subject: content.subject,
+        html: content.html,
+        text: content.text
+      });
+
+      console.log(`Admins emailed about ${submission.type} request ${submission._id}`);
+      return { success: true, messageId: result.messageId, to };
+    } catch (error) {
+      console.error(`Error emailing admins about request ${submission._id}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  generateNewRequestEmail(submission) {
+    const isQuote = submission.type === 'quote';
+    const oneLine = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+    const subject = isQuote
+      ? `Nouvelle demande de devis : ${oneLine(submission.name)}${submission.city ? ` (${oneLine(submission.city)})` : ''}`
+      : `Nouveau message : ${oneLine(submission.subject) || oneLine(submission.name)}`;
+    const adminUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/admin/forms?search=${encodeURIComponent(submission.email)}`;
+    const receivedAt = new Date(submission.createdAt || Date.now()).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short', timeZone: 'Africa/Tunis' });
+
+    const details = [
+      ['Nom', submission.name],
+      ['Email', submission.email],
+      ['Téléphone', submission.phone],
+      ['Ville', submission.city],
+      ['Sujet', submission.subject]
+    ].filter(([, value]) => value);
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
+        <div style="background: #2563eb; color: #fff; padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 20px;">${isQuote ? 'Nouvelle demande de devis' : 'Nouveau message de contact'}</h1>
+          <p style="margin: 6px 0 0; opacity: 0.9;">Reçu le ${escapeHtml(receivedAt)}</p>
+        </div>
+        <div style="border: 1px solid #e5e7eb; border-top: 0; padding: 20px; border-radius: 0 0 8px 8px;">
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
+            ${details.map(([label, value]) => `
+              <tr>
+                <td style="padding: 6px 12px 6px 0; color: #6b7280; width: 110px; vertical-align: top;">${label}</td>
+                <td style="padding: 6px 0;">${escapeHtml(value)}</td>
+              </tr>`).join('')}
+          </table>
+          <div style="background: #f9fafb; border-radius: 6px; padding: 14px; white-space: pre-wrap;">${escapeHtml(submission.message)}</div>
+          <p style="margin: 20px 0 8px;">
+            <a href="${escapeHtml(adminUrl)}" style="background: #2563eb; color: #fff; padding: 10px 18px; border-radius: 6px; text-decoration: none; display: inline-block;">Ouvrir dans l'administration</a>
+          </p>
+          <p style="color: #6b7280; font-size: 13px; margin: 12px 0 0;">Répondez à cet email pour écrire directement à ${escapeHtml(submission.name)}.</p>
+        </div>
+      </div>`;
+
+    const text = [
+      isQuote ? 'Nouvelle demande de devis' : 'Nouveau message de contact',
+      `Reçu le ${receivedAt}`,
+      '',
+      ...details.map(([label, value]) => `${label} : ${value}`),
+      '',
+      submission.message,
+      '',
+      `Ouvrir dans l'administration : ${adminUrl}`,
+      `Répondez à cet email pour écrire directement à ${submission.name}.`
+    ].join('\n');
+
+    return { subject, html, text };
+  }
+
   generateOrderConfirmationEmail(order) {
     const pricing = order.pricing || {};
     const address = order.customer.address || {};
