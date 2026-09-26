@@ -20,6 +20,7 @@ const TrackOrder = () => {
   const [searchParams] = useSearchParams();
   const [trackingCode, setTrackingCode] = useState(searchParams.get('code') || '');
   const [email, setEmail] = useState('');
+  const [orderNumber, setOrderNumber] = useState('');
   const [searchMethod, setSearchMethod] = useState('code'); // 'code' or 'email'
   const [loading, setLoading] = useState(false);
   const [orderData, setOrderData] = useState(null);
@@ -66,8 +67,8 @@ const TrackOrder = () => {
 
   const handleTrackByEmail = async (e) => {
     e.preventDefault();
-    if (!email.trim()) {
-      setError('Veuillez entrer votre adresse email');
+    if (!email.trim() || !orderNumber.trim()) {
+      setError('Veuillez entrer votre adresse email et votre numéro de commande');
       return;
     }
 
@@ -77,20 +78,19 @@ const TrackOrder = () => {
 
     try {
       const response = await axios.post('/api/tracking/search', {
-        email: email.trim()
+        email: email.trim(),
+        orderNumber: orderNumber.trim()
       });
-      
-      if (response.data.orders && response.data.orders.length > 0) {
-        // For now, show the most recent order
-        const mostRecentOrder = response.data.orders[0];
-        // Get full order details
-        const orderResponse = await axios.get(`/api/tracking/${mostRecentOrder.trackingCode}`);
+
+      const [order] = response.data.orders || [];
+      if (order) {
+        const orderResponse = await axios.get(`/api/tracking/${encodeURIComponent(order.trackingCode)}`);
         setOrderData(orderResponse.data);
       }
     } catch (error) {
       console.error('Error searching orders:', error);
       if (error.response?.status === 404) {
-        setError('Aucune commande trouvée pour cette adresse email.');
+        setError('Aucune commande ne correspond à cet email et ce numéro de commande.');
       } else {
         setError('Erreur lors de la recherche. Veuillez réessayer.');
       }
@@ -144,7 +144,7 @@ const TrackOrder = () => {
             Suivi de Commande
           </h1>
           <p className="text-lg text-gray-600">
-            Suivez votre commande en temps réel avec votre code de suivi ou votre email
+            Suivez votre commande en temps réel avec votre code de suivi, ou votre email et votre numéro de commande
           </p>
         </motion.div>
 
@@ -175,7 +175,7 @@ const TrackOrder = () => {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Adresse email
+                Email et n° de commande
               </button>
             </div>
           </div>
@@ -245,6 +245,24 @@ const TrackOrder = () => {
                     <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   </div>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Numéro de commande
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={orderNumber}
+                      onChange={(e) => setOrderNumber(e.target.value)}
+                      placeholder="Ex: ORD-1748984093010-A1B2C3"
+                      className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <Package className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  </div>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Il figure sur la page de confirmation et dans l'email de confirmation.
+                  </p>
+                </div>
                 <button
                   type="submit"
                   disabled={loading}
@@ -255,7 +273,7 @@ const TrackOrder = () => {
                   ) : (
                     <>
                       <Mail className="w-5 h-5 mr-2" />
-                      Rechercher mes commandes
+                      Rechercher ma commande
                     </>
                   )}
                 </button>

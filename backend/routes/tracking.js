@@ -94,10 +94,12 @@ router.get('/:identifier', [
   }
 });
 
-// POST /api/tracking/search - Search orders by email (for guest users)
+// POST /api/tracking/search - Find a guest order by email and order number.
+// Both are required: an email address alone is often known to others, and
+// must not be enough to see someone's orders.
 router.post('/search', [
   body('email').isEmail().normalizeEmail().withMessage('Email valide requis'),
-  body('orderNumber').optional().isLength({ min: 1 }).withMessage('Numéro de commande invalide')
+  body('orderNumber').isString().trim().toUpperCase().isLength({ min: 1, max: 50 }).withMessage('Numéro de commande requis')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -106,11 +108,7 @@ router.post('/search', [
     }
 
     const { email, orderNumber } = req.body;
-    let query = { 'customer.email': email };
-
-    if (orderNumber) {
-      query.orderNumber = orderNumber;
-    }
+    const query = { 'customer.email': email, orderNumber };
 
     const orders = await Order.find(query)
       .select('orderNumber trackingCode status createdAt estimatedDelivery totalAmount')
@@ -119,7 +117,7 @@ router.post('/search', [
 
     if (orders.length === 0) {
       return res.status(404).json({ 
-        message: 'Aucune commande trouvée pour cette adresse email.' 
+        message: 'Aucune commande ne correspond à cet email et ce numéro de commande.'
       });
     }
 

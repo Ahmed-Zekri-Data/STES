@@ -57,17 +57,10 @@ router.post('/', optionalCustomerAuth, [
       paymentMethod: paymentMethodValue
     });
 
-    // Find or create customer
-    let customerId = null;
-    if (req.customer) {
-      customerId = req.customer.customerId;
-    } else {
-      // Check if customer exists by email
-      const existingCustomer = await Customer.findOne({ email: customer.email.toLowerCase() }); // Ensure email is lowercased for lookup
-      if (existingCustomer) {
-        customerId = existingCustomer._id;
-      }
-    }
+    // Only a logged-in customer's order goes into their account. A guest
+    // order is never linked by email: anyone can type any address, and
+    // the order would then show up in someone else's account.
+    const customerId = req.customer ? req.customer.customerId : null;
 
     // Create order
     const order = new Order({
