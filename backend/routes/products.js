@@ -6,6 +6,11 @@ const { auth } = require('../middleware/auth');
 const { customerAuth } = require('../middleware/customerAuth');
 const { productCategories, searchFilters } = require('../config/productCategories');
 
+// Case-insensitive "contains" match for text typed by a visitor. The text is
+// escaped, so characters like "(" or "*" are matched literally instead of
+// breaking the query or making it slow.
+const containing = (text) => new RegExp(String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
 // Product photos are either full http(s) URLs or images served by this API
 // (uploads and placeholders)
 const isImageLocation = (value) => {
@@ -80,7 +85,7 @@ router.get('/', [
     if (category) filter.category = category;
     if (subcategory) filter.subcategory = subcategory;
     if (featured !== undefined) filter.featured = featured === 'true';
-    if (brand) filter.brand = new RegExp(brand, 'i');
+    if (brand) filter.brand = containing(brand);
 
     // Price range filter
     if (minPrice || maxPrice) {
@@ -97,11 +102,10 @@ router.get('/', [
     // Search filter
     if (search) {
       filter.$or = [
-        { $text: { $search: search } },
-        { name: new RegExp(search, 'i') },
-        { description: new RegExp(search, 'i') },
-        { brand: new RegExp(search, 'i') },
-        { tags: { $in: [new RegExp(search, 'i')] } }
+        { name: containing(search) },
+        { description: containing(search) },
+        { brand: containing(search) },
+        { tags: { $in: [containing(search)] } }
       ];
     }
 
@@ -191,9 +195,9 @@ router.get('/search/suggestions', [
     // Get product name suggestions
     const products = await Product.find({
       $or: [
-        { name: new RegExp(q, 'i') },
-        { brand: new RegExp(q, 'i') },
-        { tags: { $in: [new RegExp(q, 'i')] } }
+        { name: containing(q) },
+        { brand: containing(q) },
+        { tags: { $in: [containing(q)] } }
       ],
       inStock: true
     })
@@ -215,7 +219,7 @@ router.get('/search/suggestions', [
 
     // Get brand suggestions
     const brands = await Product.distinct('brand', {
-      brand: new RegExp(q, 'i'),
+      brand: containing(q),
       inStock: true
     });
 
