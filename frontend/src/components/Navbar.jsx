@@ -36,7 +36,6 @@ const Navbar = () => {
   const navigation = [
     { name: t('home'), href: '/' },
     { name: t('shop'), href: '/shop' },
-    { name: 'Boutique Pro', href: '/boutique' },
     { name: t('services'), href: '/services' },
     { name: 'Suivi', href: '/track-order' },
     { name: t('about'), href: '/about' },

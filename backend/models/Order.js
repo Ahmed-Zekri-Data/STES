@@ -66,6 +66,10 @@ const orderSchema = new mongoose.Schema({
         required: true,
         trim: true
       },
+      governorate: {
+        type: String,
+        trim: true
+      },
       postalCode: {
         type: String,
         trim: true

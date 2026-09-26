@@ -5,7 +5,10 @@ const Order = require('../models/Order');
 const Customer = require('../models/Customer');
 const { auth } = require('../middleware/auth');
 const { optionalCustomerAuth } = require('../middleware/customerAuth');
-const { CheckoutError, priceOrderItems, reserveStock, releaseStock, reserveOrderStock, releaseOrderStock } = require('../services/orderService');
+const { CheckoutError, priceOrderItems, quoteOrder, reserveStock, releaseStock, reserveOrderStock, releaseOrderStock } = require('../services/orderService');
+
+// Delivery is priced by governorate when the address has one, else by city
+const deliveryPlace = (address) => address?.governorate || address?.city || 'tunis';
 // const emailNotificationService = require('../services/emailNotificationService');
 
 // POST /api/orders - Create new order
@@ -47,17 +50,12 @@ router.post('/', optionalCustomerAuth, [
     const paymentMethodValue = payment?.method || paymentMethod || 'cash_on_delivery';
 
     // Prices come from the catalog, never from the request
-    const { orderItems, subtotal } = await priceOrderItems(items);
-
-    // Calculate shipping cost
-    const city = shippingAddress?.city || customer.address?.city || 'tunis';
-    const shippingCost = calculateShippingCost(city, isUrgent);
-
-    // Calculate pricing
-    const taxRate = 0.19; // 19% VAT in Tunisia
-    const taxAmount = subtotal * taxRate;
-    const paymentFee = paymentMethodValue === 'cash_on_delivery' ? 5 : 0;
-    const totalAmount = subtotal + shippingCost + taxAmount + paymentFee;
+    const { orderItems, pricing } = await quoteOrder({
+      items,
+      place: deliveryPlace(shippingAddress || customer.address),
+      isUrgent,
+      paymentMethod: paymentMethodValue
+    });
 
     // Find or create customer
     let customerId = null;
@@ -82,7 +80,7 @@ router.post('/', optionalCustomerAuth, [
         address: {
           street: shippingAddress?.address || shippingAddress?.street || customer.address?.street,
           city: shippingAddress?.city || customer.address?.city,
-          state: shippingAddress?.state || customer.address?.state,
+          governorate: shippingAddress?.governorate || shippingAddress?.state || customer.address?.governorate,
           postalCode: shippingAddress?.postalCode || customer.address?.postalCode,
           country: shippingAddress?.country || customer.address?.country || 'Tunisia'
         }
@@ -98,7 +96,7 @@ router.post('/', optionalCustomerAuth, [
         company: billing?.company || customer.company,
         address: billing?.address || shippingAddress?.address || customer.address?.street,
         city: billing?.city || shippingAddress?.city || customer.address?.city,
-        state: billing?.state || shippingAddress?.state || customer.address?.state,
+        state: billing?.state || billing?.governorate || shippingAddress?.state || shippingAddress?.governorate || customer.address?.state,
         postalCode: billing?.postalCode || shippingAddress?.postalCode || customer.address?.postalCode,
         country: billing?.country || shippingAddress?.country || customer.address?.country || 'Tunisia',
         phone: billing?.phone || customer.phone,
@@ -106,18 +104,11 @@ router.post('/', optionalCustomerAuth, [
       },
 
       // Pricing breakdown
-      pricing: {
-        subtotal,
-        shippingCost,
-        taxAmount,
-        taxRate,
-        paymentFee,
-        totalAmount
-      },
+      pricing,
 
       // Legacy fields for compatibility
-      shippingCost,
-      totalAmount,
+      shippingCost: pricing.shippingCost,
+      totalAmount: pricing.totalAmount,
 
       // Payment information
       paymentMethod: paymentMethodValue,
@@ -162,6 +153,36 @@ router.post('/', optionalCustomerAuth, [
     }
     console.error('Error creating order:', error);
     res.status(500).json({ message: 'Error creating order' });
+  }
+});
+
+// POST /api/orders/quote - Price a cart exactly as POST /api/orders would
+router.post('/quote', [
+  body('items').isArray({ min: 1 }).withMessage('At least one item is required'),
+  body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
+  body('paymentMethod').optional().isIn(['cash_on_delivery', 'bank_transfer', 'card', 'paymee', 'flouci', 'd17', 'konnect'])
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { items, shipping, isUrgent, paymentMethod } = req.body;
+    const { orderItems, pricing } = await quoteOrder({
+      items,
+      place: deliveryPlace(shipping),
+      isUrgent: Boolean(isUrgent),
+      paymentMethod: paymentMethod || 'cash_on_delivery'
+    });
+
+    res.json({ items: orderItems, pricing });
+  } catch (error) {
+    if (error instanceof CheckoutError) {
+      return res.status(error.status).json({ message: error.message });
+    }
+    console.error('Error quoting order:', error);
+    res.status(500).json({ message: 'Error quoting order' });
   }
 });
 
@@ -680,44 +701,6 @@ router.get('/stats/summary', auth, async (req, res) => {
   }
 });
 
-// Helper function to calculate shipping cost
-function calculateShippingCost(city, isUrgent = false) {
-  const baseCost = 7; // Base shipping cost in TND
-  const urgentMultiplier = isUrgent ? 2 : 1;
-
-  // Different rates for different cities
-  const cityRates = {
-    'tunis': 1,
-    'sfax': 1.2,
-    'sousse': 1.1,
-    'kairouan': 1.3,
-    'bizerte': 1.2,
-    'gabes': 1.4,
-    'ariana': 1,
-    'gafsa': 1.5,
-    'monastir': 1.1,
-    'ben arous': 1,
-    'kasserine': 1.6,
-    'medenine': 1.5,
-    'nabeul': 1.1,
-    'tataouine': 1.7,
-    'beja': 1.4,
-    'jendouba': 1.5,
-    'mahdia': 1.2,
-    'manouba': 1,
-    'siliana': 1.4,
-    'tozeur': 1.6,
-    'zaghouan': 1.3,
-    'kef': 1.5,
-    'sidi bouzid': 1.4,
-    'kebili': 1.6
-  };
-
-  const cityKey = city.toLowerCase();
-  const cityRate = cityRates[cityKey] || 1.3; // Default rate for unlisted cities
-
-  return Math.round(baseCost * cityRate * urgentMultiplier);
-}
 
 // DELETE /api/orders/:id - Delete order (Admin only)
 router.delete('/:id', auth, async (req, res) => {

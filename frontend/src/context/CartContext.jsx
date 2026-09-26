@@ -10,25 +10,29 @@ export const useCart = () => {
   return context;
 };
 
-export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
+// Read during the first render, so the save effect below never runs with an
+// empty cart and overwrites what was stored.
+const loadSavedCart = () => {
+  try {
+    const savedCart = JSON.parse(localStorage.getItem('cart'));
+    return Array.isArray(savedCart) ? savedCart : [];
+  } catch (error) {
+    console.error('Error loading cart from localStorage:', error);
+    return [];
+  }
+};
 
-  // Load cart from localStorage on mount
-  useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      try {
-        setCartItems(JSON.parse(savedCart));
-      } catch (error) {
-        console.error('Error loading cart from localStorage:', error);
-      }
-    }
-  }, []);
+export const CartProvider = ({ children }) => {
+  const [cartItems, setCartItems] = useState(loadSavedCart);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cartItems));
+    try {
+      localStorage.setItem('cart', JSON.stringify(cartItems));
+    } catch (error) {
+      console.error('Error saving cart to localStorage:', error);
+    }
   }, [cartItems]);
 
   const addToCart = (product, quantity = 1) => {
@@ -70,6 +74,23 @@ export const CartProvider = ({ children }) => {
     setCartItems([]);
   };
 
+  // Update names and prices from the server's quote, so the cart never shows
+  // a price other than the one that will be charged.
+  const syncWithServer = (serverItems) => {
+    setCartItems(prevItems => {
+      let changed = false;
+      const updated = prevItems.map(item => {
+        const serverItem = serverItems.find(s => String(s.product) === String(item._id));
+        if (serverItem && (serverItem.price !== item.price || serverItem.name !== item.name)) {
+          changed = true;
+          return { ...item, price: serverItem.price, name: serverItem.name };
+        }
+        return item;
+      });
+      return changed ? updated : prevItems;
+    });
+  };
+
   const getCartTotal = () => {
     return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
@@ -89,6 +110,7 @@ export const CartProvider = ({ children }) => {
     removeFromCart,
     updateQuantity,
     clearCart,
+    syncWithServer,
     getCartTotal,
     getCartItemsCount,
     toggleCart,

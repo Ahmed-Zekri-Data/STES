@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { LanguageProvider } from './context/LanguageContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AnimationProvider } from './components/animations/AnimationProvider';
@@ -16,14 +16,13 @@ import CartSidebar from './components/CartSidebar';
 
 // Pages
 import Home from './pages/Home';
-import Shop from './pages/Shop';
 import EnhancedShop from './pages/EnhancedShop';
 import ProductDetails from './pages/ProductDetails';
 import Services from './pages/Services';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Cart from './pages/Cart';
-import CheckoutSimple from './pages/CheckoutSimple';
+import Checkout from './pages/Checkout';
 import CustomerDashboard from './pages/CustomerDashboard';
 import Wishlist from './pages/Wishlist';
 import OrderTracking from './pages/OrderTracking';
@@ -42,6 +41,12 @@ import Pages from './pages/admin/Pages';
 import TrackingDashboard from './pages/admin/TrackingDashboard';
 import TrackOrder from './pages/TrackOrder';
 import ProtectedRoute from './components/ProtectedRoute';
+
+// The shop used to live at /boutique; keep old links (and their filters) working
+const RedirectToShop = () => {
+  const { search } = useLocation();
+  return <Navigate to={{ pathname: '/shop', search }} replace />;
+};
 
 function App() {
   return (
@@ -70,22 +75,13 @@ function App() {
                       <div className="min-h-screen flex flex-col">
                         <Navbar />
                         <main className="flex-grow">
-                          <Shop />
-                        </main>
-                        <Footer />
-                        <CartSidebar />
-                      </div>
-                    } />
-                    <Route path="/boutique" element={
-                      <div className="min-h-screen flex flex-col">
-                        <Navbar />
-                        <main className="flex-grow">
                           <EnhancedShop />
                         </main>
                         <Footer />
                         <CartSidebar />
                       </div>
                     } />
+                    <Route path="/boutique" element={<RedirectToShop />} />
                     <Route path="/product/:id" element={
                       <div className="min-h-screen flex flex-col">
                         <Navbar />
@@ -140,7 +136,7 @@ function App() {
                       <div className="min-h-screen flex flex-col">
                         <Navbar />
                         <main className="flex-grow">
-                          <CheckoutSimple />
+                          <Checkout />
                         </main>
                         <Footer />
                         <CartSidebar />

@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
+import { useCart } from './CartContext';
 
 const CheckoutContext = createContext();
 
@@ -10,7 +12,22 @@ export const useCheckout = () => {
   return context;
 };
 
+// Order lines as the API expects them: only product IDs and quantities matter,
+// the server prices everything from the catalog.
+const toOrderItems = (cartItems) => cartItems.map(item => ({
+  productId: item._id,
+  quantity: item.quantity
+}));
+
+const apiErrorMessage = (error, fallback) =>
+  error.response?.data?.message ||
+  error.response?.data?.errors?.[0]?.msg ||
+  fallback;
+
+const formatMoney = (amount) => Number(amount).toFixed(3);
+
 export const CheckoutProvider = ({ children }) => {
+  const { cartItems, clearCart, syncWithServer } = useCart();
   const [checkoutData, setCheckoutData] = useState({
     // Customer Information
     customer: {
@@ -69,6 +86,10 @@ export const CheckoutProvider = ({ children }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderConfirmation, setOrderConfirmation] = useState(null);
+
+  // The server's price for the current cart, delivery place and payment method
+  const [quote, setQuote] = useState(null);
+  const [quoteError, setQuoteError] = useState('');
 
   // Tunisian Governorates for address selection
   const tunisianGovernorates = [
@@ -132,13 +153,15 @@ export const CheckoutProvider = ({ children }) => {
   // Validate current step
   const validateStep = (step) => {
     switch (step) {
-      case 1: // Customer Information
+      case 1: { // Customer Information
         const { firstName, lastName, email, phone } = checkoutData.customer;
         return firstName && lastName && email && phone;
-      
-      case 2: // Shipping Address
+      }
+
+      case 2: { // Shipping Address
         const { address, city, governorate } = checkoutData.shipping;
         return address && city && governorate;
+      }
       
       case 3: // Payment Method
         return checkoutData.payment.method !== '';
@@ -165,131 +188,159 @@ export const CheckoutProvider = ({ children }) => {
     }
   };
 
-  // Calculate order totals
-  const calculateTotals = (cartItems) => {
-    const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const deliveryFee = subtotal > 200 ? 0 : 15; // Free delivery over 200 TND
-    const paymentFee = checkoutData.payment.method === 'cash_on_delivery' ? 5 : 0;
-    const taxRate = 0.19; // 19% VAT in Tunisia
-    const taxAmount = subtotal * taxRate;
-    const total = subtotal + deliveryFee + paymentFee + taxAmount;
+  // Ask the server what this order will cost whenever anything that affects
+  // the price changes. Nothing is reserved by quoting.
+  const cartKey = JSON.stringify(toOrderItems(cartItems));
+  const { governorate, city } = checkoutData.shipping;
+  const { method: paymentMethod } = checkoutData.payment;
+  const { urgentDelivery } = checkoutData.order;
+
+  useEffect(() => {
+    const items = JSON.parse(cartKey);
+    if (items.length === 0 || orderConfirmation) {
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const response = await axios.post('/api/orders/quote', {
+          items,
+          shipping: { governorate, city },
+          isUrgent: urgentDelivery,
+          paymentMethod: paymentMethod || 'cash_on_delivery'
+        });
+        if (!cancelled) {
+          setQuote(response.data.pricing);
+          setQuoteError('');
+          syncWithServer(response.data.items);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setQuote(null);
+          setQuoteError(apiErrorMessage(error, 'Impossible de calculer le total de la commande.'));
+        }
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // syncWithServer only changes items when the server's prices differ
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartKey, governorate, city, urgentDelivery, paymentMethod, orderConfirmation]);
+
+  // Order totals for display, from the server's quote. Until the first quote
+  // arrives, only the subtotal is known.
+  const calculateTotals = (items = cartItems) => {
+    if (!quote) {
+      const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      return { subtotal: formatMoney(subtotal), deliveryFee: '—', paymentFee: '—', taxAmount: '—', total: '—' };
+    }
 
     return {
-      subtotal: subtotal.toFixed(3),
-      deliveryFee: deliveryFee.toFixed(3),
-      paymentFee: paymentFee.toFixed(3),
-      taxAmount: taxAmount.toFixed(3),
-      total: total.toFixed(3)
+      subtotal: formatMoney(quote.subtotal),
+      deliveryFee: formatMoney(quote.shippingCost),
+      paymentFee: formatMoney(quote.paymentFee),
+      taxAmount: formatMoney(quote.taxAmount),
+      total: formatMoney(quote.totalAmount)
     };
   };
 
-  // Process payment
-  const processPayment = async (cartItems) => {
+  // Create the order, start its payment, and show the confirmation (or send
+  // the customer to the payment gateway). Throws an Error whose message can
+  // be shown to the customer.
+  const processPayment = async (items = cartItems, { notes } = {}) => {
     setIsProcessing(true);
 
     try {
-      // First create the order
-      const orderData = {
-        items: cartItems.map(item => ({
-          productId: item._id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          image: item.images?.[0] || item.image
-        })),
-        customer: {
-          firstName: checkoutData.customer.firstName,
-          lastName: checkoutData.customer.lastName,
-          email: checkoutData.customer.email,
-          phone: checkoutData.customer.phone,
-          company: checkoutData.customer.company
-        },
-        shipping: checkoutData.shipping,
-        billing: checkoutData.billing.sameAsShipping ? checkoutData.shipping : checkoutData.billing,
-        payment: {
-          method: checkoutData.payment.method
-        },
-        notes: checkoutData.order.notes,
-        isUrgent: checkoutData.order.urgentDelivery
-      };
+      const { customer, shipping, billing, payment, order } = checkoutData;
 
-      // Create order via API
-      const orderResponse = await fetch('/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(orderData)
-      });
-
-      if (!orderResponse.ok) {
-        throw new Error('Failed to create order');
+      // axios carries the customer's login token, so their order is linked
+      // to their account
+      let createdOrder;
+      try {
+        const orderResponse = await axios.post('/api/orders', {
+          items: toOrderItems(items),
+          customer: {
+            firstName: customer.firstName,
+            lastName: customer.lastName,
+            email: customer.email,
+            phone: customer.phone,
+            company: customer.company
+          },
+          shipping,
+          billing: billing.sameAsShipping ? { ...shipping, sameAsShipping: true } : billing,
+          payment: { method: payment.method },
+          notes: notes ?? order.notes,
+          isUrgent: order.urgentDelivery
+        });
+        createdOrder = orderResponse.data.order;
+      } catch (error) {
+        throw new Error(apiErrorMessage(error, 'La commande n\'a pas pu être créée. Veuillez réessayer.'), { cause: error });
       }
 
-      const orderResult = await orderResponse.json();
-      const orderId = orderResult.order._id || orderResult.order.id;
+      // The order exists and its stock is reserved: the cart is done
+      clearCart();
 
-      // Initiate payment
-      const paymentData = {
-        orderId,
-        paymentMethod: checkoutData.payment.method,
-        customerInfo: {
-          firstName: checkoutData.customer.firstName,
-          lastName: checkoutData.customer.lastName,
-          email: checkoutData.customer.email,
-          phone: checkoutData.customer.phone
-        }
-      };
-
-      const paymentResponse = await fetch('/api/payments/initiate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(paymentData)
-      });
-
-      if (!paymentResponse.ok) {
-        throw new Error('Failed to initiate payment');
+      let paymentResult;
+      try {
+        const paymentResponse = await axios.post('/api/payments/initiate', {
+          orderId: createdOrder.id,
+          paymentMethod: payment.method,
+          customerInfo: {
+            firstName: customer.firstName,
+            lastName: customer.lastName,
+            email: customer.email,
+            phone: customer.phone
+          }
+        });
+        paymentResult = paymentResponse.data;
+      } catch (error) {
+        throw new Error(
+          `Votre commande ${createdOrder.orderNumber} est enregistrée, mais le paiement n'a pas pu être lancé : ` +
+          `${apiErrorMessage(error, 'erreur inconnue')}. Contactez-nous pour finaliser le paiement.`,
+          { cause: error }
+        );
       }
 
-      const paymentResult = await paymentResponse.json();
-
-      // Handle different payment methods
       if (paymentResult.redirectUrl) {
-        // Redirect to payment gateway
+        // Online payment: the gateway sends the customer back to /payment/*
         window.location.href = paymentResult.redirectUrl;
-        return;
+        return null;
       }
 
-      // For cash on delivery or bank transfer, show confirmation
-      const totals = calculateTotals(cartItems);
+      const pricing = createdOrder.pricing;
       const confirmation = {
-        orderId: orderResult.order.orderNumber,
-        orderDate: new Date().toISOString(),
-        customer: checkoutData.customer,
-        shipping: checkoutData.shipping,
-        billing: checkoutData.billing.sameAsShipping ? checkoutData.shipping : checkoutData.billing,
+        orderId: createdOrder.orderNumber,
+        trackingCode: createdOrder.trackingCode,
+        orderDate: createdOrder.createdAt,
+        customer,
+        shipping,
+        billing: billing.sameAsShipping ? shipping : billing,
         payment: {
-          method: checkoutData.payment.method,
+          method: payment.method,
           status: paymentResult.status,
           reference: paymentResult.paymentReference,
           instructions: paymentResult.instructions,
           bankDetails: paymentResult.bankDetails
         },
-        items: cartItems,
-        totals,
-        estimatedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'confirmed'
+        items: createdOrder.items,
+        totals: {
+          subtotal: formatMoney(pricing.subtotal),
+          deliveryFee: formatMoney(pricing.shippingCost),
+          paymentFee: formatMoney(pricing.paymentFee),
+          taxAmount: formatMoney(pricing.taxAmount),
+          total: formatMoney(pricing.totalAmount)
+        },
+        estimatedDelivery: createdOrder.estimatedDelivery,
+        status: createdOrder.status
       };
 
       setOrderConfirmation(confirmation);
       setCurrentStep(5); // Confirmation step
-
       return confirmation;
-    } catch (error) {
-      console.error('Payment processing error:', error);
-      throw error;
     } finally {
       setIsProcessing(false);
     }
@@ -306,6 +357,8 @@ export const CheckoutProvider = ({ children }) => {
     });
     setCurrentStep(1);
     setOrderConfirmation(null);
+    setQuote(null);
+    setQuoteError('');
   };
 
   const value = {
@@ -320,6 +373,8 @@ export const CheckoutProvider = ({ children }) => {
     nextStep,
     prevStep,
     calculateTotals,
+    quote,
+    quoteError,
     processPayment,
     resetCheckout
   };

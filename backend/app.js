@@ -12,13 +12,54 @@ const createApp = () => {
   // Security middleware
   app.use(helmet());
 
-  // Rate limiting
-  const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again later.'
+  // Placeholder images are cached by browsers and cheap to serve; keep them
+  // outside the API rate limit so a page full of products can't exhaust it
+  app.use('/api/placeholder', require('./routes/placeholder'));
+
+  // Behind a reverse proxy every request comes from the proxy's address, so
+  // all visitors would share one rate limit. TRUST_PROXY (e.g. 1 for one
+  // proxy hop) makes Express use the client address from X-Forwarded-For.
+  // Leave it unset when clients connect directly, or they could spoof it.
+  if (process.env.TRUST_PROXY) {
+    const hops = Number(process.env.TRUST_PROXY);
+    app.set('trust proxy', Number.isInteger(hops) ? hops : process.env.TRUST_PROXY);
+  }
+
+  // Rate limiting, per client IP. Generous for normal browsing (a single
+  // page makes several API calls, and many customers can share one mobile
+  // network address); strict where passwords and tokens can be guessed.
+  const fifteenMinutes = 15 * 60 * 1000;
+  const limitMessage = (message) => ({ message });
+
+  app.use('/api/', rateLimit({
+    windowMs: fifteenMinutes,
+    max: 1000,
+    message: limitMessage('Trop de requêtes. Veuillez réessayer dans quelques minutes.')
+  }));
+
+  // Only failed attempts count, so customers who type their password
+  // correctly are never blocked
+  const credentialLimiter = rateLimit({
+    windowMs: fifteenMinutes,
+    max: 10,
+    skipSuccessfulRequests: true,
+    message: limitMessage('Trop de tentatives. Veuillez réessayer dans 15 minutes.')
   });
-  app.use('/api/', limiter);
+  for (const path of [
+    '/api/auth/login',
+    '/api/customers/login',
+    '/api/customers/forgot-password',
+    '/api/customers/reset-password',
+    '/api/customers/verify-email'
+  ]) {
+    app.post(path, credentialLimiter);
+  }
+
+  app.post('/api/customers/register', rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 20,
+    message: limitMessage('Trop de comptes créés. Veuillez réessayer plus tard.')
+  }));
 
   // CORS configuration
   app.use(cors({

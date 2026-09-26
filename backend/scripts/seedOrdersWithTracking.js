@@ -115,7 +115,7 @@ async function seedOrdersWithTracking() {
           name: item.productName,
           price: item.price,
           quantity: item.quantity,
-          image: product ? product.image : '/placeholder-product.jpg'
+          image: product ? product.image : '/api/placeholder/300/200'
         };
       });
 

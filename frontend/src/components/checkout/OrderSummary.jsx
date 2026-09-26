@@ -6,7 +6,7 @@ import { ShoppingBag, Truck, CreditCard, Tag, Shield } from 'lucide-react';
 
 const OrderSummary = () => {
   const { cartItems } = useCart();
-  const { calculateTotals, checkoutData } = useCheckout();
+  const { calculateTotals, checkoutData, quoteError } = useCheckout();
   
   const totals = calculateTotals(cartItems);
 
@@ -27,6 +27,12 @@ const OrderSummary = () => {
           <p className="text-sm text-gray-600">{cartItems.length} article{cartItems.length > 1 ? 's' : ''}</p>
         </div>
       </div>
+
+      {quoteError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          {quoteError}
+        </div>
+      )}
 
       {/* Cart Items */}
       <div className="space-y-4 mb-6">

@@ -407,7 +407,7 @@ const OrderTracking = () => {
                 className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg"
               >
                 <img
-                  src={item.image || '/placeholder-product.jpg'}
+                  src={item.image || '/api/placeholder/64/64'}
                   alt={item.name}
                   className="w-16 h-16 object-cover rounded-lg"
                 />
