@@ -6,6 +6,25 @@ const { auth } = require('../middleware/auth');
 const { customerAuth } = require('../middleware/customerAuth');
 const { productCategories, searchFilters } = require('../config/productCategories');
 
+// Case-insensitive "contains" match for text typed by a visitor. The text is
+// escaped, so characters like "(" or "*" are matched literally instead of
+// breaking the query or making it slow.
+const containing = (text) => new RegExp(String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+// Product photos are either full http(s) URLs or images served by this API
+// (uploads and placeholders)
+const isImageLocation = (value) => {
+  if (/^\/api\/(uploads|placeholder)\/[\w./-]+$/.test(value) && !value.includes('..')) {
+    return true;
+  }
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
 // GET /api/products - Get all products with filtering and pagination
 router.get('/', [
   query('page').optional().isInt({ min: 1 }),
@@ -66,7 +85,7 @@ router.get('/', [
     if (category) filter.category = category;
     if (subcategory) filter.subcategory = subcategory;
     if (featured !== undefined) filter.featured = featured === 'true';
-    if (brand) filter.brand = new RegExp(brand, 'i');
+    if (brand) filter.brand = containing(brand);
 
     // Price range filter
     if (minPrice || maxPrice) {
@@ -83,11 +102,10 @@ router.get('/', [
     // Search filter
     if (search) {
       filter.$or = [
-        { $text: { $search: search } },
-        { name: new RegExp(search, 'i') },
-        { description: new RegExp(search, 'i') },
-        { brand: new RegExp(search, 'i') },
-        { tags: { $in: [new RegExp(search, 'i')] } }
+        { name: containing(search) },
+        { description: containing(search) },
+        { brand: containing(search) },
+        { tags: { $in: [containing(search)] } }
       ];
     }
 
@@ -177,9 +195,9 @@ router.get('/search/suggestions', [
     // Get product name suggestions
     const products = await Product.find({
       $or: [
-        { name: new RegExp(q, 'i') },
-        { brand: new RegExp(q, 'i') },
-        { tags: { $in: [new RegExp(q, 'i')] } }
+        { name: containing(q) },
+        { brand: containing(q) },
+        { tags: { $in: [containing(q)] } }
       ],
       inStock: true
     })
@@ -201,7 +219,7 @@ router.get('/search/suggestions', [
 
     // Get brand suggestions
     const brands = await Product.distinct('brand', {
-      brand: new RegExp(q, 'i'),
+      brand: containing(q),
       inStock: true
     });
 
@@ -254,7 +272,7 @@ router.post('/', auth, [
   body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
   body('category').isIn(Object.keys(productCategories)).withMessage('Invalid category'),
   body('stockQuantity').optional().isInt({ min: 0 }).withMessage('Stock quantity must be a non-negative integer'),
-  body('image').optional().isURL().withMessage('Image must be a valid URL'),
+  body('image').optional().custom(isImageLocation).withMessage('Image must be an http(s) URL or an uploaded image'),
   body('featured').optional().isBoolean().withMessage('Featured must be a boolean')
 ], async (req, res) => {
   try {
@@ -283,7 +301,7 @@ router.put('/:id', auth, [
   body('price').optional().isFloat({ min: 0 }),
   body('category').optional().isIn(Object.keys(productCategories)),
   body('stockQuantity').optional().isInt({ min: 0 }),
-  body('image').optional().isURL(),
+  body('image').optional().custom(isImageLocation).withMessage('Image must be an http(s) URL or an uploaded image'),
   body('featured').optional().isBoolean()
 ], async (req, res) => {
   try {

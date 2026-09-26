@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const { uploadRoot } = require('./config/uploads');
 
 // Builds the Express app without connecting to MongoDB or listening, so
 // tests can create their own instance. server.js does both for real runs.
@@ -15,6 +16,16 @@ const createApp = () => {
   // Placeholder images are cached by browsers and cheap to serve; keep them
   // outside the API rate limit so a page full of products can't exhaust it
   app.use('/api/placeholder', require('./routes/placeholder'));
+
+  // Uploaded files have random, never-reused names, so browsers may cache
+  // them indefinitely
+  app.use('/api/uploads', express.static(uploadRoot(), {
+    immutable: true,
+    maxAge: '365d',
+    index: false,
+    dotfiles: 'deny',
+    setHeaders: (res) => res.set('Cross-Origin-Resource-Policy', 'cross-origin')
+  }));
 
   // Behind a reverse proxy every request comes from the proxy's address, so
   // all visitors would share one rate limit. TRUST_PROXY (e.g. 1 for one
@@ -75,6 +86,7 @@ const createApp = () => {
   app.use('/api/products', require('./routes/products'));
   app.use('/api/orders', require('./routes/orders'));
   app.use('/api/forms', require('./routes/forms'));
+  app.use('/api/admin/uploads', require('./routes/uploads'));
   app.use('/api/admin', require('./routes/admin'));
   app.use('/api/admin/categories', require('./routes/adminCategories'));
   app.use('/api/admin/brands', require('./routes/adminBrands'));
