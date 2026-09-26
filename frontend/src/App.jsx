@@ -11,6 +11,7 @@ import { OrderTrackingProvider } from './context/OrderTrackingContext';
 
 // Components
 import Navbar from './components/Navbar';
+import ErrorBoundary from './components/ErrorBoundary';
 import Footer from './components/Footer';
 import CartSidebar from './components/CartSidebar';
 
@@ -59,6 +60,7 @@ function App() {
                 <OrderTrackingProvider>
                   <AdminProvider>
                 <Router>
+                  <ErrorBoundary>
                   <Routes>
                     {/* Public Routes */}
                     <Route path="/" element={
@@ -225,6 +227,7 @@ function App() {
                       <Route path="settings" element={<div className="p-6"><h1 className="text-2xl font-bold">Settings</h1><p className="text-gray-600">Coming soon...</p></div>} />
                     </Route>
                   </Routes>
+                  </ErrorBoundary>
                 </Router>
                   </AdminProvider>
                 </OrderTrackingProvider>
