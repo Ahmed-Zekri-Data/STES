@@ -1,10 +1,19 @@
 const express = require('express');
 const router = express.Router();
+const { query, validationResult } = require('express-validator');
 const { auth, checkPermission, requireSuperAdmin } = require('../middleware/auth');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const FormSubmission = require('../models/FormSubmission');
 const Admin = require('../models/Admin');
+const Customer = require('../models/Customer');
+const { containing } = require('../utils/text');
+
+// Products at or below this many units are flagged in the notifications
+const LOW_STOCK_THRESHOLD = 5;
+
+const can = (admin, permission) =>
+  admin.role === 'super_admin' || admin.permissions.includes(permission);
 
 // GET /api/admin/dashboard - Get dashboard statistics
 router.get('/dashboard', auth, async (req, res) => {
@@ -96,6 +105,152 @@ router.get('/dashboard', auth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
     res.status(500).json({ message: 'Error fetching dashboard data' });
+  }
+});
+
+// GET /api/admin/notifications - What needs attention: orders waiting to be
+// handled and products running out. Each part is only sent to admins with
+// the matching permission.
+router.get('/notifications', auth, async (req, res) => {
+  try {
+    const result = {};
+
+    if (can(req.admin, 'orders')) {
+      const filter = { status: 'pending' };
+      const [count, latest] = await Promise.all([
+        Order.countDocuments(filter),
+        Order.find(filter)
+          .sort({ createdAt: -1 })
+          .limit(5)
+          .select('orderNumber customer.name totalAmount createdAt')
+          .lean()
+      ]);
+      result.pendingOrders = {
+        count,
+        latest: latest.map(order => ({
+          id: order._id,
+          orderNumber: order.orderNumber,
+          customerName: order.customer?.name,
+          totalAmount: order.totalAmount,
+          createdAt: order.createdAt
+        }))
+      };
+    }
+
+    if (can(req.admin, 'products')) {
+      const filter = { stockQuantity: { $lte: LOW_STOCK_THRESHOLD } };
+      const [count, items] = await Promise.all([
+        Product.countDocuments(filter),
+        Product.find(filter)
+          .sort({ stockQuantity: 1, name: 1 })
+          .limit(5)
+          .select('name stockQuantity')
+          .lean()
+      ]);
+      result.lowStock = {
+        count,
+        threshold: LOW_STOCK_THRESHOLD,
+        items: items.map(product => ({
+          id: product._id,
+          name: product.name,
+          stockQuantity: product.stockQuantity
+        }))
+      };
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching admin notifications:', error);
+    res.status(500).json({ message: 'Error fetching notifications' });
+  }
+});
+
+// GET /api/admin/search?q= - Search orders, products and customers at once
+// (up to 5 of each). Each part is only searched for admins with the
+// matching permission.
+router.get('/search', auth, [
+  query('q').isString().trim().isLength({ min: 2, max: 100 }).withMessage('Search must be 2 to 100 characters')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const text = containing(req.query.q);
+    const searches = {};
+
+    if (can(req.admin, 'orders')) {
+      searches.orders = Order.find({
+        $or: [
+          { orderNumber: text },
+          { trackingCode: text },
+          { 'customer.name': text },
+          { 'customer.email': text },
+          { 'customer.phone': text }
+        ]
+      })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select('orderNumber customer.name customer.email status totalAmount createdAt')
+        .lean()
+        .then(orders => orders.map(order => ({
+          id: order._id,
+          orderNumber: order.orderNumber,
+          customerName: order.customer?.name,
+          customerEmail: order.customer?.email,
+          status: order.status,
+          totalAmount: order.totalAmount,
+          createdAt: order.createdAt
+        })));
+    }
+
+    if (can(req.admin, 'products')) {
+      searches.products = Product.find({
+        $or: [{ name: text }, { brand: text }, { sku: text }]
+      })
+        .sort({ name: 1 })
+        .limit(5)
+        .select('name brand price stockQuantity')
+        .lean()
+        .then(products => products.map(product => ({
+          id: product._id,
+          name: product.name,
+          brand: product.brand,
+          price: product.price,
+          stockQuantity: product.stockQuantity
+        })));
+    }
+
+    if (can(req.admin, 'users')) {
+      searches.customers = Customer.find({
+        $or: [
+          { firstName: text },
+          { lastName: text },
+          { email: text },
+          { phone: text },
+          // Full names such as "Ahmed Ben Ali"
+          { $expr: { $regexMatch: { input: { $concat: ['$firstName', ' ', '$lastName'] }, regex: text } } }
+        ]
+      })
+        .sort({ lastName: 1, firstName: 1 })
+        .limit(5)
+        .select('firstName lastName email phone')
+        .lean()
+        .then(customers => customers.map(customer => ({
+          id: customer._id,
+          name: `${customer.firstName} ${customer.lastName}`,
+          email: customer.email,
+          phone: customer.phone
+        })));
+    }
+
+    const names = Object.keys(searches);
+    const found = await Promise.all(Object.values(searches));
+    res.json(Object.fromEntries(names.map((name, i) => [name, found[i]])));
+  } catch (error) {
+    console.error('Error searching admin data:', error);
+    res.status(500).json({ message: 'Error searching' });
   }
 });
 

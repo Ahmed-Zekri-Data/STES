@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import {
@@ -23,7 +24,8 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [statusFilter, setStatusFilter] = useState('');
   const [verificationFilter, setVerificationFilter] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -40,6 +42,11 @@ const Customers = () => {
     { value: 'true', label: 'Verified' },
     { value: 'false', label: 'Unverified' }
   ];
+
+  // Links from the admin top bar (search results, notifications) set ?search=
+  useEffect(() => {
+    setSearchTerm(searchParams.get('search') || '');
+  }, [searchParams]);
 
   useEffect(() => {
     fetchCustomers();
