@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, ShoppingBag, Heart, MapPin, Settings, Award, Package, Clock, Bell } from 'lucide-react';
 import { useCustomer } from '../context/CustomerContext';
@@ -9,7 +10,10 @@ import NotificationPreferences from '../components/notifications/NotificationPre
 
 const CustomerDashboard = () => {
   const { customer, isAuthenticated, loading } = useCustomer();
-  const [activeTab, setActiveTab] = useState('overview');
+  // The tab is in the address (/account?tab=orders), so menu links can open it
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'overview';
+  const setActiveTab = (tab) => setSearchParams(tab === 'overview' ? {} : { tab }, { replace: true });
 
   if (loading) {
     return (

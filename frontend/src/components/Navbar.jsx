@@ -9,6 +9,10 @@ import AuthModal from './auth/AuthModal';
 import InAppNotifications from './notifications/InAppNotifications';
 import ThemeToggle from './ThemeToggle';
 
+// Dropdowns open under their button from 640px. On phones the button can be
+// anywhere in the bar, so they span the screen under the bar instead.
+const DROPDOWN_POSITION = 'fixed inset-x-2 top-16 sm:absolute sm:inset-x-auto sm:top-auto sm:end-0 mt-2';
+
 const Navbar = () => {
   const { t, language, changeLanguage } = useLanguage();
   const { getCartItemsCount, toggleCart } = useCart();
@@ -42,12 +46,18 @@ const Navbar = () => {
   ];
 
   const languages = [
-    { code: 'fr', name: 'Français', flag: '🇫🇷' },
-    { code: 'ar', name: 'العربية', flag: '🇹🇳' },
-    { code: 'en', name: 'English', flag: '🇺🇸' },
+    { code: 'fr', name: 'Français', short: 'FR', flag: '🇫🇷' },
+    { code: 'ar', name: 'العربية', short: 'ع', flag: '🇹🇳' },
+    { code: 'en', name: 'English', short: 'EN', flag: '🇺🇸' },
   ];
 
   const isActive = (path) => location.pathname === path;
+
+  const openAuthModal = (mode) => {
+    setAuthModalMode(mode);
+    setIsAuthModalOpen(true);
+    setIsMobileMenuOpen(false);
+  };
 
   return (
     <motion.nav
@@ -60,7 +70,7 @@ const Navbar = () => {
       animate={{ y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <motion.div
@@ -68,7 +78,7 @@ const Navbar = () => {
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Link to="/" className="flex items-center group">
+            <Link to="/" className="flex items-center group" aria-label="STES.tn">
               <motion.div
                 className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300"
                 whileHover={{ rotate: 360 }}
@@ -76,14 +86,14 @@ const Navbar = () => {
               >
                 <Waves className="text-white w-6 h-6" />
               </motion.div>
-              <span className="ml-3 text-xl font-bold gradient-text">
+              <span className="ms-2 sm:ms-3 text-lg sm:text-xl font-bold gradient-text">
                 STES.tn
               </span>
             </Link>
           </motion.div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:block">
+          {/* Desktop Navigation: from 1024px, where the links and the right side fit */}
+          <div className="hidden lg:block">
             <div className="ml-10 flex items-baseline space-x-1">
               {navigation.map((item, index) => (
                 <motion.div
@@ -116,15 +126,17 @@ const Navbar = () => {
           </div>
 
           {/* Right side items */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-1 sm:gap-3">
             {/* Theme Toggle */}
             <ThemeToggle className="hidden sm:flex" />
 
-            {/* Language Selector */}
-            <div className="relative">
+            {/* Language Selector (in the menu on phones) */}
+            <div className="hidden sm:block relative">
               <button
                 onClick={() => setIsLanguageMenuOpen(!isLanguageMenuOpen)}
-                className="flex items-center space-x-1 text-gray-700 hover:text-primary-600 transition-colors"
+                aria-label="Langue"
+                aria-expanded={isLanguageMenuOpen}
+                className="flex items-center gap-1 p-2 text-gray-700 hover:text-primary-600 transition-colors"
               >
                 <Globe className="w-5 h-5" />
                 <span className="text-sm font-medium">
@@ -133,7 +145,7 @@ const Navbar = () => {
               </button>
 
               {isLanguageMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                <div className="absolute end-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
                   {languages.map((lang) => (
                     <button
                       key={lang.code}
@@ -141,11 +153,11 @@ const Navbar = () => {
                         changeLanguage(lang.code);
                         setIsLanguageMenuOpen(false);
                       }}
-                      className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                      className={`block w-full text-start px-4 py-2 text-sm hover:bg-gray-100 ${
                         language === lang.code ? 'bg-primary-50 text-primary-700' : 'text-gray-700'
                       }`}
                     >
-                      <span className="mr-2">{lang.flag}</span>
+                      <span className="me-2">{lang.flag}</span>
                       {lang.name}
                     </button>
                   ))}
@@ -155,10 +167,12 @@ const Navbar = () => {
 
             {/* Customer Authentication */}
             {isAuthenticated ? (
-              <div className="relative">
+              <div className="sm:relative">
                 <motion.button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors p-2 rounded-lg hover:bg-blue-50"
+                  aria-label="Mon compte"
+                  aria-expanded={isUserMenuOpen}
+                  className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors p-1 sm:p-2 rounded-lg hover:bg-blue-50"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -177,7 +191,7 @@ const Navbar = () => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50"
+                      className={`${DROPDOWN_POSITION} sm:w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50`}
                     >
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-medium text-gray-900">
@@ -197,15 +211,15 @@ const Navbar = () => {
                           onClick={() => setIsUserMenuOpen(false)}
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                         >
-                          <User className="w-4 h-4 mr-3" />
+                          <User className="w-4 h-4 me-3" />
                           Mon compte
                         </Link>
                         <Link
-                          to="/orders"
+                          to="/account?tab=orders"
                           onClick={() => setIsUserMenuOpen(false)}
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                         >
-                          <ShoppingCart className="w-4 h-4 mr-3" />
+                          <ShoppingCart className="w-4 h-4 me-3" />
                           Mes commandes
                         </Link>
                         <Link
@@ -213,7 +227,7 @@ const Navbar = () => {
                           onClick={() => setIsUserMenuOpen(false)}
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                         >
-                          <Truck className="w-4 h-4 mr-3" />
+                          <Truck className="w-4 h-4 me-3" />
                           Suivi de commande
                         </Link>
                         <Link
@@ -221,15 +235,15 @@ const Navbar = () => {
                           onClick={() => setIsUserMenuOpen(false)}
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                         >
-                          <Heart className="w-4 h-4 mr-3" />
+                          <Heart className="w-4 h-4 me-3" />
                           Ma liste de souhaits
                         </Link>
                         <Link
-                          to="/account/settings"
+                          to="/account?tab=settings"
                           onClick={() => setIsUserMenuOpen(false)}
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                         >
-                          <Settings className="w-4 h-4 mr-3" />
+                          <Settings className="w-4 h-4 me-3" />
                           Paramètres
                         </Link>
                       </div>
@@ -242,7 +256,7 @@ const Navbar = () => {
                           }}
                           className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                         >
-                          <LogOut className="w-4 h-4 mr-3" />
+                          <LogOut className="w-4 h-4 me-3" />
                           Se déconnecter
                         </button>
                       </div>
@@ -251,12 +265,18 @@ const Navbar = () => {
                 </AnimatePresence>
               </div>
             ) : (
-              <div className="flex items-center space-x-2">
+              <>
+              {/* Phones: one icon; "S'inscrire" is in the menu */}
+              <button
+                onClick={() => openAuthModal('login')}
+                aria-label="Connexion"
+                className="sm:hidden p-2 text-gray-700 hover:text-blue-600 transition-colors"
+              >
+                <User className="w-6 h-6" />
+              </button>
+              <div className="hidden sm:flex items-center gap-2">
                 <motion.button
-                  onClick={() => {
-                    setAuthModalMode('login');
-                    setIsAuthModalOpen(true);
-                  }}
+                  onClick={() => openAuthModal('login')}
                   className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-lg hover:bg-blue-50"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -264,10 +284,7 @@ const Navbar = () => {
                   Connexion
                 </motion.button>
                 <motion.button
-                  onClick={() => {
-                    setAuthModalMode('register');
-                    setIsAuthModalOpen(true);
-                  }}
+                  onClick={() => openAuthModal('register')}
                   className="text-sm font-medium bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 shadow-md hover:shadow-lg"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -275,6 +292,7 @@ const Navbar = () => {
                   S'inscrire
                 </motion.button>
               </div>
+              </>
             )}
 
             {/* Notifications (only for authenticated users) */}
@@ -283,6 +301,7 @@ const Navbar = () => {
             {/* Cart Button */}
             <motion.button
               onClick={toggleCart}
+              aria-label="Panier"
               className="relative p-2 text-gray-700 hover:text-blue-600 transition-colors group"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -317,9 +336,11 @@ const Navbar = () => {
             </motion.button>
 
             {/* Mobile menu button */}
-            <div className="md:hidden">
+            <div className="lg:hidden">
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Menu"
+                aria-expanded={isMobileMenuOpen}
                 className="p-2 text-gray-700 hover:text-primary-600 transition-colors"
               >
                 {isMobileMenuOpen ? (
@@ -336,7 +357,7 @@ const Navbar = () => {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              className="md:hidden"
+              className="lg:hidden"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
@@ -370,6 +391,47 @@ const Navbar = () => {
                     </Link>
                   </motion.div>
                 ))}
+
+                {/* On phones these don't fit in the top bar */}
+                <div className="sm:hidden pt-3 mt-2 border-t border-blue-100 space-y-3">
+                  {!isAuthenticated && (
+                    <div className="grid grid-cols-2 gap-2 px-2">
+                      <button
+                        onClick={() => openAuthModal('login')}
+                        className="px-4 py-3 rounded-xl text-base font-medium text-gray-700 bg-white shadow-sm hover:text-blue-600"
+                      >
+                        Connexion
+                      </button>
+                      <button
+                        onClick={() => openAuthModal('register')}
+                        className="px-4 py-3 rounded-xl text-base font-medium text-white bg-gradient-to-r from-blue-500 to-cyan-500 shadow-sm"
+                      >
+                        S'inscrire
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between px-4">
+                    <span className="text-sm text-gray-600">Langue</span>
+                    <div className="flex gap-1">
+                      {languages.map((lang) => (
+                        <button
+                          key={lang.code}
+                          onClick={() => changeLanguage(lang.code)}
+                          aria-pressed={language === lang.code}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+                            language === lang.code ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 shadow-sm'
+                          }`}
+                        >
+                          {lang.short}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between px-4">
+                    <span className="text-sm text-gray-600">Thème</span>
+                    <ThemeToggle />
+                  </div>
+                </div>
               </motion.div>
             </motion.div>
           )}
