@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAdmin } from '../../context/AdminContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,9 +26,26 @@ import {
   Truck
 } from 'lucide-react';
 
+// Tailwind's lg breakpoint: from here the sidebar is always shown
+const DESKTOP_QUERY = '(min-width: 1024px)';
+
+const useIsDesktop = () => {
+  const [isDesktop, setIsDesktop] = useState(() => window.matchMedia(DESKTOP_QUERY).matches);
+
+  useEffect(() => {
+    const query = window.matchMedia(DESKTOP_QUERY);
+    const update = () => setIsDesktop(query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+
+  return isDesktop;
+};
+
 const AdminLayout = () => {
   const { admin, logout } = useAdmin();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isDesktop = useIsDesktop();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -94,12 +111,14 @@ const AdminLayout = () => {
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
+      {/* Sidebar: always shown on desktop, slides in on smaller screens.
+          The position is set by the animation (an inline style), which a
+          Tailwind class like lg:translate-x-0 cannot override. */}
       <motion.div
-        className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl lg:translate-x-0"
+        className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl"
         variants={sidebarVariants}
-        initial="closed"
-        animate={sidebarOpen ? "open" : "closed"}
+        initial={false}
+        animate={isDesktop || sidebarOpen ? "open" : "closed"}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -130,7 +149,7 @@ const AdminLayout = () => {
           </motion.div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
+          <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
             {navigation.map((item, index) => {
               const Icon = item.icon;
               return (
@@ -212,57 +231,11 @@ const AdminLayout = () => {
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setSidebarOpen(true)}
+                aria-label="Open menu"
                 className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
               >
                 <Menu className="w-5 h-5" />
               </button>
-
-              {/* Admin Navigation - Desktop */}
-              <nav className="hidden lg:flex items-center space-x-1 ml-8">
-                {navigation.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <motion.div
-                      key={item.name}
-                      whileHover={{ y: -2 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    >
-                      <Link
-                        to={item.href}
-                        className={`relative flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 group ${
-                          isActive(item.href)
-                            ? 'bg-blue-50 text-blue-700 shadow-md'
-                            : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
-                        }`}
-                      >
-                        <Icon className={`w-4 h-4 mr-2 transition-colors duration-300 ${
-                          isActive(item.href) ? 'text-blue-600' : 'text-gray-500 group-hover:text-blue-600'
-                        }`} />
-                        <span>{item.name}</span>
-                        {isActive(item.href) && (
-                          <motion.div
-                            className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full"
-                            layoutId="activeNavIndicator"
-                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                          />
-                        )}
-                      </Link>
-                    </motion.div>
-                  );
-                })}
-              </nav>
-
-              {/* Mobile Navigation Menu */}
-              <div className="lg:hidden">
-                <motion.button
-                  onClick={() => setSidebarOpen(true)}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Menu className="w-5 h-5" />
-                </motion.button>
-              </div>
 
               {/* Search */}
               <div className="hidden md:block ml-8">
