@@ -13,7 +13,7 @@ import {
   Tag
 } from 'lucide-react';
 import AnimatedButton from '../../components/AnimatedButton';
-import adminApi from '../../utils/adminApi';
+import adminApi, { errorMessage } from '../../utils/adminApi';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 const Categories = () => {
@@ -82,7 +82,7 @@ const Categories = () => {
       setEditingCategory(null);
     } catch (error) {
       console.error('Error saving category:', error);
-      alert('Error saving category: ' + (error.response?.data?.message || error.message));
+      alert('Error saving category: ' + errorMessage(error));
     }
   };
 
@@ -92,10 +92,11 @@ const Categories = () => {
       name: category.name,
       nameEn: category.nameEn,
       nameAr: category.nameAr || '',
-      description: category.description,
+      description: category.description || '',
       icon: category.icon,
       image: category.image || '',
-      parentCategory: category.parentCategory || '',
+      // The list includes the parent as { _id, name }
+      parentCategory: category.parentCategory?._id || category.parentCategory || '',
       sortOrder: category.sortOrder,
       isActive: category.isActive
     });
@@ -109,7 +110,7 @@ const Categories = () => {
         setCategories(prev => prev.filter(cat => cat._id !== categoryId));
       } catch (error) {
         console.error('Error deleting category:', error);
-        alert('Error deleting category: ' + (error.response?.data?.message || error.message));
+        alert('Error deleting category: ' + errorMessage(error));
       }
     }
   };
@@ -124,7 +125,7 @@ const Categories = () => {
       ));
     } catch (error) {
       console.error('Error toggling category status:', error);
-      alert('Error updating category status: ' + (error.response?.data?.message || error.message));
+      alert('Error updating category status: ' + errorMessage(error));
     }
   };
 

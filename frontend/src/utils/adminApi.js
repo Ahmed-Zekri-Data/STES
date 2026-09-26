@@ -28,4 +28,9 @@ adminApi.interceptors.response.use(
   }
 );
 
+// The reason the server gave for refusing a request: its message, or the
+// first field that failed validation
+export const errorMessage = (error) =>
+  error.response?.data?.message || error.response?.data?.errors?.[0]?.msg || error.message;
+
 export default adminApi;

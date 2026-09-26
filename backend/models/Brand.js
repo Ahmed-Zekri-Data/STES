@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { slugify } = require('../utils/text');
 
 const brandSchema = new mongoose.Schema({
   name: {
@@ -105,14 +106,12 @@ brandSchema.index({ isFeatured: 1 });
 brandSchema.index({ sortOrder: 1 });
 brandSchema.index({ name: 'text', description: 'text' });
 
-// Pre-save middleware to generate slug
-brandSchema.pre('save', function(next) {
-  if (this.isModified('name') || this.isNew) {
-    this.slug = this.name.toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim('-');
+// Give new brands their slug. This runs before validation, which requires
+// it. The slug then stays the same when the brand is renamed, so links to
+// the brand keep working.
+brandSchema.pre('validate', function(next) {
+  if (!this.slug) {
+    this.slug = slugify(this.name) || String(this._id);
   }
   next();
 });
