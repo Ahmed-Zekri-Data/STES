@@ -3,12 +3,11 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { ShoppingBag, Wrench, Star, Users, Award, Clock, Waves, Droplets, Sparkles, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
 import { Parallax } from 'react-parallax';
 import AnimatedProductCard from '../components/AnimatedProductCard';
 
 const Home = () => {
-  const { t, isRTL } = useLanguage();
+  const { t } = useLanguage();
 
   // Animation variants
   const containerVariants = {

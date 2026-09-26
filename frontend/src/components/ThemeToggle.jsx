@@ -4,7 +4,7 @@ import { Sun, Moon, Monitor } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 const ThemeToggle = ({ variant = 'button', className = '' }) => {
-  const { theme, isDark, toggleTheme, isTransitioning } = useTheme();
+  const { isDark, toggleTheme, isTransitioning } = useTheme();
 
   if (variant === 'dropdown') {
     return (

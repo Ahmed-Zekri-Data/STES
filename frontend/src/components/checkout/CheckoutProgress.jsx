@@ -40,7 +40,6 @@ const CheckoutProgress = () => {
           const Icon = step.icon;
           const isActive = currentStep === step.id;
           const isCompleted = currentStep > step.id;
-          const isUpcoming = currentStep < step.id;
 
           return (
             <div key={step.id} className="flex items-center flex-1">

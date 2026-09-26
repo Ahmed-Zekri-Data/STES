@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Package, Truck, MapPin, Clock, CheckCircle, AlertCircle, Phone, Mail } from 'lucide-react';
 import { useOrderTracking } from '../context/OrderTrackingContext';
-import { useLanguage } from '../context/LanguageContext';
 import AnimatedButton from '../components/AnimatedButton';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -18,7 +17,6 @@ const OrderTracking = () => {
     formatTimelineForDisplay
   } = useOrderTracking();
   
-  const { t, language } = useLanguage();
   const [searchType, setSearchType] = useState('tracking'); // 'tracking' or 'email'
   const [searchValue, setSearchValue] = useState('');
   const [emailSearch, setEmailSearch] = useState('');
@@ -197,7 +195,7 @@ const OrderTracking = () => {
   const renderTrackingResult = () => {
     if (!trackingData) return null;
 
-    const { order, timeline, tracking } = trackingData;
+    const { order, timeline } = trackingData;
     const deliveryStatus = getDeliveryStatus(order);
     const formattedTimeline = formatTimelineForDisplay(timeline);
 

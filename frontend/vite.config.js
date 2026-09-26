@@ -12,5 +12,11 @@ export default defineConfig({
         secure: false,
       }
     }
+  },
+  test: {
+    environment: 'jsdom',
+    include: ['src/**/*.test.{js,jsx}'],
+    setupFiles: ['src/setupTests.js'],
+    restoreMocks: true
   }
 })

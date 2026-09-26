@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { Phone, Mail, MapPin, MessageCircle } from 'lucide-react';
 
 const Footer = () => {
-  const { t, isRTL, language } = useLanguage();
+  const { t, language } = useLanguage();
   const [shopCategories, setShopCategories] = useState({});
 
   // The first categories of the shop, as ordered in Admin → Categories

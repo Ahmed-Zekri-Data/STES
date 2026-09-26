@@ -3,12 +3,10 @@ import { motion } from 'framer-motion';
 import { Star, ShoppingCart, Eye, Award, Truck, Tag, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
-import { useLanguage } from '../../context/LanguageContext';
 import WishlistButton from '../WishlistButton';
 import { showPlaceholderOnError } from '../../utils/images';
 
 const EnhancedProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
-  const { t } = useLanguage();
   const { addToCart } = useCart();
 
   const cardVariants = {

@@ -15,14 +15,10 @@ import {
 import EnhancedProductCard from '../components/shop/EnhancedProductCard';
 import ProductFilters from '../components/shop/ProductFilters';
 import ProductSearch from '../components/shop/ProductSearch';
-import { useLanguage } from '../context/LanguageContext';
-import { useCart } from '../context/CartContext';
 import LoadingSpinner, { SkeletonCard } from '../components/LoadingSpinner';
 import axios from 'axios';
 
 const EnhancedShop = () => {
-  const { t } = useLanguage();
-  const { addToCart } = useCart();
   const [searchParams, setSearchParams] = useSearchParams();
   
   const [products, setProducts] = useState([]);
@@ -153,21 +149,6 @@ const EnhancedShop = () => {
       page: newPage
     }));
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const getSortLabel = () => {
-    const sortKey = `${filters.sortBy}_${filters.sortOrder}`;
-    const sortLabels = {
-      'createdAt_desc': 'Plus récents',
-      'createdAt_asc': 'Plus anciens',
-      'price_asc': 'Prix croissant',
-      'price_desc': 'Prix décroissant',
-      'rating_desc': 'Mieux notés',
-      'name_asc': 'Nom A-Z',
-      'name_desc': 'Nom Z-A',
-      'popularity_desc': 'Plus populaires'
-    };
-    return sortLabels[sortKey] || 'Trier par';
   };
 
   return (

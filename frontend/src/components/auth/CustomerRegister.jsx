@@ -8,7 +8,7 @@ import LoadingSpinner from '../LoadingSpinner';
 
 const CustomerRegister = ({ onClose, onSwitchToLogin }) => {
   const { register } = useCustomer();
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',

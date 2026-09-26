@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { User, ShoppingBag, Heart, MapPin, Settings, Award, Package, Clock, Bell } from 'lucide-react';
 import { useCustomer } from '../context/CustomerContext';
-import { useLanguage } from '../context/LanguageContext';
 import AnimatedButton from '../components/AnimatedButton';
 import LoadingSpinner from '../components/LoadingSpinner';
 import OrderHistory from '../components/customer/OrderHistory';
@@ -10,7 +9,6 @@ import NotificationPreferences from '../components/notifications/NotificationPre
 
 const CustomerDashboard = () => {
   const { customer, isAuthenticated, loading } = useCustomer();
-  const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState('overview');
 
   if (loading) {

@@ -335,7 +335,7 @@ export const StaggeredList = ({
         }
       }}
     >
-      {React.Children.map(children, (child, index) => (
+      {React.Children.map(children, (child) => (
         <motion.div
           variants={{
             hidden: { 

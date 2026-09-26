@@ -19,8 +19,7 @@ const ProductFilters = ({
   onFiltersChange, 
   onClearFilters,
   viewMode,
-  onViewModeChange,
-  totalProducts = 0
+  onViewModeChange
 }) => {
   const [categories, setCategories] = useState({});
   const [searchFilters, setSearchFilters] = useState({});

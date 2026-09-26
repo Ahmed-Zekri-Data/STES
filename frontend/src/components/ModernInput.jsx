@@ -45,7 +45,6 @@ const ModernInput = forwardRef(({
   };
 
   const currentValue = value !== undefined ? value : internalValue;
-  const hasValue = currentValue && currentValue.length > 0;
   const isPassword = type === 'password';
 
   // Size variants

@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
 import { useCustomer } from '../context/CustomerContext';
-import { useTheme } from '../context/ThemeContext';
 import { ShoppingCart, Menu, X, Globe, Waves, User, LogOut, Settings, Heart, Truck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuthModal from './auth/AuthModal';
@@ -11,7 +10,7 @@ import InAppNotifications from './notifications/InAppNotifications';
 import ThemeToggle from './ThemeToggle';
 
 const Navbar = () => {
-  const { t, language, changeLanguage, isRTL } = useLanguage();
+  const { t, language, changeLanguage } = useLanguage();
   const { getCartItemsCount, toggleCart } = useCart();
   const { customer, isAuthenticated, logout } = useCustomer();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

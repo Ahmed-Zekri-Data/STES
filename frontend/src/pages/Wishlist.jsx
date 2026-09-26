@@ -18,7 +18,6 @@ import {
 import { useWishlist } from '../context/WishlistContext';
 import { useCustomer } from '../context/CustomerContext';
 import { useCart } from '../context/CartContext';
-import { useLanguage } from '../context/LanguageContext';
 import AnimatedButton from '../components/AnimatedButton';
 import LoadingSpinner from '../components/LoadingSpinner';
 import WishlistButton from '../components/WishlistButton';
@@ -26,9 +25,8 @@ import EnhancedProductCard from '../components/shop/EnhancedProductCard';
 
 const Wishlist = () => {
   const { isAuthenticated } = useCustomer();
-  const { wishlist, loading, clearWishlist, updateWishlistSettings, removeFromWishlist } = useWishlist();
+  const { wishlist, loading, clearWishlist, updateWishlistSettings } = useWishlist();
   const { addToCart } = useCart();
-  const { t, language } = useLanguage();
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState({
     name: '',
