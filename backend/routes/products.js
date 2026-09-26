@@ -6,6 +6,20 @@ const { auth } = require('../middleware/auth');
 const { customerAuth } = require('../middleware/customerAuth');
 const { productCategories, searchFilters } = require('../config/productCategories');
 
+// Product photos are either full http(s) URLs or images served by this API
+// (uploads and placeholders)
+const isImageLocation = (value) => {
+  if (/^\/api\/(uploads|placeholder)\/[\w./-]+$/.test(value) && !value.includes('..')) {
+    return true;
+  }
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
 // GET /api/products - Get all products with filtering and pagination
 router.get('/', [
   query('page').optional().isInt({ min: 1 }),
@@ -254,7 +268,7 @@ router.post('/', auth, [
   body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
   body('category').isIn(Object.keys(productCategories)).withMessage('Invalid category'),
   body('stockQuantity').optional().isInt({ min: 0 }).withMessage('Stock quantity must be a non-negative integer'),
-  body('image').optional().isURL().withMessage('Image must be a valid URL'),
+  body('image').optional().custom(isImageLocation).withMessage('Image must be an http(s) URL or an uploaded image'),
   body('featured').optional().isBoolean().withMessage('Featured must be a boolean')
 ], async (req, res) => {
   try {
@@ -283,7 +297,7 @@ router.put('/:id', auth, [
   body('price').optional().isFloat({ min: 0 }),
   body('category').optional().isIn(Object.keys(productCategories)),
   body('stockQuantity').optional().isInt({ min: 0 }),
-  body('image').optional().isURL(),
+  body('image').optional().custom(isImageLocation).withMessage('Image must be an http(s) URL or an uploaded image'),
   body('featured').optional().isBoolean()
 ], async (req, res) => {
   try {

@@ -17,6 +17,10 @@ import {
 } from 'lucide-react';
 import api from '../../utils/axios';
 import AnimatedButton from '../../components/AnimatedButton';
+import { showPlaceholderOnError } from '../../utils/images';
+
+const UPLOADABLE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -70,6 +74,41 @@ const Products = () => {
     const matchesCategory = selectedCategory === '' || product.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState('');
+
+  // Uploads the chosen photo right away and puts its URL in the form
+  const handleImageFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow picking the same file again
+    if (!file) {
+      return;
+    }
+
+    // Quick checks for a friendly message; the server checks the file itself
+    if (!UPLOADABLE_TYPES.includes(file.type)) {
+      setImageError('Choose a JPEG, PNG or WebP image.');
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setImageError('The image must be 5 MB or smaller.');
+      return;
+    }
+
+    setImageError('');
+    setUploadingImage(true);
+    try {
+      const body = new FormData();
+      body.append('image', file);
+      const response = await api.post('/admin/uploads/product-image', body, { timeout: 60000 });
+      setFormData(prev => ({ ...prev, image: response.data.url }));
+    } catch (error) {
+      setImageError(error.response?.data?.message || 'Upload failed. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -144,6 +183,7 @@ const Products = () => {
   };
 
   const resetForm = () => {
+    setImageError('');
     setFormData({
       name: '',
       description: '',
@@ -265,6 +305,7 @@ const Products = () => {
               <div className="relative">
                 <img
                   src={product.image}
+                  onError={showPlaceholderOnError}
                   alt={product.name}
                   className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                 />
@@ -460,16 +501,46 @@ const Products = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Image URL
+                    Photo
                   </label>
-                  <input
-                    type="url"
-                    name="image"
-                    value={formData.image}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="https://example.com/image.jpg"
-                  />
+                  <div className="flex items-start gap-4">
+                    <div className="w-28 h-28 flex-shrink-0 rounded-xl border border-gray-200 bg-gray-50 overflow-hidden">
+                      <img
+                        src={formData.image || '/api/placeholder/300/300'}
+                        onError={showPlaceholderOnError}
+                        alt="Product photo preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <label
+                        className={`inline-flex items-center px-4 py-2 rounded-xl border border-gray-300 text-sm font-medium ${
+                          uploadingImage ? 'bg-gray-100 text-gray-400 cursor-wait' : 'bg-white text-gray-700 hover:bg-gray-50 cursor-pointer'
+                        }`}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        {uploadingImage ? 'Uploading…' : 'Upload photo'}
+                        <input
+                          type="file"
+                          name="imageFile"
+                          accept={UPLOADABLE_TYPES.join(',')}
+                          onChange={handleImageFile}
+                          disabled={uploadingImage}
+                          className="sr-only"
+                        />
+                      </label>
+                      <p className="text-xs text-gray-500">JPEG, PNG or WebP, up to 5 MB. Or paste a link:</p>
+                      <input
+                        type="text"
+                        name="image"
+                        value={formData.image}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="https://example.com/image.jpg"
+                      />
+                      {imageError && <p className="text-sm text-red-600">{imageError}</p>}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex items-center">
@@ -498,7 +569,7 @@ const Products = () => {
                   >
                     Cancel
                   </button>
-                  <AnimatedButton type="submit">
+                  <AnimatedButton type="submit" disabled={uploadingImage}>
                     <Save className="w-4 h-4 mr-2" />
                     {editingProduct ? 'Update Product' : 'Add Product'}
                   </AnimatedButton>
