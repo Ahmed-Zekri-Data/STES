@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { slugify } = require('../utils/text');
 
 const categorySchema = new mongoose.Schema({
   name: {
@@ -88,14 +89,12 @@ categorySchema.virtual('fullPath').get(function() {
   return this.parentCategory ? `${this.parentCategory.name} > ${this.name}` : this.name;
 });
 
-// Pre-save middleware to generate slug
-categorySchema.pre('save', function(next) {
-  if (this.isModified('name') || this.isNew) {
-    this.slug = this.name.toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim('-');
+// Give new categories their slug. This runs before validation, which
+// requires it. The slug then stays the same when the category is renamed,
+// because products refer to their category by slug.
+categorySchema.pre('validate', function(next) {
+  if (!this.slug) {
+    this.slug = slugify(this.name) || slugify(this.nameEn) || String(this._id);
   }
   next();
 });

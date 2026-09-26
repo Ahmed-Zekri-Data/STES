@@ -3,6 +3,35 @@ const router = express.Router();
 const { body, validationResult, query } = require('express-validator');
 const Category = require('../models/Category');
 const { auth, checkPermission } = require('../middleware/auth');
+const { containing, isImageLocation } = require('../utils/text');
+
+// Fields the admin can set. Anything else in the request (slug,
+// subcategories, product count) is ignored.
+const EDITABLE = ['name', 'nameEn', 'nameAr', 'description', 'icon', 'image',
+  'parentCategory', 'sortOrder', 'isActive', 'seoTitle', 'seoDescription'];
+
+const categoryFields = (body) => {
+  const fields = {};
+  for (const key of EDITABLE) {
+    if (body[key] !== undefined) fields[key] = body[key];
+  }
+  // The form sends "" for "no parent category"
+  if (fields.parentCategory === '') fields.parentCategory = null;
+  return fields;
+};
+
+// Blank optional fields arrive as "" from the admin form
+const blankAllowed = { values: 'falsy' };
+
+// The parent must exist, and a category cannot be its own parent
+const checkParent = async (parentId, categoryId) => {
+  if (!parentId) return null;
+  if (categoryId && String(parentId) === String(categoryId)) {
+    return 'A category cannot be its own parent';
+  }
+  const parent = await Category.exists({ _id: parentId });
+  return parent ? null : 'Parent category not found';
+};
 
 // GET /api/admin/categories - Get all categories
 router.get('/', auth, checkPermission('products'), [
@@ -30,11 +59,8 @@ router.get('/', auth, checkPermission('products'), [
     const filter = {};
 
     if (search) {
-      filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { nameEn: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
-      ];
+      const text = containing(search);
+      filter.$or = [{ name: text }, { nameEn: text }, { description: text }];
     }
 
     if (isActive !== undefined) {
@@ -104,8 +130,8 @@ router.post('/', auth, checkPermission('products'), [
   body('nameAr').optional().trim().isLength({ max: 100 }).withMessage('Arabic name must be less than 100 characters'),
   body('description').optional().trim().isLength({ max: 500 }).withMessage('Description must be less than 500 characters'),
   body('icon').optional().trim().isLength({ max: 10 }).withMessage('Icon must be less than 10 characters'),
-  body('image').optional().isURL().withMessage('Image must be a valid URL'),
-  body('parentCategory').optional().isMongoId().withMessage('Parent category must be a valid ID'),
+  body('image').optional(blankAllowed).custom(isImageLocation).withMessage('Image must be an http(s) URL or an uploaded image'),
+  body('parentCategory').optional(blankAllowed).isMongoId().withMessage('Parent category must be a valid ID'),
   body('sortOrder').optional().isInt({ min: 0 }).withMessage('Sort order must be a non-negative integer'),
   body('seoTitle').optional().trim().isLength({ max: 60 }).withMessage('SEO title must be less than 60 characters'),
   body('seoDescription').optional().trim().isLength({ max: 160 }).withMessage('SEO description must be less than 160 characters')
@@ -116,7 +142,13 @@ router.post('/', auth, checkPermission('products'), [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const category = new Category(req.body);
+    const fields = categoryFields(req.body);
+    const parentProblem = await checkParent(fields.parentCategory);
+    if (parentProblem) {
+      return res.status(400).json({ message: parentProblem });
+    }
+
+    const category = new Category(fields);
     await category.save();
 
     // If this is a subcategory, add it to parent's subcategories array
@@ -135,7 +167,7 @@ router.post('/', auth, checkPermission('products'), [
       return res.status(400).json({ message: error.message });
     }
     if (error.code === 11000) {
-      return res.status(400).json({ message: 'Category name or slug already exists' });
+      return res.status(400).json({ message: 'A category with this name already exists' });
     }
     res.status(500).json({ message: 'Error creating category' });
   }
@@ -148,8 +180,8 @@ router.put('/:id', auth, checkPermission('products'), [
   body('nameAr').optional().trim().isLength({ max: 100 }),
   body('description').optional().trim().isLength({ max: 500 }),
   body('icon').optional().trim().isLength({ max: 10 }),
-  body('image').optional().isURL(),
-  body('parentCategory').optional().isMongoId(),
+  body('image').optional(blankAllowed).custom(isImageLocation).withMessage('Image must be an http(s) URL or an uploaded image'),
+  body('parentCategory').optional(blankAllowed).isMongoId().withMessage('Parent category must be a valid ID'),
   body('sortOrder').optional().isInt({ min: 0 }),
   body('isActive').optional().isBoolean(),
   body('seoTitle').optional().trim().isLength({ max: 60 }),
@@ -166,28 +198,29 @@ router.put('/:id', auth, checkPermission('products'), [
       return res.status(404).json({ message: 'Category not found' });
     }
 
+    const fields = categoryFields(req.body);
+    if (fields.parentCategory !== undefined) {
+      const parentProblem = await checkParent(fields.parentCategory, req.params.id);
+      if (parentProblem) {
+        return res.status(400).json({ message: parentProblem });
+      }
+    }
+
     const category = await Category.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      fields,
       { new: true, runValidators: true }
     ).populate('parentCategory', 'name');
 
-    // Handle parent category changes
-    if (req.body.parentCategory !== undefined) {
-      // Remove from old parent if it existed
-      if (oldCategory.parentCategory && oldCategory.parentCategory.toString() !== req.body.parentCategory) {
-        await Category.findByIdAndUpdate(
-          oldCategory.parentCategory,
-          { $pull: { subcategories: category._id } }
-        );
+    // Keep the parents' subcategory lists in step
+    if (fields.parentCategory !== undefined) {
+      const oldParent = oldCategory.parentCategory ? String(oldCategory.parentCategory) : null;
+      const newParent = fields.parentCategory ? String(fields.parentCategory) : null;
+      if (oldParent && oldParent !== newParent) {
+        await Category.findByIdAndUpdate(oldParent, { $pull: { subcategories: category._id } });
       }
-
-      // Add to new parent if it exists
-      if (req.body.parentCategory) {
-        await Category.findByIdAndUpdate(
-          req.body.parentCategory,
-          { $addToSet: { subcategories: category._id } }
-        );
+      if (newParent) {
+        await Category.findByIdAndUpdate(newParent, { $addToSet: { subcategories: category._id } });
       }
     }
 
@@ -198,7 +231,7 @@ router.put('/:id', auth, checkPermission('products'), [
       return res.status(400).json({ message: error.message });
     }
     if (error.code === 11000) {
-      return res.status(400).json({ message: 'Category name or slug already exists' });
+      return res.status(400).json({ message: 'A category with this name already exists' });
     }
     res.status(500).json({ message: 'Error updating category' });
   }

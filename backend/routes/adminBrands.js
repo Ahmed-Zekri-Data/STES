@@ -3,6 +3,28 @@ const router = express.Router();
 const { body, validationResult, query } = require('express-validator');
 const Brand = require('../models/Brand');
 const { auth, checkPermission } = require('../middleware/auth');
+const { containing, isImageLocation } = require('../utils/text');
+
+// Fields the admin can set. Anything else in the request (slug, product
+// count) is ignored.
+const EDITABLE = ['name', 'description', 'logo', 'website', 'country', 'isActive',
+  'isFeatured', 'sortOrder', 'contactInfo', 'seoTitle', 'seoDescription'];
+
+const brandFields = (body) => {
+  const fields = {};
+  for (const key of EDITABLE) {
+    if (body[key] !== undefined) fields[key] = body[key];
+  }
+  if (fields.contactInfo) {
+    const { email, phone, address } = fields.contactInfo;
+    fields.contactInfo = { email, phone, address };
+  }
+  return fields;
+};
+
+// Blank optional fields arrive as "" from the admin form
+const blankAllowed = { values: 'falsy' };
+const website = { protocols: ['http', 'https'], require_protocol: true };
 
 // GET /api/admin/brands - Get all brands
 router.get('/', auth, checkPermission('products'), [
@@ -32,11 +54,8 @@ router.get('/', auth, checkPermission('products'), [
     const filter = {};
 
     if (search) {
-      filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { country: { $regex: search, $options: 'i' } }
-      ];
+      const text = containing(search);
+      filter.$or = [{ name: text }, { description: text }, { country: text }];
     }
 
     if (isActive !== undefined) {
@@ -93,11 +112,11 @@ router.get('/:id', auth, checkPermission('products'), async (req, res) => {
 router.post('/', auth, checkPermission('products'), [
   body('name').trim().isLength({ min: 1, max: 100 }).withMessage('Name is required and must be less than 100 characters'),
   body('description').optional().trim().isLength({ max: 1000 }).withMessage('Description must be less than 1000 characters'),
-  body('logo').optional().isURL().withMessage('Logo must be a valid URL'),
-  body('website').optional().isURL().withMessage('Website must be a valid URL'),
+  body('logo').optional(blankAllowed).custom(isImageLocation).withMessage('Logo must be an http(s) URL or an uploaded image'),
+  body('website').optional(blankAllowed).isURL(website).withMessage('Website must be a full address, starting with http:// or https://'),
   body('country').optional().trim().isLength({ max: 50 }).withMessage('Country must be less than 50 characters'),
   body('sortOrder').optional().isInt({ min: 0 }).withMessage('Sort order must be a non-negative integer'),
-  body('contactInfo.email').optional().isEmail().withMessage('Contact email must be valid'),
+  body('contactInfo.email').optional(blankAllowed).isEmail().withMessage('Contact email must be valid'),
   body('contactInfo.phone').optional().trim().isLength({ max: 20 }).withMessage('Phone must be less than 20 characters'),
   body('contactInfo.address').optional().trim().isLength({ max: 200 }).withMessage('Address must be less than 200 characters'),
   body('seoTitle').optional().trim().isLength({ max: 60 }).withMessage('SEO title must be less than 60 characters'),
@@ -109,7 +128,7 @@ router.post('/', auth, checkPermission('products'), [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const brand = new Brand(req.body);
+    const brand = new Brand(brandFields(req.body));
     await brand.save();
 
     res.status(201).json(brand);
@@ -119,7 +138,7 @@ router.post('/', auth, checkPermission('products'), [
       return res.status(400).json({ message: error.message });
     }
     if (error.code === 11000) {
-      return res.status(400).json({ message: 'Brand name already exists' });
+      return res.status(400).json({ message: 'A brand with this name already exists' });
     }
     res.status(500).json({ message: 'Error creating brand' });
   }
@@ -129,13 +148,13 @@ router.post('/', auth, checkPermission('products'), [
 router.put('/:id', auth, checkPermission('products'), [
   body('name').optional().trim().isLength({ min: 1, max: 100 }),
   body('description').optional().trim().isLength({ max: 1000 }),
-  body('logo').optional().isURL(),
-  body('website').optional().isURL(),
+  body('logo').optional(blankAllowed).custom(isImageLocation).withMessage('Logo must be an http(s) URL or an uploaded image'),
+  body('website').optional(blankAllowed).isURL(website).withMessage('Website must be a full address, starting with http:// or https://'),
   body('country').optional().trim().isLength({ max: 50 }),
   body('sortOrder').optional().isInt({ min: 0 }),
   body('isActive').optional().isBoolean(),
   body('isFeatured').optional().isBoolean(),
-  body('contactInfo.email').optional().isEmail(),
+  body('contactInfo.email').optional(blankAllowed).isEmail().withMessage('Contact email must be valid'),
   body('contactInfo.phone').optional().trim().isLength({ max: 20 }),
   body('contactInfo.address').optional().trim().isLength({ max: 200 }),
   body('seoTitle').optional().trim().isLength({ max: 60 }),
@@ -149,7 +168,7 @@ router.put('/:id', auth, checkPermission('products'), [
 
     const brand = await Brand.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      brandFields(req.body),
       { new: true, runValidators: true }
     );
 
@@ -164,7 +183,7 @@ router.put('/:id', auth, checkPermission('products'), [
       return res.status(400).json({ message: error.message });
     }
     if (error.code === 11000) {
-      return res.status(400).json({ message: 'Brand name already exists' });
+      return res.status(400).json({ message: 'A brand with this name already exists' });
     }
     res.status(500).json({ message: 'Error updating brand' });
   }

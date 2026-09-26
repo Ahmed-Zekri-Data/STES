@@ -5,21 +5,7 @@ const Product = require('../models/Product');
 const { auth } = require('../middleware/auth');
 const { customerAuth } = require('../middleware/customerAuth');
 const { productCategories, searchFilters } = require('../config/productCategories');
-const { containing } = require('../utils/text');
-
-// Product photos are either full http(s) URLs or images served by this API
-// (uploads and placeholders)
-const isImageLocation = (value) => {
-  if (/^\/api\/(uploads|placeholder)\/[\w./-]+$/.test(value) && !value.includes('..')) {
-    return true;
-  }
-  try {
-    const url = new URL(value);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
-    return false;
-  }
-};
+const { containing, isImageLocation } = require('../utils/text');
 
 // GET /api/products - Get all products with filtering and pagination
 router.get('/', [

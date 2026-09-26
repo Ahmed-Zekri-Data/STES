@@ -13,7 +13,7 @@ import {
   MapPin
 } from 'lucide-react';
 import AnimatedButton from '../../components/AnimatedButton';
-import adminApi from '../../utils/adminApi';
+import adminApi, { errorMessage } from '../../utils/adminApi';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 const Brands = () => {
@@ -86,7 +86,7 @@ const Brands = () => {
       setEditingBrand(null);
     } catch (error) {
       console.error('Error saving brand:', error);
-      alert('Error saving brand: ' + (error.response?.data?.message || error.message));
+      alert('Error saving brand: ' + errorMessage(error));
     }
   };
 
@@ -94,17 +94,17 @@ const Brands = () => {
     setEditingBrand(brand);
     setFormData({
       name: brand.name,
-      description: brand.description,
+      description: brand.description || '',
       logo: brand.logo || '',
       website: brand.website || '',
       country: brand.country || '',
       isActive: brand.isActive,
       isFeatured: brand.isFeatured,
       sortOrder: brand.sortOrder,
-      contactInfo: brand.contactInfo || {
-        email: '',
-        phone: '',
-        address: ''
+      contactInfo: {
+        email: brand.contactInfo?.email || '',
+        phone: brand.contactInfo?.phone || '',
+        address: brand.contactInfo?.address || ''
       }
     });
     setShowAddModal(true);
@@ -431,7 +431,7 @@ const Brands = () => {
                     Logo URL
                   </label>
                   <input
-                    type="url"
+                    type="text"
                     value={formData.logo}
                     onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
