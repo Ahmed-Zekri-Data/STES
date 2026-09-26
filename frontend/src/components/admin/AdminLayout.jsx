@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAdmin } from '../../context/AdminContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Breadcrumb from './Breadcrumb';
+import ErrorBoundary from '../ErrorBoundary';
 import QuickActions from './QuickActions';
 import {
   LayoutDashboard,
@@ -370,7 +371,10 @@ const AdminLayout = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <Outlet />
+            {/* Keeps the admin menu usable when a page fails */}
+            <ErrorBoundary homePath="/admin/dashboard" homeLabel="Retour au tableau de bord">
+              <Outlet />
+            </ErrorBoundary>
           </motion.div>
         </main>
       </div>
