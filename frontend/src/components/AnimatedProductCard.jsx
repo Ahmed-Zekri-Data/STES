@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../context/LanguageContext';
 import { ShoppingCart, Eye, Heart, Star } from 'lucide-react';
+import { showPlaceholderOnError } from '../utils/images';
 
 const AnimatedProductCard = ({ product, index = 0 }) => {
   const { t } = useLanguage();
@@ -82,6 +83,7 @@ const AnimatedProductCard = ({ product, index = 0 }) => {
       <div className="relative h-64 overflow-hidden bg-gradient-to-br from-blue-50 to-cyan-50">
         <motion.img
           src={product.image}
+          onError={showPlaceholderOnError}
           alt={product.name}
           className="w-full h-full object-cover"
           variants={imageVariants}

@@ -12,6 +12,10 @@ const createApp = () => {
   // Security middleware
   app.use(helmet());
 
+  // Placeholder images are cached by browsers and cheap to serve; keep them
+  // outside the API rate limit so a page full of products can't exhaust it
+  app.use('/api/placeholder', require('./routes/placeholder'));
+
   // Rate limiting
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes

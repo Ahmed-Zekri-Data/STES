@@ -690,7 +690,7 @@ const CreateOrderModal = ({ onClose, onOrderCreated }) => {
         name: product.name,
         price: product.price,
         quantity: quantity,
-        image: product.images?.[0] || ''
+        image: product.image || ''
       };
       setFormData(prev => ({ ...prev, items: [...prev.items, newItem] }));
     }

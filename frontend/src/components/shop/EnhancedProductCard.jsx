@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useLanguage } from '../../context/LanguageContext';
 import WishlistButton from '../WishlistButton';
+import { showPlaceholderOnError } from '../../utils/images';
 
 const EnhancedProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
   const { t } = useLanguage();
@@ -137,6 +138,7 @@ const EnhancedProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
           <div className="relative w-48 h-32 flex-shrink-0">
             <img
               src={product.image}
+              onError={showPlaceholderOnError}
               alt={product.name}
               className="w-full h-full object-cover"
             />
@@ -265,6 +267,7 @@ const EnhancedProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
       <div className="relative h-64 overflow-hidden bg-gradient-to-br from-blue-50 to-cyan-50">
         <motion.img
           src={product.image}
+          onError={showPlaceholderOnError}
           alt={product.name}
           className="w-full h-full object-cover"
           variants={imageVariants}

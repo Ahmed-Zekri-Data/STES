@@ -4,6 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
 import { ArrowLeft, Plus, Minus, ShoppingCart, Star } from 'lucide-react';
 import axios from 'axios';
+import { showPlaceholderOnError } from '../utils/images';
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -123,6 +124,7 @@ const ProductDetails = () => {
             <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-md">
               <img
                 src={product.image}
+                onError={showPlaceholderOnError}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />

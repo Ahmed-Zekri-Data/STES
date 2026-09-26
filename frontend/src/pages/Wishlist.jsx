@@ -291,7 +291,7 @@ const Wishlist = () => {
                 >
                   <div className="relative">
                     <img
-                      src={item.product?.images?.[0] || item.productSnapshot?.image || '/placeholder-product.jpg'}
+                      src={item.product?.image || item.productSnapshot?.image || '/api/placeholder/300/200'}
                       alt={item.product?.name || item.productSnapshot?.name}
                       className="w-full h-48 object-cover"
                     />
