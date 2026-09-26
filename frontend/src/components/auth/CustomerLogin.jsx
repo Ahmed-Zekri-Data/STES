@@ -23,7 +23,6 @@ const CustomerLogin = ({ onClose, onSwitchToRegister }) => {
 
   // List of admin emails that should be redirected to admin panel
   const adminEmails = [
-    'ahmedzekri143@gmail.com',
     'admin@piscinefacile.tn',
     'admin@stes.tn'
   ];

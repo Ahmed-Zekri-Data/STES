@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Customer = require('../models/Customer');
 const Product = require('../models/Product');
-require('dotenv').config();
+require('../config/env');
 
 const sampleOrders = [
   {
@@ -115,7 +115,7 @@ async function seedOrdersWithTracking() {
           name: item.productName,
           price: item.price,
           quantity: item.quantity,
-          image: product ? product.images[0] : '/placeholder-product.jpg'
+          image: product ? product.image : '/placeholder-product.jpg'
         };
       });
 
@@ -141,6 +141,7 @@ async function seedOrdersWithTracking() {
           }
         },
         items: orderItems,
+        pricing: { subtotal: totalAmount, totalAmount },
         totalAmount,
         status: orderData.status,
         paymentMethod: orderData.paymentMethod,
@@ -154,7 +155,7 @@ async function seedOrdersWithTracking() {
       await order.save();
 
       // Add realistic status history based on current status
-      await addRealisticStatusHistory(order, orderData.daysAgo);
+      await addRealisticStatusHistory(order);
 
       createdOrders.push(order);
       console.log(`✅ Created order ${order.orderNumber} for ${customer.fullName}`);
@@ -185,13 +186,14 @@ async function seedOrdersWithTracking() {
 
   } catch (error) {
     console.error('❌ Error seeding orders:', error);
+    process.exitCode = 1;
   } finally {
     await mongoose.connection.close();
     console.log('Database connection closed');
   }
 }
 
-async function addRealisticStatusHistory(order, daysAgo) {
+async function addRealisticStatusHistory(order) {
   const statusProgression = {
     'pending': ['pending'],
     'confirmed': ['pending', 'confirmed'],

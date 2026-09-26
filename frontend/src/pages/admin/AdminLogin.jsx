@@ -165,16 +165,6 @@ const AdminLogin = () => {
             </button>
           </div>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h3 className="text-sm font-medium text-blue-800 mb-2">
-              Identifiants de démonstration:
-            </h3>
-            <div className="text-sm text-blue-700">
-              <p><strong>Utilisateur:</strong> admin</p>
-              <p><strong>Mot de passe:</strong> admin123456</p>
-            </div>
-          </div>
         </form>
 
         <div className="text-center">

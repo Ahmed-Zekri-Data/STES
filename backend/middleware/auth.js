@@ -1,5 +1,5 @@
-const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
+const { verifyAdminToken } = require('../config/jwt');
 
 const auth = async (req, res, next) => {
   try {
@@ -11,7 +11,7 @@ const auth = async (req, res, next) => {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const decoded = verifyAdminToken(token);
     
     // Check if admin still exists and is active
     const admin = await Admin.findById(decoded.adminId).select('-password');

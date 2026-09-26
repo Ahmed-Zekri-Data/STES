@@ -56,32 +56,20 @@ cd ..
 ```
 
 5. **Environment Setup**
-Create a `.env` file in the root directory:
-```env
-# Database
-MONGODB_URI=mongodb://localhost:27017/stes-ecommerce
-
-# JWT Secret
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-
-# Server Configuration
-PORT=5000
-NODE_ENV=development
-
-# Frontend URL (for CORS)
-FRONTEND_URL=http://localhost:5173
-
-# Admin Configuration
-DEFAULT_ADMIN_USERNAME=admin
-DEFAULT_ADMIN_EMAIL=admin@piscinefacile.tn
-DEFAULT_ADMIN_PASSWORD=admin123456
+Copy the template to `.env` in the root directory and fill in the values:
+```bash
+cp .env.example .env
 ```
+At minimum set `JWT_SECRET` (the server refuses to start without it) and
+`MONGODB_URI`. For push notifications, generate VAPID keys with
+`cd backend && npm run generate-vapid`. `.env` is ignored by git; never commit it.
 
 6. **Database Setup**
 Start MongoDB and run the seed script:
 ```bash
 # Make sure MongoDB is running
 cd backend
+npm run check:db
 npm run seed
 ```
 
@@ -93,7 +81,7 @@ npm run dev
 
 This will start:
 - Frontend: http://localhost:5173
-- Backend: http://localhost:5000
+- Backend: http://localhost:9000
 
 ## 📁 Project Structure
 
@@ -111,9 +99,12 @@ STES/
 │   ├── models/              # MongoDB models
 │   ├── routes/              # API routes
 │   ├── middleware/          # Custom middleware
-│   ├── scripts/             # Utility scripts
+│   ├── services/            # Business logic (orders, payments, notifications)
+│   ├── scripts/             # Seed and maintenance scripts
+│   │   └── manual/          # Ad-hoc API scripts
 │   └── package.json
-├── .env                     # Environment variables
+├── docs/                    # Guides and implementation notes
+├── .env.example             # Environment template (copy to .env)
 └── package.json            # Root package.json
 ```
 
@@ -130,11 +121,37 @@ STES/
 - `npm start` - Start production server
 - `npm run dev` - Start development server with nodemon
 - `npm run seed` - Seed database with sample data
+- `npm run check:db` - Check the MongoDB connection
+- `npm run init:pages` - Create the default CMS pages
+- `npm run generate-vapid` - Generate push notification keys
+
+- `npm test` - Run the API tests
+- `npm run lint` - Lint the backend
+- `npm run create-admin` - Create the admin account from `DEFAULT_ADMIN_*` in `.env`
+- `npm run reset-admin-password` - Reset that admin's password to `DEFAULT_ADMIN_PASSWORD`
 
 ### Frontend
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
+
+## 🧪 Testing
+
+The backend has API tests (Node's test runner, supertest and an in-memory
+MongoDB) covering authentication, order pricing and stock, and payments:
+
+```bash
+cd backend
+npm test
+npm run lint
+```
+
+The first run downloads a MongoDB binary. If that download is blocked, point
+the tests at an installed `mongod` with `MONGOMS_SYSTEM_BINARY=/path/to/mongod`.
+
+GitHub Actions (`.github/workflows/ci.yml`) runs the lint and tests, starts
+the server against MongoDB and checks it connects, and builds the frontend on
+every push and pull request.
 
 ## 🛠 API Endpoints
 
@@ -163,10 +180,11 @@ STES/
 
 ## 👤 Admin Access
 
-### Default Admin Credentials
-- **Username**: admin
-- **Password**: admin123456
-- **Access URL**: http://localhost:5173/admin
+### Creating the Admin Account
+Set `DEFAULT_ADMIN_USERNAME`, `DEFAULT_ADMIN_EMAIL` and `DEFAULT_ADMIN_PASSWORD`
+(at least 12 characters) in `.env`, then run `cd backend && npm run create-admin`.
+Sign in at http://localhost:5173/admin. To reset the password later, change
+`DEFAULT_ADMIN_PASSWORD` and run `npm run reset-admin-password`.
 
 ### Admin Features
 - Dashboard with statistics

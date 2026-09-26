@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
+const { signCustomerToken } = require('../config/jwt');
 const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const Customer = require('../models/Customer');
-const { customerAuth, optionalCustomerAuth, requireEmailVerification } = require('../middleware/customerAuth');
+const { customerAuth } = require('../middleware/customerAuth');
 
 // POST /api/customers/register - Customer registration
 router.post('/register', [
@@ -46,14 +46,7 @@ router.post('/register', [
     await customer.save();
 
     // Generate JWT token
-    const token = jwt.sign(
-      { 
-        customerId: customer._id,
-        email: customer.email
-      },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '30d' }
-    );
+    const token = signCustomerToken(customer);
 
     // TODO: Send verification email
     console.log(`Email verification token for ${email}: ${emailVerificationToken}`);
@@ -98,14 +91,7 @@ router.post('/login', [
     const customer = await Customer.findByCredentials(email, password);
 
     // Generate JWT token
-    const token = jwt.sign(
-      { 
-        customerId: customer._id,
-        email: customer.email
-      },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '30d' }
-    );
+    const token = signCustomerToken(customer);
 
     // Update last login
     customer.lastLogin = new Date();

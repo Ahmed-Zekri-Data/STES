@@ -96,12 +96,8 @@ adminSchema.pre('save', async function(next) {
 });
 
 // Method to compare password
-adminSchema.methods.comparePassword = async function(candidatePassword) {
-  try {
-    return await bcrypt.compare(candidatePassword, this.password);
-  } catch (error) {
-    throw error;
-  }
+adminSchema.methods.comparePassword = function(candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
 };
 
 // Method to increment login attempts

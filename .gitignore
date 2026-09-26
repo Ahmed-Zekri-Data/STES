@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Local configuration and secrets (copy .env.example to .env)
+.env
+.env.*
+!.env.example
+
+# Build output and coverage
+dist/
+coverage/
+
+# Uploaded files
+uploads/
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

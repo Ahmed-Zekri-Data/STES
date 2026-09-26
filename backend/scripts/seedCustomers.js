@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Customer = require('../models/Customer');
-require('dotenv').config();
+require('../config/env');
 
 const sampleCustomers = [
   {
@@ -198,7 +198,8 @@ async function seedCustomers() {
     console.log('Cleared existing customers');
 
     // Insert sample customers
-    const customers = await Customer.insertMany(sampleCustomers);
+    // create() runs the save hooks, so passwords are hashed (insertMany skips them)
+    const customers = await Customer.create(sampleCustomers);
     console.log(`✅ Successfully seeded ${customers.length} customers`);
 
     // Display created customers
@@ -223,6 +224,7 @@ async function seedCustomers() {
 
   } catch (error) {
     console.error('❌ Error seeding customers:', error);
+    process.exitCode = 1;
   } finally {
     // Close the connection
     await mongoose.connection.close();

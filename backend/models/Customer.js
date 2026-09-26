@@ -221,12 +221,8 @@ customerSchema.pre('save', function(next) {
 });
 
 // Method to compare password
-customerSchema.methods.comparePassword = async function(candidatePassword) {
-  try {
-    return await bcrypt.compare(candidatePassword, this.password);
-  } catch (error) {
-    throw error;
-  }
+customerSchema.methods.comparePassword = function(candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
 };
 
 // Method to increment login attempts

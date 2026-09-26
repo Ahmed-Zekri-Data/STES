@@ -1,6 +1,6 @@
 const webpush = require('web-push');
 const { NotificationPreferences } = require('../models/Notification');
-require('dotenv').config();
+require('../config/env');
 
 class PushNotificationService {
   constructor() {

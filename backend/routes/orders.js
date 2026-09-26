@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult, query } = require('express-validator');
 const Order = require('../models/Order');
-const Product = require('../models/Product');
 const Customer = require('../models/Customer');
 const { auth } = require('../middleware/auth');
 const { optionalCustomerAuth } = require('../middleware/customerAuth');
+const { CheckoutError, priceOrderItems, reserveStock, releaseStock, reserveOrderStock, releaseOrderStock } = require('../services/orderService');
 // const emailNotificationService = require('../services/emailNotificationService');
 
 // POST /api/orders - Create new order
@@ -46,62 +46,8 @@ router.post('/', optionalCustomerAuth, [
     const shippingAddress = shipping || customer.address;
     const paymentMethodValue = payment?.method || paymentMethod || 'cash_on_delivery';
 
-    // Validate products and calculate total
-    const productIds = items.map(item => item.product || item.productId);
-    let orderItems = [];
-    let subtotal = 0;
-
-    // If products are provided, validate them
-    if (productIds.some(id => id)) {
-      const products = await Product.find({ _id: { $in: productIds.filter(id => id) } });
-
-      orderItems = items.map(item => {
-        const productId = item.product || item.productId;
-        if (productId) {
-          const product = products.find(p => p._id.toString() === productId);
-          if (!product) {
-            throw new Error(`Product ${productId} not found`);
-          }
-
-          const itemTotal = product.price * item.quantity;
-          subtotal += itemTotal;
-
-          return {
-            product: product._id,
-            name: item.name || product.name,
-            price: item.price || product.price,
-            quantity: item.quantity,
-            image: item.image || product.image || product.images?.[0]
-          };
-        } else {
-          // For items without product ID (from checkout)
-          const itemTotal = item.price * item.quantity;
-          subtotal += itemTotal;
-
-          return {
-            product: null,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            image: item.image
-          };
-        }
-      });
-    } else {
-      // All items are from checkout without product validation
-      orderItems = items.map(item => {
-        const itemTotal = item.price * item.quantity;
-        subtotal += itemTotal;
-
-        return {
-          product: item.productId || null,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          image: item.image
-        };
-      });
-    }
+    // Prices come from the catalog, never from the request
+    const { orderItems, subtotal } = await priceOrderItems(items);
 
     // Calculate shipping cost
     const city = shippingAddress?.city || customer.address?.city || 'tunis';
@@ -115,8 +61,8 @@ router.post('/', optionalCustomerAuth, [
 
     // Find or create customer
     let customerId = null;
-    if (req.customer && req.customer._id) { // Check if req.customer and its _id exists
-      customerId = req.customer._id; // Use _id from the customer object attached by middleware
+    if (req.customer) {
+      customerId = req.customer.customerId;
     } else {
       // Check if customer exists by email
       const existingCustomer = await Customer.findOne({ email: customer.email.toLowerCase() }); // Ensure email is lowercased for lookup
@@ -183,12 +129,16 @@ router.post('/', optionalCustomerAuth, [
       status: 'pending'
     });
 
-    await order.save();
-
-    // Populate product details for response
-    if (orderItems.some(item => item.product)) {
-      await order.populate('items.product');
+    await reserveStock(orderItems);
+    order.stockReserved = true;
+    try {
+      await order.save();
+    } catch (error) {
+      await releaseStock(orderItems);
+      throw error;
     }
+
+    await order.populate('items.product');
 
     res.status(201).json({
       message: 'Order created successfully',
@@ -207,6 +157,9 @@ router.post('/', optionalCustomerAuth, [
       }
     });
   } catch (error) {
+    if (error instanceof CheckoutError) {
+      return res.status(error.status).json({ message: error.message });
+    }
     console.error('Error creating order:', error);
     res.status(500).json({ message: 'Error creating order' });
   }
@@ -280,8 +233,146 @@ router.get('/', auth, [
   }
 });
 
-// GET /api/orders/:id - Get single order
-router.get('/:id', async (req, res) => {
+// GET /api/orders/stats - Get order statistics for tracking dashboard
+router.get('/stats', auth, async (req, res) => {
+  try {
+    const { timeRange = '7d' } = req.query;
+
+    // Calculate date range
+    const now = new Date();
+    let startDate = new Date();
+
+    switch (timeRange) {
+      case '24h':
+        startDate.setHours(now.getHours() - 24);
+        break;
+      case '7d':
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case '30d':
+        startDate.setDate(now.getDate() - 30);
+        break;
+      case '90d':
+        startDate.setDate(now.getDate() - 90);
+        break;
+      default:
+        startDate.setDate(now.getDate() - 7);
+    }
+
+    // Get order statistics
+    const [
+      totalOrders,
+      statusDistribution,
+      deliveryStats,
+      previousPeriodOrders
+    ] = await Promise.all([
+      // Total orders in period
+      Order.countDocuments({
+        createdAt: { $gte: startDate }
+      }),
+
+      // Status distribution
+      Order.aggregate([
+        { $match: { createdAt: { $gte: startDate } } },
+        { $group: { _id: '$status', count: { $sum: 1 } } }
+      ]),
+
+      // Delivery statistics
+      Order.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: startDate },
+            status: 'delivered',
+            actualDelivery: { $exists: true },
+            estimatedDelivery: { $exists: true }
+          }
+        },
+        {
+          $project: {
+            deliveryDays: {
+              $divide: [
+                { $subtract: ['$actualDelivery', '$createdAt'] },
+                1000 * 60 * 60 * 24
+              ]
+            },
+            onTime: {
+              $lte: ['$actualDelivery', '$estimatedDelivery']
+            }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            avgDeliveryTime: { $avg: '$deliveryDays' },
+            onTimeCount: { $sum: { $cond: ['$onTime', 1, 0] } },
+            totalDelivered: { $sum: 1 }
+          }
+        }
+      ]),
+
+      // Previous period for growth calculation
+      Order.countDocuments({
+        createdAt: {
+          $gte: new Date(startDate.getTime() - (now.getTime() - startDate.getTime())),
+          $lt: startDate
+        }
+      })
+    ]);
+
+    // Process status distribution
+    const statusDistributionObj = statusDistribution.reduce((acc, item) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, {});
+
+    // Calculate metrics
+    const delivered = statusDistributionObj.delivered || 0;
+    const inTransit = (statusDistributionObj.shipped || 0) + (statusDistributionObj.processing || 0);
+    const urgentOrders = await Order.countDocuments({
+      createdAt: { $gte: startDate },
+      isUrgent: true,
+      status: { $in: ['pending', 'confirmed', 'processing', 'shipped'] }
+    });
+
+    const deliveryData = deliveryStats[0] || {};
+    const avgDeliveryTime = Math.round(deliveryData.avgDeliveryTime || 4);
+    const onTimeDelivery = deliveryData.totalDelivered > 0
+      ? Math.round((deliveryData.onTimeCount / deliveryData.totalDelivered) * 100)
+      : 0;
+    const deliveryRate = totalOrders > 0 ? Math.round((delivered / totalOrders) * 100) : 0;
+
+    const orderGrowth = previousPeriodOrders > 0
+      ? Math.round(((totalOrders - previousPeriodOrders) / previousPeriodOrders) * 100)
+      : 0;
+
+    // Additional metrics
+    const customerSatisfaction = 95; // This would come from reviews/feedback
+    const repeatCustomers = 65; // This would come from customer analysis
+    const coverageAreas = 24; // Number of cities/areas covered
+
+    res.json({
+      totalOrders,
+      inTransit,
+      delivered,
+      urgentOrders,
+      avgDeliveryTime,
+      onTimeDelivery,
+      deliveryRate,
+      orderGrowth,
+      customerSatisfaction,
+      repeatCustomers,
+      coverageAreas,
+      statusDistribution: statusDistributionObj
+    });
+
+  } catch (error) {
+    console.error('Error fetching order statistics:', error);
+    res.status(500).json({ message: 'Error fetching statistics' });
+  }
+});
+
+// GET /api/orders/:id - Get single order (Admin only)
+router.get('/:id', auth, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate('items.product');
     
@@ -299,8 +390,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// GET /api/orders/number/:orderNumber - Get order by order number
-router.get('/number/:orderNumber', async (req, res) => {
+// GET /api/orders/number/:orderNumber - Get order by order number (Admin only)
+router.get('/number/:orderNumber', auth, async (req, res) => {
   try {
     const order = await Order.findOne({ orderNumber: req.params.orderNumber })
       .populate('items.product');
@@ -328,7 +419,7 @@ router.post('/admin', auth, [
   body('items').isArray({ min: 1 }).withMessage('At least one item is required'),
   body('items.*.product').isMongoId().withMessage('Valid product ID is required'),
   body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
-  body('shippingCost').optional().isFloat({ min: 0 }).withMessage('Shipping cost must be non-negative'),
+  body('shippingCost').optional().isFloat({ min: 0 }).withMessage('Shipping cost must be non-negative').toFloat(),
   body('notes').optional().trim().isLength({ max: 500 }).withMessage('Notes cannot exceed 500 characters'),
   body('status').optional().isIn(['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'])
 ], async (req, res) => {
@@ -340,39 +431,7 @@ router.post('/admin', auth, [
 
     const { customer, items, shippingCost = 0, notes, status = 'pending' } = req.body;
 
-    // Validate and get products
-    const productIds = items.map(item => item.product);
-    const products = await Product.find({ _id: { $in: productIds } });
-
-    if (products.length !== productIds.length) {
-      return res.status(400).json({ message: 'One or more products not found' });
-    }
-
-    // Check stock availability
-    for (const item of items) {
-      const product = products.find(p => p._id.toString() === item.product);
-      if (!product.inStock || product.stockQuantity < item.quantity) {
-        return res.status(400).json({
-          message: `Insufficient stock for product: ${product.name}`
-        });
-      }
-    }
-
-    // Calculate totals
-    let subtotal = 0;
-    const orderItems = items.map(item => {
-      const product = products.find(p => p._id.toString() === item.product);
-      const itemTotal = product.price * item.quantity;
-      subtotal += itemTotal;
-
-      return {
-        product: product._id,
-        name: product.name,
-        price: product.price,
-        quantity: item.quantity,
-        image: product.image
-      };
-    });
+    const { orderItems, subtotal } = await priceOrderItems(items);
 
     const taxRate = 0.19; // 19% VAT in Tunisia
     const taxAmount = subtotal * taxRate;
@@ -385,7 +444,7 @@ router.post('/admin', auth, [
     let existingCustomer = null;
     try {
       existingCustomer = await Customer.findOne({ email: customer.email });
-    } catch (error) {
+    } catch {
       // Customer model might not be available, continue without it
     }
 
@@ -415,17 +474,18 @@ router.post('/admin', auth, [
       paymentMethod: 'cash_on_delivery' // Use valid enum value
     });
 
-    await order.save();
-
-    // Update product stock
-    for (const item of items) {
-      await Product.findByIdAndUpdate(
-        item.product,
-        {
-          $inc: { stockQuantity: -item.quantity },
-          $set: { inStock: true } // Will be updated by pre-save middleware
-        }
-      );
+    const takesStock = status !== 'cancelled';
+    if (takesStock) {
+      await reserveStock(orderItems);
+      order.stockReserved = true;
+    }
+    try {
+      await order.save();
+    } catch (error) {
+      if (takesStock) {
+        await releaseStock(orderItems);
+      }
+      throw error;
     }
 
     // Update customer stats if customer exists
@@ -438,6 +498,9 @@ router.post('/admin', auth, [
     await order.populate('items.product', 'name category');
     res.status(201).json(order);
   } catch (error) {
+    if (error instanceof CheckoutError) {
+      return res.status(error.status).json({ message: error.message });
+    }
     console.error('Error creating admin order:', error);
     res.status(500).json({ message: 'Error creating order' });
   }
@@ -467,6 +530,11 @@ router.put('/:id/status', auth, [
 
     const previousStatus = currentOrder.status;
 
+    // Reactivating a cancelled order needs its stock back first
+    if (previousStatus === 'cancelled' && status !== 'cancelled') {
+      await reserveOrderStock(currentOrder);
+    }
+
     const updateData = { status };
     if (trackingNumber) updateData.trackingNumber = trackingNumber;
 
@@ -475,6 +543,10 @@ router.put('/:id/status', auth, [
       updateData,
       { new: true, runValidators: true }
     ).populate('items.product');
+
+    if (status === 'cancelled' && previousStatus !== 'cancelled') {
+      await releaseOrderStock(currentOrder);
+    }
 
     // Add custom tracking event if note or location provided
     if (note || location) {
@@ -509,6 +581,9 @@ router.put('/:id/status', auth, [
       emailSent: sendNotification && previousStatus !== status
     });
   } catch (error) {
+    if (error instanceof CheckoutError) {
+      return res.status(error.status).json({ message: error.message });
+    }
     console.error('Error updating order status:', error);
     if (error.name === 'CastError') {
       return res.status(400).json({ message: 'Invalid order ID' });
@@ -660,14 +735,7 @@ router.delete('/:id', auth, async (req, res) => {
     }
 
     // Restore product stock if order is being deleted
-    if (order.status === 'pending') {
-      for (const item of order.items) {
-        await Product.findByIdAndUpdate(
-          item.product,
-          { $inc: { stockQuantity: item.quantity } }
-        );
-      }
-    }
+    await releaseOrderStock(order);
 
     // Update customer stats if customer exists
     if (order.customerId) {
@@ -693,142 +761,5 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
-// GET /api/orders/stats - Get order statistics for tracking dashboard
-router.get('/stats', auth, async (req, res) => {
-  try {
-    const { timeRange = '7d' } = req.query;
-
-    // Calculate date range
-    const now = new Date();
-    let startDate = new Date();
-
-    switch (timeRange) {
-      case '24h':
-        startDate.setHours(now.getHours() - 24);
-        break;
-      case '7d':
-        startDate.setDate(now.getDate() - 7);
-        break;
-      case '30d':
-        startDate.setDate(now.getDate() - 30);
-        break;
-      case '90d':
-        startDate.setDate(now.getDate() - 90);
-        break;
-      default:
-        startDate.setDate(now.getDate() - 7);
-    }
-
-    // Get order statistics
-    const [
-      totalOrders,
-      statusDistribution,
-      deliveryStats,
-      previousPeriodOrders
-    ] = await Promise.all([
-      // Total orders in period
-      Order.countDocuments({
-        createdAt: { $gte: startDate }
-      }),
-
-      // Status distribution
-      Order.aggregate([
-        { $match: { createdAt: { $gte: startDate } } },
-        { $group: { _id: '$status', count: { $sum: 1 } } }
-      ]),
-
-      // Delivery statistics
-      Order.aggregate([
-        {
-          $match: {
-            createdAt: { $gte: startDate },
-            status: 'delivered',
-            actualDelivery: { $exists: true },
-            estimatedDelivery: { $exists: true }
-          }
-        },
-        {
-          $project: {
-            deliveryDays: {
-              $divide: [
-                { $subtract: ['$actualDelivery', '$createdAt'] },
-                1000 * 60 * 60 * 24
-              ]
-            },
-            onTime: {
-              $lte: ['$actualDelivery', '$estimatedDelivery']
-            }
-          }
-        },
-        {
-          $group: {
-            _id: null,
-            avgDeliveryTime: { $avg: '$deliveryDays' },
-            onTimeCount: { $sum: { $cond: ['$onTime', 1, 0] } },
-            totalDelivered: { $sum: 1 }
-          }
-        }
-      ]),
-
-      // Previous period for growth calculation
-      Order.countDocuments({
-        createdAt: {
-          $gte: new Date(startDate.getTime() - (now.getTime() - startDate.getTime())),
-          $lt: startDate
-        }
-      })
-    ]);
-
-    // Process status distribution
-    const statusDistributionObj = statusDistribution.reduce((acc, item) => {
-      acc[item._id] = item.count;
-      return acc;
-    }, {});
-
-    // Calculate metrics
-    const delivered = statusDistributionObj.delivered || 0;
-    const inTransit = (statusDistributionObj.shipped || 0) + (statusDistributionObj.processing || 0);
-    const urgentOrders = await Order.countDocuments({
-      createdAt: { $gte: startDate },
-      isUrgent: true,
-      status: { $in: ['pending', 'confirmed', 'processing', 'shipped'] }
-    });
-
-    const deliveryData = deliveryStats[0] || {};
-    const avgDeliveryTime = Math.round(deliveryData.avgDeliveryTime || 4);
-    const onTimeDelivery = deliveryData.totalDelivered > 0
-      ? Math.round((deliveryData.onTimeCount / deliveryData.totalDelivered) * 100)
-      : 0;
-    const deliveryRate = totalOrders > 0 ? Math.round((delivered / totalOrders) * 100) : 0;
-
-    const orderGrowth = previousPeriodOrders > 0
-      ? Math.round(((totalOrders - previousPeriodOrders) / previousPeriodOrders) * 100)
-      : 0;
-
-    // Additional metrics
-    const customerSatisfaction = 95; // This would come from reviews/feedback
-    const repeatCustomers = 65; // This would come from customer analysis
-    const coverageAreas = 24; // Number of cities/areas covered
-
-    res.json({
-      totalOrders,
-      inTransit,
-      delivered,
-      urgentOrders,
-      avgDeliveryTime,
-      onTimeDelivery,
-      deliveryRate,
-      orderGrowth,
-      customerSatisfaction,
-      repeatCustomers,
-      coverageAreas,
-      statusDistribution: statusDistributionObj
-    });
-
-  } catch (error) {
-    console.error('Error fetching order statistics:', error);
-    res.status(500).json({ message: 'Error fetching statistics' });
-  }
-});
 
 module.exports = router;

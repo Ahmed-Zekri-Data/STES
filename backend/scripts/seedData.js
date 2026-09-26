@@ -1,14 +1,15 @@
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Admin = require('../models/Admin');
-require('dotenv').config();
+const adminCredentials = require('./adminCredentials');
+require('../config/env');
 
 const products = [
   {
     name: 'Moteur de Piscine 1.5HP',
     description: 'Moteur haute performance pour piscines résidentielles. Efficace et silencieux, parfait pour la circulation de l\'eau.',
     price: 850,
-    category: 'motors',
+    category: 'pumps-motors',
     image: '/api/placeholder/300/200',
     specifications: {
       'Puissance': '1.5 HP',
@@ -24,7 +25,7 @@ const products = [
     name: 'Moteur de Piscine 2HP',
     description: 'Moteur puissant pour grandes piscines et spas. Conçu pour un usage intensif avec une excellente durabilité.',
     price: 1200,
-    category: 'motors',
+    category: 'pumps-motors',
     image: '/api/placeholder/300/200',
     specifications: {
       'Puissance': '2 HP',
@@ -40,7 +41,7 @@ const products = [
     name: 'Pompe à Chaleur 12kW',
     description: 'Système de chauffage efficace pour maintenir la température idéale de votre piscine toute l\'année.',
     price: 2500,
-    category: 'motors',
+    category: 'pumps-motors',
     image: '/api/placeholder/300/200',
     specifications: {
       'Puissance': '12 kW',
@@ -167,6 +168,9 @@ const products = [
 ];
 
 const seedDatabase = async () => {
+  // Checked first: seeding deletes the existing admins
+  const { username, email, password } = adminCredentials();
+
   try {
     // Connect to MongoDB
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/stes-ecommerce');
@@ -183,9 +187,9 @@ const seedDatabase = async () => {
 
     // Create default admin user
     const defaultAdmin = new Admin({
-      username: process.env.DEFAULT_ADMIN_USERNAME || 'admin',
-      email: process.env.DEFAULT_ADMIN_EMAIL || 'admin@piscinefacile.tn',
-      password: process.env.DEFAULT_ADMIN_PASSWORD || 'admin123456',
+      username,
+      email,
+      password,
       firstName: 'Admin',
       lastName: 'User',
       role: 'super_admin',
@@ -196,7 +200,6 @@ const seedDatabase = async () => {
     console.log('Created default admin user');
     console.log(`Username: ${defaultAdmin.username}`);
     console.log(`Email: ${defaultAdmin.email}`);
-    console.log(`Password: ${process.env.DEFAULT_ADMIN_PASSWORD || 'admin123456'}`);
 
     console.log('Database seeded successfully!');
     process.exit(0);

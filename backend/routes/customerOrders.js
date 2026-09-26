@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
-const Customer = require('../models/Customer');
+const { releaseOrderStock } = require('../services/orderService');
 const { customerAuth } = require('../middleware/customerAuth');
 
 // GET /api/customer-orders - Get customer's orders
@@ -127,6 +127,7 @@ router.post('/:orderId/cancel', customerAuth, async (req, res) => {
       order.notes = order.notes ? `${order.notes}\nCancellation reason: ${reason}` : `Cancellation reason: ${reason}`;
     }
     await order.save();
+    await releaseOrderStock(order);
 
     res.json({
       message: 'Order cancelled successfully',
@@ -135,70 +136,6 @@ router.post('/:orderId/cancel', customerAuth, async (req, res) => {
   } catch (error) {
     console.error('Error cancelling order:', error);
     res.status(500).json({ message: 'Error cancelling order' });
-  }
-});
-
-// POST /api/customer-orders - Create new order (for authenticated customers)
-router.post('/', customerAuth, async (req, res) => {
-  try {
-    const { items, shippingAddress, paymentMethod, notes } = req.body;
-
-    // Get customer details
-    const customer = await Customer.findById(req.customer.customerId);
-    if (!customer) {
-      return res.status(404).json({ message: 'Customer not found' });
-    }
-
-    // Calculate total
-    let totalAmount = 0;
-    const orderItems = items.map(item => {
-      const itemTotal = item.price * item.quantity;
-      totalAmount += itemTotal;
-      return {
-        product: item.productId,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        image: item.image
-      };
-    });
-
-    // Create order
-    const order = new Order({
-      customerId: customer._id,
-      customer: {
-        name: customer.fullName,
-        email: customer.email,
-        phone: customer.phone || '',
-        address: {
-          street: shippingAddress.street,
-          city: shippingAddress.city,
-          postalCode: shippingAddress.postalCode,
-          country: shippingAddress.country || 'Tunisia'
-        }
-      },
-      items: orderItems,
-      totalAmount,
-      paymentMethod: paymentMethod || 'cash_on_delivery',
-      notes
-    });
-
-    await order.save();
-
-    // Update customer stats
-    customer.orderCount += 1;
-    customer.totalSpent += totalAmount;
-    customer.loyaltyPoints += Math.floor(totalAmount / 10); // 1 point per 10 TND
-    await customer.save();
-
-    res.status(201).json({
-      message: 'Order created successfully',
-      order,
-      loyaltyPointsEarned: Math.floor(totalAmount / 10)
-    });
-  } catch (error) {
-    console.error('Error creating order:', error);
-    res.status(500).json({ message: 'Error creating order' });
   }
 });
 

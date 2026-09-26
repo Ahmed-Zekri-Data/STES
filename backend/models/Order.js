@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 
 const orderItemSchema = new mongoose.Schema({
@@ -96,6 +97,11 @@ const orderSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'processing', 'paid', 'failed', 'cancelled', 'refunded', 'partially_refunded'],
     default: 'pending'
+  },
+  // True while this order's items are taken out of product stock
+  stockReserved: {
+    type: Boolean,
+    default: false
   },
   paymentDetails: {
     transactionId: {
@@ -336,15 +342,25 @@ orderSchema.virtual('formattedTotal').get(function() {
   return `${this.totalAmount.toFixed(2)} TND`;
 });
 
-// Pre-save middleware to generate order number and tracking code
+const randomSuffix = (length) => crypto.randomBytes(length).toString('hex').slice(0, length).toUpperCase();
+
+// Generate identifiers before validation, since orderNumber is required.
+// Random suffixes keep concurrent orders from colliding on the unique indexes.
+orderSchema.pre('validate', function(next) {
+  if (this.isNew) {
+    if (!this.orderNumber) {
+      this.orderNumber = `ORD-${Date.now()}-${randomSuffix(6)}`;
+    }
+    if (!this.trackingCode) {
+      this.trackingCode = `TRK-${Date.now()}-${randomSuffix(6)}`;
+    }
+  }
+  next();
+});
+
+// Pre-save middleware to initialize new orders and record status changes
 orderSchema.pre('save', async function(next) {
   if (this.isNew) {
-    const count = await this.constructor.countDocuments();
-    this.orderNumber = `ORD-${Date.now()}-${(count + 1).toString().padStart(4, '0')}`;
-
-    // Generate unique tracking code
-    this.trackingCode = `TRK-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-
     // Initialize status history
     this.statusHistory = [{
       status: this.status,
