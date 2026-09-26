@@ -167,7 +167,7 @@ const EnhancedProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
                     {product.name}
                   </h3>
                   <p className="text-sm text-gray-500 capitalize">
-                    {product.category} {product.subcategory && `• ${product.subcategory}`}
+                    {product.categoryName || product.category} {product.subcategory && `• ${product.subcategory}`}
                   </p>
                   {product.brand && (
                     <p className="text-xs text-gray-400 mt-1">
@@ -349,7 +349,7 @@ const EnhancedProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
           transition={{ delay: 0.5 }}
         >
           <p className="capitalize">
-            {product.category} {product.subcategory && `• ${product.subcategory}`}
+            {product.categoryName || product.category} {product.subcategory && `• ${product.subcategory}`}
           </p>
           {product.brand && (
             <p className="text-xs">Marque: {product.brand}</p>

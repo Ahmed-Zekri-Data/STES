@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -41,17 +41,14 @@ const Products = () => {
     featured: false
   });
 
+  // Categories come from Admin → Categories; products store their slug
+  const [categoryList, setCategoryList] = useState([]);
   const categories = [
     { value: '', label: 'All Categories' },
-    { value: 'pools', label: 'Pools' },
-    { value: 'pumps-motors', label: 'Pumps & Motors' },
-    { value: 'filters', label: 'Filters' },
-    { value: 'chemicals', label: 'Chemicals' },
-    { value: 'cleaning', label: 'Cleaning' },
-    { value: 'heating', label: 'Heating' },
-    { value: 'lighting', label: 'Lighting' },
-    { value: 'accessories', label: 'Accessories' },
-    { value: 'maintenance', label: 'Maintenance' }
+    ...categoryList.map(category => ({
+      value: category.slug,
+      label: category.isActive ? category.name : `${category.name} (hidden in shop)`
+    }))
   ];
 
   // Links from the admin top bar (search results, notifications) set ?search=
@@ -61,7 +58,17 @@ const Products = () => {
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get('/admin/categories', { params: { limit: 100 } });
+      setCategoryList(response.data.categories);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -455,6 +462,11 @@ const Products = () => {
                         </option>
                       ))}
                     </select>
+                    {categoryList.length === 0 && (
+                      <p className="mt-2 text-sm text-gray-500">
+                        No categories yet. Create one in <Link to="/admin/categories" className="text-blue-600 underline">Categories</Link> first.
+                      </p>
+                    )}
                   </div>
 
                   <div>

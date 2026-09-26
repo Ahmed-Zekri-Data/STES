@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult, query } = require('express-validator');
 const Category = require('../models/Category');
+const Product = require('../models/Product');
 const { auth, checkPermission } = require('../middleware/auth');
 const { containing, isImageLocation } = require('../utils/text');
 
@@ -79,8 +80,18 @@ router.get('/', auth, checkPermission('products'), [
       Category.countDocuments(filter)
     ]);
 
+    // Count products live: the stored productCount was never kept up to date
+    const counts = await Product.aggregate([
+      { $match: { category: { $in: categories.map(c => c.slug) } } },
+      { $group: { _id: '$category', count: { $sum: 1 } } }
+    ]);
+    const countBySlug = new Map(counts.map(c => [c._id, c.count]));
+
     res.json({
-      categories,
+      categories: categories.map(category => ({
+        ...category.toJSON(),
+        productCount: countBySlug.get(category.slug) || 0
+      })),
       pagination: {
         currentPage: parseInt(page),
         totalPages: Math.ceil(total / limit),
@@ -246,7 +257,6 @@ router.delete('/:id', auth, checkPermission('products'), async (req, res) => {
     }
 
     // Check if category has products
-    const Product = require('../models/Product');
     const productCount = await Product.countDocuments({ category: category.slug });
     if (productCount > 0) {
       return res.status(400).json({ 

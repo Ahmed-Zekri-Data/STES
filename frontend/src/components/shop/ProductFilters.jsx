@@ -43,63 +43,8 @@ const ProductFilters = ({
       setSearchFilters(response.data.filters);
     } catch (error) {
       console.error('Error fetching categories:', error);
-      // Fallback data for development
-      setCategories({
-        'pumps-motors': {
-          name: 'Pompes et Moteurs',
-          icon: '⚙️',
-          subcategories: {
-            'circulation-pumps': 'Pompes de circulation',
-            'filtration-pumps': 'Pompes de filtration',
-            'heat-pumps': 'Pompes à chaleur'
-          }
-        },
-        'filters': {
-          name: 'Filtration',
-          icon: '🔄',
-          subcategories: {
-            'sand-filters': 'Filtres à sable',
-            'cartridge-filters': 'Filtres à cartouche',
-            'de-filters': 'Filtres à diatomée'
-          }
-        },
-        'chemicals': {
-          name: 'Produits Chimiques',
-          icon: '🧪',
-          subcategories: {
-            'chlorine': 'Chlore',
-            'ph-adjusters': 'Régulateurs de pH',
-            'algaecides': 'Anti-algues'
-          }
-        },
-        'cleaning': {
-          name: 'Nettoyage',
-          icon: '🧽',
-          subcategories: {
-            'robotic-cleaners': 'Robots nettoyeurs',
-            'manual-tools': 'Outils manuels',
-            'brushes': 'Brosses'
-          }
-        },
-        'heating': {
-          name: 'Chauffage',
-          icon: '🔥',
-          subcategories: {
-            'heat-pumps': 'Pompes à chaleur',
-            'electric-heaters': 'Chauffages électriques',
-            'solar-heaters': 'Chauffages solaires'
-          }
-        },
-        'lighting': {
-          name: 'Éclairage',
-          icon: '💡',
-          subcategories: {
-            'led-lights': 'Éclairage LED',
-            'underwater-lights': 'Éclairage sous-marin',
-            'color-changing': 'Éclairage multicolore'
-          }
-        }
-      });
+      // Without the API, show no categories rather than made-up ones
+      setCategories({});
 
     setSearchFilters({
       priceRanges: [
@@ -115,7 +60,7 @@ const ProductFilters = ({
         { label: '2 étoiles et plus', min: 2 },
         { label: '1 étoile et plus', min: 1 }
       ],
-      brands: ['AquaPro', 'FilterMax', 'ChemPool', 'ProPool', 'CleanPool', 'PoolTech', 'AquaMax', 'BlueWave']
+      brands: []
     });
     }
   };
