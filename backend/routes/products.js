@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult, query } = require('express-validator');
 const Product = require('../models/Product');
-const { auth } = require('../middleware/auth');
+const { auth, checkPermission } = require('../middleware/auth');
 const { customerAuth } = require('../middleware/customerAuth');
 const { searchFilters } = require('../config/productCategories');
 const { categoryExists, slugsWithin, categoryNames, shopCategories } = require('../services/categoryService');
@@ -271,7 +271,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/products - Create new product (Admin only)
-router.post('/', auth, [
+router.post('/', auth, checkPermission('products'), [
   body('name').trim().isLength({ min: 1, max: 100 }).withMessage('Name is required and must be less than 100 characters'),
   body('description').trim().isLength({ min: 1, max: 1000 }).withMessage('Description is required and must be less than 1000 characters'),
   body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
@@ -300,7 +300,7 @@ router.post('/', auth, [
 });
 
 // PUT /api/products/:id - Update product (Admin only)
-router.put('/:id', auth, [
+router.put('/:id', auth, checkPermission('products'), [
   body('name').optional().trim().isLength({ min: 1, max: 100 }),
   body('description').optional().trim().isLength({ min: 1, max: 1000 }),
   body('price').optional().isFloat({ min: 0 }),
@@ -339,7 +339,7 @@ router.put('/:id', auth, [
 });
 
 // DELETE /api/products/:id - Delete product (Admin only)
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, checkPermission('products'), async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
 

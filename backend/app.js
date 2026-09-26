@@ -97,6 +97,7 @@ const createApp = () => {
   app.use('/api/orders', require('./routes/orders'));
   app.use('/api/forms', require('./routes/forms'));
   app.use('/api/admin/uploads', require('./routes/uploads'));
+  app.use('/api/admin/products', require('./routes/adminProducts'));
   app.use('/api/admin', require('./routes/admin'));
   app.use('/api/admin/categories', require('./routes/adminCategories'));
   app.use('/api/admin/brands', require('./routes/adminBrands'));

@@ -9,8 +9,7 @@ const Admin = require('../models/Admin');
 const Customer = require('../models/Customer');
 const { containing } = require('../utils/text');
 
-// Products at or below this many units are flagged in the notifications
-const LOW_STOCK_THRESHOLD = 5;
+const { LOW_STOCK_THRESHOLD } = require('../config/inventory');
 
 const can = (admin, permission) =>
   admin.role === 'super_admin' || admin.permissions.includes(permission);
