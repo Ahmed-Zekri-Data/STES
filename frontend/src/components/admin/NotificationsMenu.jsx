@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, ShoppingCart, PackageX, RefreshCw } from 'lucide-react';
+import { Bell, ShoppingCart, PackageX, MessageSquare, RefreshCw } from 'lucide-react';
 import { adminGet, formatTND, timeAgo } from './topBarApi';
 
 const REFRESH_MS = 60000;
 
-// The bell in the admin top bar: orders waiting to be handled and products
-// running out, refreshed every minute and on every page change.
+// The bell in the admin top bar: orders waiting to be handled, products
+// running out and unread contact or quote requests, refreshed every minute
+// and on every page change.
 const NotificationsMenu = () => {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState(null);
@@ -17,7 +18,7 @@ const NotificationsMenu = () => {
 
   const load = useCallback(async () => {
     try {
-      const response = await adminGet('/api/admin/notifications');
+      const response = await adminGet('/admin/notifications');
       setData(response.data);
       setFailed(false);
     } catch (error) {
@@ -52,7 +53,8 @@ const NotificationsMenu = () => {
 
   const pendingOrders = data?.pendingOrders;
   const lowStock = data?.lowStock;
-  const total = (pendingOrders?.count || 0) + (lowStock?.count || 0);
+  const newMessages = data?.newMessages;
+  const total = (pendingOrders?.count || 0) + (lowStock?.count || 0) + (newMessages?.count || 0);
   const close = () => setOpen(false);
 
   return (
@@ -105,8 +107,43 @@ const NotificationsMenu = () => {
                 <p className="p-4 text-sm text-gray-500">Nothing needs your attention.</p>
               )}
 
+              {newMessages?.count > 0 && (
+                <section className="p-2 border-t border-gray-100 first:border-t-0">
+                  <h4 className="px-2 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    New messages ({newMessages.count})
+                  </h4>
+                  {newMessages.latest.map(message => (
+                    <Link
+                      key={message.id}
+                      to={`/admin/forms?search=${encodeURIComponent(message.email)}`}
+                      onClick={close}
+                      className="flex items-start gap-3 p-2 rounded-lg hover:bg-purple-50"
+                    >
+                      <MessageSquare className="w-4 h-4 mt-0.5 text-purple-600 shrink-0" />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium text-gray-900 truncate">
+                          {message.subject || (message.type === 'quote' ? 'Quote request' : 'Message')}
+                        </span>
+                        <span className="block text-xs text-gray-600 truncate">
+                          {message.name} · {timeAgo(message.createdAt)}
+                        </span>
+                      </span>
+                    </Link>
+                  ))}
+                  {newMessages.count > newMessages.latest.length && (
+                    <Link
+                      to="/admin/forms?status=new"
+                      onClick={close}
+                      className="block px-2 py-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      See all {newMessages.count} new messages
+                    </Link>
+                  )}
+                </section>
+              )}
+
               {pendingOrders?.count > 0 && (
-                <section className="p-2">
+                <section className="p-2 border-t border-gray-100 first:border-t-0">
                   <h4 className="px-2 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     Orders waiting ({pendingOrders.count})
                   </h4>
@@ -139,7 +176,7 @@ const NotificationsMenu = () => {
               )}
 
               {lowStock?.count > 0 && (
-                <section className="p-2 border-t border-gray-100">
+                <section className="p-2 border-t border-gray-100 first:border-t-0">
                   <h4 className="px-2 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     Low stock ({lowStock.count})
                   </h4>

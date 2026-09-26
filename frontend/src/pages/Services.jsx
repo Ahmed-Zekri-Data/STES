@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { Wrench, CheckCircle, Phone, Mail, MapPin, Clock } from 'lucide-react';
 import axios from 'axios';
+import { submitErrorMessage } from '../utils/forms';
 
 const Services = () => {
   const { t } = useLanguage();
@@ -64,12 +65,7 @@ const Services = () => {
     setLoading(true);
 
     try {
-      // TODO: Replace with actual API call
-      // await axios.post('/api/forms/quote', formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await axios.post('/api/forms/quote', formData);
       setSubmitted(true);
       setFormData({
         name: '',
@@ -80,7 +76,7 @@ const Services = () => {
       });
     } catch (error) {
       console.error('Error submitting quote request:', error);
-      alert('Erreur lors de l\'envoi de la demande. Veuillez réessayer.');
+      alert(submitErrorMessage(error, 'Erreur lors de l\'envoi de la demande. Veuillez réessayer.'));
     } finally {
       setLoading(false);
     }
@@ -238,6 +234,7 @@ const Services = () => {
                   value={formData.message}
                   onChange={handleInputChange}
                   required
+                  maxLength={1000}
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="Décrivez votre projet et vos besoins..."

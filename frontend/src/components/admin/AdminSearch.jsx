@@ -60,7 +60,7 @@ const AdminSearch = () => {
     setLoading(true);
     const timer = setTimeout(async () => {
       try {
-        const response = await adminGet('/api/admin/search', { q: query }, { signal: controller.signal });
+        const response = await adminGet('/admin/search', { q: query }, { signal: controller.signal });
         setResults(toResults(response.data));
         setFailed(false);
         setActive(0);

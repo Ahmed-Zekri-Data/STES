@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText,
@@ -10,210 +11,257 @@ import {
   User,
   Phone,
   Mail,
-  MessageSquare,
-  Filter,
+  MapPin,
   CheckCircle,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Archive,
+  X
 } from 'lucide-react';
 import AnimatedButton from '../../components/AnimatedButton';
+import adminApi from '../../utils/adminApi';
+
+const PAGE_SIZE = 20;
+
+const formStatuses = [
+  { value: '', label: 'All statuses' },
+  { value: 'new', label: 'New' },
+  { value: 'read', label: 'Read' },
+  { value: 'replied', label: 'Replied' },
+  { value: 'archived', label: 'Archived' }
+];
+
+const formTypes = [
+  { value: '', label: 'All types' },
+  { value: 'contact', label: 'Contact' },
+  { value: 'quote', label: 'Quote request' },
+  { value: 'newsletter', label: 'Newsletter' }
+];
+
+const typeLabel = (type) => formTypes.find(t => t.value === type)?.label || type;
+
+// Quote requests and newsletter sign-ups have no subject
+const formTitle = (form) => {
+  if (form.subject) return form.subject;
+  if (form.type === 'quote') return form.city ? `Quote request · ${form.city}` : 'Quote request';
+  if (form.type === 'newsletter') return 'Newsletter sign-up';
+  return 'Message';
+};
+
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'new': return 'bg-blue-100 text-blue-800 border-blue-200';
+    case 'read': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    case 'replied': return 'bg-green-100 text-green-800 border-green-200';
+    default: return 'bg-gray-100 text-gray-800 border-gray-200';
+  }
+};
+
+const getStatusIcon = (status) => {
+  switch (status) {
+    case 'new': return <AlertCircle className="w-4 h-4" />;
+    case 'read': return <Clock className="w-4 h-4" />;
+    case 'replied': return <CheckCircle className="w-4 h-4" />;
+    case 'archived': return <Archive className="w-4 h-4" />;
+    default: return <Clock className="w-4 h-4" />;
+  }
+};
+
+const getTypeColor = (type) => {
+  switch (type) {
+    case 'contact': return 'bg-purple-100 text-purple-800';
+    case 'quote': return 'bg-blue-100 text-blue-800';
+    case 'newsletter': return 'bg-green-100 text-green-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+};
+
+const formatDate = (dateString) => new Date(dateString).toLocaleDateString('fr-FR', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit'
+});
+
+// Quotes every cell, so commas, quotes and line breaks in messages stay in place
+const toCsv = (rows) => rows
+  .map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+  .join('\r\n');
+
+const StatusSelect = ({ value, onChange }) => (
+  <select
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+  >
+    {formStatuses.filter(s => s.value).map(status => (
+      <option key={status.value} value={status.value}>{status.label}</option>
+    ))}
+  </select>
+);
 
 const Forms = () => {
+  const [searchParams] = useSearchParams();
   const [forms, setForms] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [loadError, setLoadError] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [appliedSearch, setAppliedSearch] = useState(searchParams.get('search') || '');
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [page, setPage] = useState(1);
   const [selectedForm, setSelectedForm] = useState(null);
   const [showFormModal, setShowFormModal] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
-  const formStatuses = [
-    { value: '', label: 'All Forms' },
-    { value: 'new', label: 'New' },
-    { value: 'read', label: 'Read' },
-    { value: 'replied', label: 'Replied' }
-  ];
+  // Links from the admin top bar set ?search= and ?status=
+  const [linkedFilters, setLinkedFilters] = useState(searchParams.toString());
+  if (linkedFilters !== searchParams.toString()) {
+    setLinkedFilters(searchParams.toString());
+    setSearchTerm(searchParams.get('search') || '');
+    setAppliedSearch(searchParams.get('search') || '');
+    setStatusFilter(searchParams.get('status') || '');
+    setTypeFilter('');
+    setPage(1);
+  }
+
+  // Search on the server once typing pauses
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm.trim() !== appliedSearch) {
+        setAppliedSearch(searchTerm.trim());
+        setPage(1);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm, appliedSearch]);
+
+  const filterParams = useCallback(() => ({
+    status: statusFilter || undefined,
+    type: typeFilter || undefined,
+    search: appliedSearch || undefined
+  }), [statusFilter, typeFilter, appliedSearch]);
+
+  const fetchForms = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await adminApi.get('/forms', {
+        params: { ...filterParams(), page, limit: PAGE_SIZE }
+      });
+      setForms(response.data.submissions);
+      setTotal(response.data.pagination.totalSubmissions);
+      setTotalPages(Math.max(1, response.data.pagination.totalPages));
+      setLoadError('');
+    } catch (error) {
+      console.error('Error fetching forms:', error);
+      setLoadError(error.response?.status === 403
+        ? 'You do not have permission to view form submissions.'
+        : 'Form submissions could not be loaded. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [filterParams, page]);
 
   useEffect(() => {
     fetchForms();
-  }, []);
+  }, [fetchForms]);
 
-  const fetchForms = async () => {
-    try {
-      // Mock data for demonstration
-      setTimeout(() => {
-        setForms([
-          {
-            _id: '1',
-            type: 'contact',
-            name: 'Ahmed Ben Ali',
-            email: 'ahmed@email.com',
-            phone: '+216 98 123 456',
-            subject: 'Demande de devis pour piscine',
-            message: 'Bonjour, je souhaiterais avoir un devis pour l\'installation d\'une piscine de 8x4m dans mon jardin. Merci.',
-            status: 'new',
-            createdAt: '2024-01-15T10:30:00Z',
-            readAt: null
-          },
-          {
-            _id: '2',
-            type: 'quote',
-            name: 'Fatima Trabelsi',
-            email: 'fatima@email.com',
-            phone: '+216 97 234 567',
-            subject: 'Rénovation piscine existante',
-            message: 'Ma piscine a besoin d\'une rénovation complète. Pouvez-vous me proposer vos services ?',
-            status: 'read',
-            createdAt: '2024-01-14T15:45:00Z',
-            readAt: '2024-01-15T09:20:00Z'
-          },
-          {
-            _id: '3',
-            type: 'maintenance',
-            name: 'Mohamed Gharbi',
-            email: 'mohamed@email.com',
-            phone: '+216 96 345 678',
-            subject: 'Contrat de maintenance',
-            message: 'Je cherche un contrat de maintenance annuel pour ma piscine. Quels sont vos tarifs ?',
-            status: 'replied',
-            createdAt: '2024-01-13T11:15:00Z',
-            readAt: '2024-01-13T14:30:00Z'
-          },
-          {
-            _id: '4',
-            type: 'support',
-            name: 'Leila Mansouri',
-            email: 'leila@email.com',
-            phone: '+216 95 456 789',
-            subject: 'Problème avec pompe',
-            message: 'Ma pompe de piscine fait un bruit étrange depuis quelques jours. Pouvez-vous m\'aider ?',
-            status: 'new',
-            createdAt: '2024-01-12T16:20:00Z',
-            readAt: null
-          },
-          {
-            _id: '5',
-            type: 'contact',
-            name: 'Karim Bouazizi',
-            email: 'karim@email.com',
-            phone: '+216 94 567 890',
-            subject: 'Information sur produits',
-            message: 'Je voudrais des informations sur vos robots nettoyeurs automatiques.',
-            status: 'read',
-            createdAt: '2024-01-11T13:10:00Z',
-            readAt: '2024-01-12T08:30:00Z'
-          }
-        ]);
-        setLoading(false);
-      }, 1000);
-    } catch (error) {
-      console.error('Error fetching forms:', error);
-      setLoading(false);
-    }
-  };
-
-  const filteredForms = forms.filter(form => {
-    const matchesSearch = 
-      form.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      form.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      form.subject.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === '' || form.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'new': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'read': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'replied': return 'bg-green-100 text-green-800 border-green-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'new': return <AlertCircle className="w-4 h-4" />;
-      case 'read': return <Clock className="w-4 h-4" />;
-      case 'replied': return <CheckCircle className="w-4 h-4" />;
-      default: return <Clock className="w-4 h-4" />;
-    }
-  };
-
-  const getTypeColor = (type) => {
-    switch (type) {
-      case 'contact': return 'bg-purple-100 text-purple-800';
-      case 'quote': return 'bg-blue-100 text-blue-800';
-      case 'maintenance': return 'bg-green-100 text-green-800';
-      case 'support': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  const replaceForm = (updated) => {
+    setForms(prev => prev.map(form => (form._id === updated._id ? updated : form)));
+    setSelectedForm(prev => (prev?._id === updated._id ? updated : prev));
   };
 
   const updateFormStatus = async (formId, newStatus) => {
     try {
-      setForms(prev => prev.map(form => 
-        form._id === formId 
-          ? { 
-              ...form, 
-              status: newStatus, 
-              readAt: newStatus === 'read' && !form.readAt ? new Date().toISOString() : form.readAt 
-            }
-          : form
-      ));
+      const response = await adminApi.put(`/forms/${formId}/status`, { status: newStatus });
+      replaceForm(response.data);
     } catch (error) {
       console.error('Error updating form status:', error);
+      alert('The status could not be changed. Please try again.');
     }
   };
 
   const deleteForm = async (formId) => {
-    if (window.confirm('Are you sure you want to delete this form?')) {
+    if (!window.confirm('Delete this submission? This cannot be undone.')) return;
+    try {
+      await adminApi.delete(`/forms/${formId}`);
       setForms(prev => prev.filter(form => form._id !== formId));
+      setTotal(prev => prev - 1);
+      if (selectedForm?._id === formId) {
+        setShowFormModal(false);
+        setSelectedForm(null);
+      }
+    } catch (error) {
+      console.error('Error deleting form:', error);
+      alert('The submission could not be deleted. Please try again.');
     }
   };
 
-  const viewFormDetails = (form) => {
+  const viewFormDetails = async (form) => {
     setSelectedForm(form);
     setShowFormModal(true);
-    
-    // Mark as read if it's new
+
+    // Opening a new submission marks it read on the server
     if (form.status === 'new') {
-      updateFormStatus(form._id, 'read');
+      try {
+        const response = await adminApi.get(`/forms/${form._id}`);
+        replaceForm(response.data);
+      } catch (error) {
+        console.error('Error opening form:', error);
+      }
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  // Exports every submission matching the filters, not just this page
+  const exportForms = async () => {
+    setExporting(true);
+    try {
+      const all = [];
+      for (let exportPage = 1; ; exportPage++) {
+        const response = await adminApi.get('/forms', {
+          params: { ...filterParams(), page: exportPage, limit: 100 }
+        });
+        all.push(...response.data.submissions);
+        if (exportPage >= response.data.pagination.totalPages) break;
+      }
+
+      const csv = toCsv([
+        ['Date', 'Type', 'Status', 'Name', 'Email', 'Phone', 'City', 'Subject', 'Message'],
+        ...all.map(form => [
+          formatDate(form.createdAt),
+          typeLabel(form.type),
+          form.status,
+          form.name,
+          form.email,
+          form.phone,
+          form.city,
+          form.subject,
+          form.message
+        ])
+      ]);
+
+      // The byte order mark makes Excel read accents correctly
+      const blob = new Blob(['﻿', csv], { type: 'text/csv;charset=utf-8' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'form-submissions.csv';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting forms:', error);
+      alert('The export failed. Please try again.');
+    } finally {
+      setExporting(false);
+    }
   };
 
-  const exportForms = () => {
-    const csvContent = [
-      ['Date', 'Name', 'Email', 'Phone', 'Type', 'Subject', 'Status'],
-      ...filteredForms.map(form => [
-        formatDate(form.createdAt),
-        form.name,
-        form.email,
-        form.phone,
-        form.type,
-        form.subject,
-        form.status
-      ])
-    ].map(row => row.join(',')).join('\n');
+  const firstLoad = loading && forms.length === 0 && !loadError;
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'forms-export.csv';
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
-
-  if (loading) {
+  if (firstLoad) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -252,20 +300,21 @@ const Forms = () => {
             Forms Management
           </h1>
           <p className="text-gray-600 mt-1">
-            Manage contact forms and inquiries
+            Contact messages, quote requests and newsletter sign-ups from the website
           </p>
         </div>
         <div className="flex items-center space-x-3">
           <span className="text-sm text-gray-600">
-            {filteredForms.length} forms found
+            {total} {total === 1 ? 'submission' : 'submissions'}
           </span>
           <AnimatedButton
             variant="outline"
             onClick={exportForms}
+            disabled={exporting || total === 0}
             className="flex items-center space-x-2"
           >
             <Download className="w-4 h-4" />
-            <span>Export</span>
+            <span>{exporting ? 'Exporting…' : 'Export'}</span>
           </AnimatedButton>
         </div>
       </motion.div>
@@ -283,98 +332,106 @@ const Forms = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search forms..."
+                placeholder="Search name, email, phone, subject, message..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
-          <div className="sm:w-48">
+          <div className="sm:w-44">
             <select
+              aria-label="Type"
+              value={typeFilter}
+              onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              {formTypes.map(type => (
+                <option key={type.value} value={type.value}>{type.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="sm:w-44">
+            <select
+              aria-label="Status"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               {formStatuses.map(status => (
-                <option key={status.value} value={status.value}>
-                  {status.label}
-                </option>
+                <option key={status.value} value={status.value}>{status.label}</option>
               ))}
             </select>
           </div>
         </div>
       </motion.div>
 
+      {loadError && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center justify-between">
+          <span>{loadError}</span>
+          <button onClick={fetchForms} className="font-medium underline">Try again</button>
+        </div>
+      )}
+
       {/* Forms List */}
-      <motion.div
-        className="space-y-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
-      >
+      <div className={`space-y-4 transition-opacity ${loading ? 'opacity-60' : ''}`}>
         <AnimatePresence>
-          {filteredForms.map((form, index) => (
+          {forms.map((form, index) => (
             <motion.div
               key={form._id}
               className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              whileHover={{ y: -2 }}
+              transition={{ duration: 0.4, delay: Math.min(index, 10) * 0.05 }}
             >
               <div className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-3 mb-3">
                       <h3 className="text-lg font-semibold text-gray-900">
-                        {form.subject}
+                        {formTitle(form)}
                       </h3>
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(form.type)}`}>
-                        {form.type}
+                        {typeLabel(form.type)}
                       </span>
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(form.status)}`}>
                         {getStatusIcon(form.status)}
                         <span className="ml-1 capitalize">{form.status}</span>
                       </span>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                      <div className="flex items-center text-gray-600">
-                        <User className="w-4 h-4 mr-2" />
-                        <span>{form.name}</span>
+                      <div className="flex items-center text-gray-600 min-w-0">
+                        <User className="w-4 h-4 mr-2 shrink-0" />
+                        <span className="truncate">{form.name}</span>
                       </div>
-                      <div className="flex items-center text-gray-600">
-                        <Mail className="w-4 h-4 mr-2" />
-                        <span>{form.email}</span>
+                      <div className="flex items-center text-gray-600 min-w-0">
+                        <Mail className="w-4 h-4 mr-2 shrink-0" />
+                        <span className="truncate">{form.email}</span>
                       </div>
+                      {form.phone && (
+                        <div className="flex items-center text-gray-600">
+                          <Phone className="w-4 h-4 mr-2 shrink-0" />
+                          <span>{form.phone}</span>
+                        </div>
+                      )}
                       <div className="flex items-center text-gray-600">
-                        <Phone className="w-4 h-4 mr-2" />
-                        <span>{form.phone}</span>
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <Calendar className="w-4 h-4 mr-2" />
+                        <Calendar className="w-4 h-4 mr-2 shrink-0" />
                         <span>{formatDate(form.createdAt)}</span>
                       </div>
                     </div>
-                    
-                    <p className="text-gray-600 mt-3 line-clamp-2">
-                      {form.message}
-                    </p>
+
+                    {form.message && (
+                      <p className="text-gray-600 mt-3 line-clamp-2">
+                        {form.message}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex items-center space-x-3">
-                    <select
-                      value={form.status}
-                      onChange={(e) => updateFormStatus(form._id, e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="new">New</option>
-                      <option value="read">Read</option>
-                      <option value="replied">Replied</option>
-                    </select>
-                    
+                    <StatusSelect value={form.status} onChange={(status) => updateFormStatus(form._id, status)} />
+
                     <AnimatedButton
                       variant="outline"
                       size="small"
@@ -383,9 +440,10 @@ const Forms = () => {
                       <Eye className="w-4 h-4 mr-1" />
                       View
                     </AnimatedButton>
-                    
+
                     <motion.button
                       onClick={() => deleteForm(form._id)}
+                      aria-label="Delete submission"
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-300"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
@@ -398,9 +456,9 @@ const Forms = () => {
             </motion.div>
           ))}
         </AnimatePresence>
-      </motion.div>
+      </div>
 
-      {filteredForms.length === 0 && !loading && (
+      {forms.length === 0 && !loading && !loadError && (
         <motion.div
           className="text-center py-12"
           initial={{ opacity: 0, scale: 0.9 }}
@@ -408,9 +466,33 @@ const Forms = () => {
           transition={{ duration: 0.5 }}
         >
           <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No forms found</h3>
-          <p className="text-gray-600">Try adjusting your search or filter criteria</p>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">No submissions found</h3>
+          <p className="text-gray-600">
+            {appliedSearch || statusFilter || typeFilter
+              ? 'Try adjusting your search or filters'
+              : 'Messages sent from the contact and services pages will appear here'}
+          </p>
         </motion.div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-4">
+          <button
+            onClick={() => setPage(page - 1)}
+            disabled={page <= 1 || loading}
+            className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-gray-600">Page {page} of {totalPages}</span>
+          <button
+            onClick={() => setPage(page + 1)}
+            disabled={page >= totalPages || loading}
+            className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
       )}
 
       {/* Form Details Modal */}
@@ -424,6 +506,8 @@ const Forms = () => {
           >
             <motion.div
               className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+              role="dialog"
+              aria-label="Submission details"
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -432,19 +516,20 @@ const Forms = () => {
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-gray-900">
-                    Form Details
+                    {formTitle(selectedForm)}
                   </h2>
                   <button
                     onClick={() => setShowFormModal(false)}
+                    aria-label="Close"
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    <FileText className="w-5 h-5" />
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
               <div className="p-6 space-y-6">
-                {/* Form Information */}
+                {/* Contact information */}
                 <div className="bg-gray-50 rounded-xl p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
                     Contact Information
@@ -456,42 +541,48 @@ const Forms = () => {
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Email</p>
-                      <p className="font-medium">{selectedForm.email}</p>
+                      <a href={`mailto:${selectedForm.email}`} className="font-medium text-blue-600 hover:underline break-all">
+                        {selectedForm.email}
+                      </a>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Phone</p>
-                      <p className="font-medium">{selectedForm.phone}</p>
-                    </div>
+                    {selectedForm.phone && (
+                      <div>
+                        <p className="text-sm text-gray-600">Phone</p>
+                        <a href={`tel:${selectedForm.phone}`} className="font-medium text-blue-600 hover:underline">
+                          {selectedForm.phone}
+                        </a>
+                      </div>
+                    )}
+                    {selectedForm.city && (
+                      <div>
+                        <p className="text-sm text-gray-600">City</p>
+                        <p className="font-medium flex items-center">
+                          <MapPin className="w-4 h-4 mr-1 text-gray-500" />
+                          {selectedForm.city}
+                        </p>
+                      </div>
+                    )}
                     <div>
                       <p className="text-sm text-gray-600">Type</p>
                       <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(selectedForm.type)}`}>
-                        {selectedForm.type}
+                        {typeLabel(selectedForm.type)}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Subject */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Subject
-                  </h3>
-                  <p className="text-gray-700 bg-gray-50 rounded-xl p-4">
-                    {selectedForm.subject}
-                  </p>
-                </div>
-
-                {/* Message */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Message
-                  </h3>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-gray-700 whitespace-pre-wrap">
-                      {selectedForm.message}
-                    </p>
+                {selectedForm.message && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Message
+                    </h3>
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <p className="text-gray-700 whitespace-pre-wrap break-words">
+                        {selectedForm.message}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Timestamps */}
                 <div className="bg-blue-50 rounded-xl p-6">
@@ -500,36 +591,28 @@ const Forms = () => {
                       <p className="text-gray-600">Submitted</p>
                       <p className="font-medium">{formatDate(selectedForm.createdAt)}</p>
                     </div>
-                    {selectedForm.readAt && (
+                    {selectedForm.repliedAt && (
                       <div>
-                        <p className="text-gray-600">Read</p>
-                        <p className="font-medium">{formatDate(selectedForm.readAt)}</p>
+                        <p className="text-gray-600">Marked replied</p>
+                        <p className="font-medium">{formatDate(selectedForm.repliedAt)}</p>
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex justify-between items-center pt-6 border-t border-gray-200">
+                <div className="flex flex-wrap gap-3 justify-between items-center pt-6 border-t border-gray-200">
                   <div className="flex items-center space-x-3">
                     <span className="text-sm font-medium text-gray-700">Status:</span>
-                    <select
+                    <StatusSelect
                       value={selectedForm.status}
-                      onChange={(e) => {
-                        updateFormStatus(selectedForm._id, e.target.value);
-                        setSelectedForm(prev => ({ ...prev, status: e.target.value }));
-                      }}
-                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="new">New</option>
-                      <option value="read">Read</option>
-                      <option value="replied">Replied</option>
-                    </select>
+                      onChange={(status) => updateFormStatus(selectedForm._id, status)}
+                    />
                   </div>
                   <div className="flex space-x-3">
                     <AnimatedButton
                       variant="outline"
-                      onClick={() => window.open(`mailto:${selectedForm.email}?subject=Re: ${selectedForm.subject}`)}
+                      onClick={() => window.open(`mailto:${selectedForm.email}?subject=${encodeURIComponent(`Re: ${formTitle(selectedForm)}`)}`)}
                     >
                       <Mail className="w-4 h-4 mr-2" />
                       Reply

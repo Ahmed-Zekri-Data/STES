@@ -18,7 +18,9 @@ const formSubmissionSchema = new mongoose.Schema({
     required: [true, 'Email is required'],
     lowercase: true,
     trim: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+    // The routes check addresses fully; this only stops obvious junk. (The
+    // old pattern rejected valid addresses such as name@company.info.)
+    match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please enter a valid email']
   },
   phone: {
     type: String,

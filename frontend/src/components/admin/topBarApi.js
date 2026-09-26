@@ -1,12 +1,6 @@
-import axios from 'axios';
+import adminApi from '../../utils/adminApi';
 
-// Sends the admin token explicitly: the shared axios defaults can hold a
-// customer token when someone is also signed in to the shop.
-export const adminGet = (url, params, config = {}) => axios.get(url, {
-  ...config,
-  params,
-  headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` }
-});
+export const adminGet = (url, params, config = {}) => adminApi.get(url, { ...config, params });
 
 export const formatTND = (amount) => `${Number(amount || 0).toFixed(3)} TND`;
 
