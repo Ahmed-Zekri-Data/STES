@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import adminApi from '../../utils/adminApi';
 import { motion } from 'framer-motion';
 import {
   Users,
@@ -55,7 +55,7 @@ const Customers = () => {
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/admin/customers');
+      const response = await adminApi.get('/admin/customers');
       setCustomers(response.data.customers || response.data);
       setLoading(false);
     } catch (error) {
@@ -66,7 +66,7 @@ const Customers = () => {
 
   const handleToggleStatus = async (customerId) => {
     try {
-      await axios.put(`/api/admin/customers/${customerId}/toggle-status`);
+      await adminApi.put(`/admin/customers/${customerId}/toggle-status`);
       setCustomers(prev => prev.map(customer =>
         customer._id === customerId
           ? { ...customer, isActive: !customer.isActive }
@@ -80,7 +80,7 @@ const Customers = () => {
 
   const handleVerifyEmail = async (customerId) => {
     try {
-      await axios.put(`/api/admin/customers/${customerId}/verify-email`);
+      await adminApi.put(`/admin/customers/${customerId}/verify-email`);
       setCustomers(prev => prev.map(customer =>
         customer._id === customerId
           ? { ...customer, isEmailVerified: true }

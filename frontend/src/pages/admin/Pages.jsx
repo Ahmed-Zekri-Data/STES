@@ -10,7 +10,7 @@ import {
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
-import api from '../../utils/axios';
+import api from '../../utils/adminApi';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import AnimatedButton from '../../components/AnimatedButton';
 

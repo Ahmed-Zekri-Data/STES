@@ -16,7 +16,7 @@ import {
   X,
   Upload
 } from 'lucide-react';
-import api from '../../utils/axios';
+import api from '../../utils/adminApi';
 import AnimatedButton from '../../components/AnimatedButton';
 import { showPlaceholderOnError } from '../../utils/images';
 

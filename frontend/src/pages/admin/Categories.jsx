@@ -13,6 +13,7 @@ import {
   Tag
 } from 'lucide-react';
 import AnimatedButton from '../../components/AnimatedButton';
+import adminApi from '../../utils/adminApi';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 const Categories = () => {
@@ -47,7 +48,7 @@ const Categories = () => {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/admin/categories');
+      const response = await adminApi.get('/admin/categories');
       setCategories(response.data.categories || response.data);
       setLoading(false);
     } catch (error) {
@@ -66,13 +67,13 @@ const Categories = () => {
 
       if (editingCategory) {
         // Update existing category
-        const response = await axios.put(`/api/admin/categories/${editingCategory._id}`, categoryData);
+        const response = await adminApi.put(`/admin/categories/${editingCategory._id}`, categoryData);
         setCategories(prev => prev.map(cat =>
           cat._id === editingCategory._id ? response.data : cat
         ));
       } else {
         // Add new category
-        const response = await axios.post('/api/admin/categories', categoryData);
+        const response = await adminApi.post('/admin/categories', categoryData);
         setCategories(prev => [response.data, ...prev]);
       }
 
@@ -104,7 +105,7 @@ const Categories = () => {
   const handleDelete = async (categoryId) => {
     if (window.confirm('Are you sure you want to delete this category?')) {
       try {
-        await axios.delete(`/api/admin/categories/${categoryId}`);
+        await adminApi.delete(`/admin/categories/${categoryId}`);
         setCategories(prev => prev.filter(cat => cat._id !== categoryId));
       } catch (error) {
         console.error('Error deleting category:', error);
@@ -115,7 +116,7 @@ const Categories = () => {
 
   const handleToggleStatus = async (categoryId) => {
     try {
-      await axios.put(`/api/admin/categories/${categoryId}/toggle-status`);
+      await adminApi.put(`/admin/categories/${categoryId}/toggle-status`);
       setCategories(prev => prev.map(cat =>
         cat._id === categoryId
           ? { ...cat, isActive: !cat.isActive }

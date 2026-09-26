@@ -19,7 +19,7 @@ import {
   Save,
   X
 } from 'lucide-react';
-import api from '../../utils/axios';
+import api from '../../utils/adminApi';
 import LoadingSpinner from '../LoadingSpinner';
 
 // Status display helpers, shared by the order list and the order details modal

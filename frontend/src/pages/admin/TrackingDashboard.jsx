@@ -14,7 +14,7 @@ import {
   Activity,
   Target
 } from 'lucide-react';
-import axios from 'axios';
+import adminApi from '../../utils/adminApi';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 const TrackingDashboard = () => {
@@ -33,8 +33,8 @@ const TrackingDashboard = () => {
       
       // Fetch tracking statistics
       const [statsResponse, ordersResponse] = await Promise.all([
-        axios.get('/api/orders/stats', { params: { timeRange } }),
-        axios.get('/api/orders', { params: { limit: 10, sort: 'createdAt', order: 'desc' } })
+        adminApi.get('/orders/stats', { params: { timeRange } }),
+        adminApi.get('/orders', { params: { limit: 10, sort: 'createdAt', order: 'desc' } })
       ]);
 
       setStats(statsResponse.data);

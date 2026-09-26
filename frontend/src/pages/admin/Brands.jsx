@@ -13,6 +13,7 @@ import {
   MapPin
 } from 'lucide-react';
 import AnimatedButton from '../../components/AnimatedButton';
+import adminApi from '../../utils/adminApi';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 const Brands = () => {
@@ -51,7 +52,7 @@ const Brands = () => {
   const fetchBrands = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/admin/brands');
+      const response = await adminApi.get('/admin/brands');
       setBrands(response.data.brands || response.data);
       setLoading(false);
     } catch (error) {
@@ -70,13 +71,13 @@ const Brands = () => {
 
       if (editingBrand) {
         // Update existing brand
-        const response = await axios.put(`/api/admin/brands/${editingBrand._id}`, brandData);
+        const response = await adminApi.put(`/admin/brands/${editingBrand._id}`, brandData);
         setBrands(prev => prev.map(brand =>
           brand._id === editingBrand._id ? response.data : brand
         ));
       } else {
         // Add new brand
-        const response = await axios.post('/api/admin/brands', brandData);
+        const response = await adminApi.post('/admin/brands', brandData);
         setBrands(prev => [response.data, ...prev]);
       }
 
