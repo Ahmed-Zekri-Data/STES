@@ -9,7 +9,7 @@ const { CheckoutError, priceOrderItems, quoteOrder, reserveStock, releaseStock, 
 
 // Delivery is priced by governorate when the address has one, else by city
 const deliveryPlace = (address) => address?.governorate || address?.city || 'tunis';
-// const emailNotificationService = require('../services/emailNotificationService');
+const emailNotificationService = require('../services/emailNotificationService');
 
 // POST /api/orders - Create new order
 router.post('/', optionalCustomerAuth, [
@@ -128,6 +128,10 @@ router.post('/', optionalCustomerAuth, [
       await releaseStock(orderItems);
       throw error;
     }
+
+    // In the background: a slow or unreachable mail server must not hold up
+    // checkout. Failures are logged by the service.
+    emailNotificationService.sendOrderConfirmation(order);
 
     await order.populate('items.product');
 

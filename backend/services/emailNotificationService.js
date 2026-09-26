@@ -1,6 +1,26 @@
 const nodemailer = require('nodemailer');
 require('../config/env');
 
+// Escapes text typed by customers before it goes into an HTML email
+const escapeHtml = (value) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
+const formatTND = (amount) => `${Number(amount || 0).toFixed(3)} TND`;
+
+const PAYMENT_METHOD_LABELS = {
+  cash_on_delivery: 'Paiement à la livraison',
+  bank_transfer: 'Virement bancaire',
+  paymee: 'Paymee',
+  flouci: 'Flouci',
+  d17: 'D17',
+  konnect: 'Konnect',
+  card: 'Carte bancaire'
+};
+
 class EmailNotificationService {
   constructor() {
     this.transporter = this.createTransporter();
@@ -17,6 +37,130 @@ class EmailNotificationService {
         pass: process.env.EMAIL_PASS
       }
     });
+  }
+
+  // True when SMTP credentials are set (not left empty or as the
+  // .env.example placeholders), so we don't try to send with no account
+  isConfigured() {
+    const user = process.env.EMAIL_USER;
+    const pass = process.env.EMAIL_PASS;
+    return Boolean(user && pass && user !== 'your-email@gmail.com' && pass !== 'your-app-password');
+  }
+
+  // Send the "order received" email to the customer after checkout
+  async sendOrderConfirmation(order) {
+    if (order.emailNotifications?.enabled === false) {
+      return { success: false, reason: 'notifications_disabled' };
+    }
+    if (!this.isConfigured()) {
+      console.log(`Email not configured (EMAIL_USER / EMAIL_PASS): no confirmation sent for order ${order.orderNumber}`);
+      return { success: false, reason: 'email_not_configured' };
+    }
+
+    try {
+      const content = this.generateOrderConfirmationEmail(order);
+      const result = await this.transporter.sendMail({
+        from: `"STES Piscines" <${process.env.EMAIL_USER}>`,
+        to: order.customer.email,
+        subject: content.subject,
+        html: content.html,
+        text: content.text
+      });
+
+      console.log(`Order confirmation email sent for order ${order.orderNumber} to ${order.customer.email}`);
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error(`Error sending order confirmation email for ${order.orderNumber}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  generateOrderConfirmationEmail(order) {
+    const pricing = order.pricing || {};
+    const address = order.customer.address || {};
+    const trackingUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/track-order?code=${encodeURIComponent(order.trackingCode)}`;
+    const paymentLabel = PAYMENT_METHOD_LABELS[order.paymentMethod] || order.paymentMethod;
+    const addressLines = [
+      address.street,
+      [address.city, address.governorate].filter(Boolean).join(', '),
+      address.country
+    ].filter(Boolean);
+    const estimatedDelivery = order.estimatedDelivery
+      ? new Date(order.estimatedDelivery).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+      : null;
+    const delivery = Number(pricing.shippingCost) === 0 ? 'Gratuite' : formatTND(pricing.shippingCost);
+
+    const totals = [
+      ['Sous-total', formatTND(pricing.subtotal)],
+      ['Livraison', delivery],
+      ...(pricing.paymentFee ? [['Frais de paiement', formatTND(pricing.paymentFee)]] : []),
+      [`TVA (${Math.round((pricing.taxRate || 0) * 100)}%)`, formatTND(pricing.taxAmount)]
+    ];
+
+    const subject = `Confirmation de votre commande ${order.orderNumber}`;
+
+    const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#1f2937;line-height:1.5">
+  <div style="max-width:600px;margin:0 auto;padding:20px">
+    <div style="background:#0284c7;color:#ffffff;padding:24px;border-radius:10px 10px 0 0;text-align:center">
+      <h1 style="margin:0;font-size:22px">STES Piscines</h1>
+      <p style="margin:4px 0 0">Merci pour votre commande !</p>
+    </div>
+    <div style="background:#ffffff;padding:24px;border:1px solid #e5e7eb">
+      <p>Bonjour ${escapeHtml(order.customer.name)},</p>
+      <p>Nous avons bien reçu votre commande. Voici son récapitulatif.</p>
+      <p style="background:#f0f9ff;padding:12px;border-radius:8px">
+        Numéro de commande : <strong>${escapeHtml(order.orderNumber)}</strong><br>
+        Code de suivi : <strong>${escapeHtml(order.trackingCode)}</strong>
+      </p>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0">
+        <tr style="text-align:left;border-bottom:1px solid #e5e7eb"><th style="padding:6px 0">Article</th><th style="padding:6px 0">Qté</th><th style="padding:6px 0;text-align:right">Total</th></tr>
+        ${order.items.map(item => `<tr style="border-bottom:1px solid #f3f4f6">
+          <td style="padding:6px 0">${escapeHtml(item.name)}</td>
+          <td style="padding:6px 0">${escapeHtml(item.quantity)}</td>
+          <td style="padding:6px 0;text-align:right">${formatTND(item.price * item.quantity)}</td>
+        </tr>`).join('')}
+      </table>
+      <table style="width:100%;border-collapse:collapse">
+        ${totals.map(([label, value]) => `<tr><td style="padding:2px 0">${label}</td><td style="padding:2px 0;text-align:right">${value}</td></tr>`).join('')}
+        <tr style="font-weight:bold;border-top:1px solid #e5e7eb"><td style="padding:8px 0">Total</td><td style="padding:8px 0;text-align:right">${formatTND(pricing.totalAmount ?? order.totalAmount)}</td></tr>
+      </table>
+      <p><strong>Paiement :</strong> ${escapeHtml(paymentLabel)}</p>
+      <p><strong>Livraison à :</strong><br>${addressLines.map(escapeHtml).join('<br>')}</p>
+      ${estimatedDelivery ? `<p><strong>Livraison estimée :</strong> ${escapeHtml(estimatedDelivery)}</p>` : ''}
+      <p style="text-align:center;margin:24px 0">
+        <a href="${escapeHtml(trackingUrl)}" style="display:inline-block;padding:12px 24px;background:#0284c7;color:#ffffff;text-decoration:none;border-radius:6px">Suivre ma commande</a>
+      </p>
+    </div>
+    <div style="background:#f9fafb;padding:16px;text-align:center;font-size:13px;color:#6b7280;border-radius:0 0 10px 10px">
+      Une question ? Répondez à cet email en indiquant votre numéro de commande.
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const text = [
+      `Bonjour ${order.customer.name},`,
+      '',
+      'Nous avons bien reçu votre commande.',
+      `Numéro de commande : ${order.orderNumber}`,
+      `Code de suivi : ${order.trackingCode}`,
+      '',
+      ...order.items.map(item => `- ${item.name} x${item.quantity} : ${formatTND(item.price * item.quantity)}`),
+      '',
+      ...totals.map(([label, value]) => `${label} : ${value}`),
+      `Total : ${formatTND(pricing.totalAmount ?? order.totalAmount)}`,
+      '',
+      `Paiement : ${paymentLabel}`,
+      `Livraison à : ${addressLines.join(', ')}`,
+      ...(estimatedDelivery ? [`Livraison estimée : ${estimatedDelivery}`] : []),
+      '',
+      `Suivre ma commande : ${trackingUrl}`
+    ].join('\n');
+
+    return { subject, html, text };
   }
 
   // Send order status update email

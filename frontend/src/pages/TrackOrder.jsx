@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, 
@@ -16,26 +17,21 @@ import {
 import axios from 'axios';
 
 const TrackOrder = () => {
-  const [trackingCode, setTrackingCode] = useState('');
+  const [searchParams] = useSearchParams();
+  const [trackingCode, setTrackingCode] = useState(searchParams.get('code') || '');
   const [email, setEmail] = useState('');
   const [searchMethod, setSearchMethod] = useState('code'); // 'code' or 'email'
   const [loading, setLoading] = useState(false);
   const [orderData, setOrderData] = useState(null);
   const [error, setError] = useState('');
 
-  const handleTrackByCode = async (e) => {
-    e.preventDefault();
-    if (!trackingCode.trim()) {
-      setError('Veuillez entrer un code de suivi');
-      return;
-    }
-
+  const trackCode = async (code) => {
     setLoading(true);
     setError('');
     setOrderData(null);
 
     try {
-      const response = await axios.get(`/api/tracking/${trackingCode.trim()}`);
+      const response = await axios.get(`/api/tracking/${encodeURIComponent(code.trim())}`);
       setOrderData(response.data);
     } catch (error) {
       console.error('Error tracking order:', error);
@@ -48,6 +44,25 @@ const TrackOrder = () => {
       setLoading(false);
     }
   };
+
+  const handleTrackByCode = (e) => {
+    e.preventDefault();
+    if (!trackingCode.trim()) {
+      setError('Veuillez entrer un code de suivi');
+      return;
+    }
+    trackCode(trackingCode);
+  };
+
+  // Links such as the one in the confirmation email: /track-order?code=TRK-...
+  useEffect(() => {
+    const code = searchParams.get('code');
+    if (code) {
+      trackCode(code);
+    }
+    // Only when the page opens with a code
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleTrackByEmail = async (e) => {
     e.preventDefault();
