@@ -197,9 +197,13 @@ const NotificationsMenu = () => {
                     </Link>
                   ))}
                   {lowStock.count > lowStock.items.length && (
-                    <p className="px-2 py-1 text-xs text-gray-500">
-                      and {lowStock.count - lowStock.items.length} more at {lowStock.threshold} units or fewer
-                    </p>
+                    <Link
+                      to="/admin/products?sort=stock"
+                      onClick={close}
+                      className="block px-2 py-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      See all {lowStock.count} at {lowStock.threshold} units or fewer
+                    </Link>
                   )}
                 </section>
               )}

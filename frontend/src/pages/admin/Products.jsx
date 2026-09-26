@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -20,15 +20,39 @@ import api from '../../utils/adminApi';
 import AnimatedButton from '../../components/AnimatedButton';
 import { showPlaceholderOnError } from '../../utils/images';
 
+const PAGE_SIZE = 24;
+
+const STOCK_TABS = [
+  { value: 'all', label: 'All' },
+  { value: 'low', label: 'Low stock' },
+  { value: 'out', label: 'Out of stock' }
+];
+
+const SORTS = [
+  { value: 'newest', label: 'Newest first' },
+  { value: 'name', label: 'Name A-Z' },
+  { value: 'price_asc', label: 'Price: low to high' },
+  { value: 'price_desc', label: 'Price: high to low' },
+  { value: 'stock', label: 'Stock: lowest first' }
+];
+
 const UPLOADABLE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [appliedSearch, setAppliedSearch] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [stockFilter, setStockFilter] = useState(searchParams.get('stock') || 'all');
+  const [sort, setSort] = useState(searchParams.get('sort') || 'newest');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ totalPages: 1, totalProducts: 0 });
+  const [stockCounts, setStockCounts] = useState({ all: 0, low: 0, out: 0 });
+  const [lowStockThreshold, setLowStockThreshold] = useState(5);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
@@ -51,13 +75,31 @@ const Products = () => {
     }))
   ];
 
-  // Links from the admin top bar (search results, notifications) set ?search=
-  useEffect(() => {
+  // Links from the admin top bar (search results, notifications) set
+  // ?search=, ?stock= or ?sort=
+  const [linkedFilters, setLinkedFilters] = useState(searchParams.toString());
+  if (linkedFilters !== searchParams.toString()) {
+    setLinkedFilters(searchParams.toString());
     setSearchTerm(searchParams.get('search') || '');
-  }, [searchParams]);
+    setAppliedSearch(searchParams.get('search') || '');
+    setStockFilter(searchParams.get('stock') || 'all');
+    setSort(searchParams.get('sort') || 'newest');
+    setSelectedCategory('');
+    setPage(1);
+  }
+
+  // Search on the server once typing pauses
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm.trim() !== appliedSearch) {
+        setAppliedSearch(searchTerm.trim());
+        setPage(1);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm, appliedSearch]);
 
   useEffect(() => {
-    fetchProducts();
     fetchCategories();
   }, []);
 
@@ -70,24 +112,45 @@ const Products = () => {
     }
   };
 
-  const fetchProducts = async () => {
+  // Every product, including out-of-stock ones (the shop's list hides them)
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await api.get('/products');
-      setProducts(response.data.products || response.data);
-      setLoading(false);
+      const response = await api.get('/admin/products', {
+        params: {
+          page,
+          limit: PAGE_SIZE,
+          search: appliedSearch || undefined,
+          category: selectedCategory || undefined,
+          stock: stockFilter,
+          sort
+        }
+      });
+      setProducts(response.data.products);
+      setPagination(response.data.pagination);
+      setStockCounts(response.data.stockCounts);
+      setLowStockThreshold(response.data.lowStockThreshold);
+      setLoadError('');
     } catch (error) {
       console.error('Error fetching products:', error);
+      setLoadError(error.response?.status === 403
+        ? 'You do not have permission to manage products.'
+        : 'Products could not be loaded. Please try again.');
+    } finally {
       setLoading(false);
     }
-  };
+  }, [page, appliedSearch, selectedCategory, stockFilter, sort]);
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === '' || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  const stockBadge = (product) => {
+    const stock = product.stockQuantity ?? 0;
+    if (stock <= 0) return { label: 'Out of stock', className: 'bg-red-600 text-white' };
+    if (stock <= lowStockThreshold) return { label: `Low stock: ${stock}`, className: 'bg-orange-500 text-white' };
+    return { label: `Stock: ${stock}`, className: 'bg-white/90 text-gray-900' };
+  };
 
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageError, setImageError] = useState('');
@@ -147,16 +210,12 @@ const Products = () => {
       };
 
       if (editingProduct) {
-        // Update existing product
-        const response = await api.put(`/products/${editingProduct._id}`, productData);
-        setProducts(prev => prev.map(p =>
-          p._id === editingProduct._id ? response.data : p
-        ));
+        await api.put(`/products/${editingProduct._id}`, productData);
       } else {
-        // Add new product
-        const response = await api.post('/products', productData);
-        setProducts(prev => [response.data, ...prev]);
+        await api.post('/products', productData);
       }
+      // Reload: the product may now belong to another filter or page
+      fetchProducts();
 
       resetForm();
       setShowAddModal(false);
@@ -188,7 +247,7 @@ const Products = () => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await api.delete(`/products/${productId}`);
-        setProducts(prev => prev.filter(p => p._id !== productId));
+        fetchProducts();
       } catch (error) {
         console.error('Error deleting product:', error);
         alert('Error deleting product: ' + (error.response?.data?.message || error.message));
@@ -209,12 +268,14 @@ const Products = () => {
     });
   };
 
-  const getCategoryLabel = (category) => {
-    const cat = categories.find(c => c.value === category);
-    return cat ? cat.label : category;
+  const getCategoryLabel = (product) => {
+    const cat = categories.find(c => c.value === product.category);
+    return cat ? cat.label : (product.categoryName || product.category);
   };
 
-  if (loading) {
+  const filtersApplied = appliedSearch || selectedCategory || stockFilter !== 'all';
+
+  if (loading && products.length === 0 && !loadError) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -284,8 +345,9 @@ const Products = () => {
           </div>
           <div className="sm:w-48">
             <select
+              aria-label="Category"
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               {categories.map(category => (
@@ -295,25 +357,66 @@ const Products = () => {
               ))}
             </select>
           </div>
+          <div className="sm:w-52">
+            <select
+              aria-label="Sort"
+              value={sort}
+              onChange={(e) => { setSort(e.target.value); setPage(1); }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              {SORTS.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Stock */}
+        <div className="flex flex-wrap gap-2 mt-4" role="tablist" aria-label="Stock">
+          {STOCK_TABS.map(tab => (
+            <button
+              key={tab.value}
+              role="tab"
+              aria-selected={stockFilter === tab.value}
+              onClick={() => { setStockFilter(tab.value); setPage(1); }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                stockFilter === tab.value
+                  ? tab.value === 'out' ? 'bg-red-600 text-white' : tab.value === 'low' ? 'bg-orange-500 text-white' : 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {tab.label} ({stockCounts[tab.value]})
+            </button>
+          ))}
+          <span className="self-center text-sm text-gray-500 ml-2">
+            Low stock means {lowStockThreshold} units or fewer
+          </span>
         </div>
       </motion.div>
 
+      {loadError && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center justify-between">
+          <span>{loadError}</span>
+          <button onClick={fetchProducts} className="font-medium underline">Try again</button>
+        </div>
+      )}
+
       {/* Products Grid */}
       <motion.div
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-opacity ${loading ? 'opacity-60' : ''}`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6, delay: 0.4 }}
       >
         <AnimatePresence>
-          {filteredProducts.map((product, index) => (
+          {products.map((product, index) => (
             <motion.div
               key={product._id}
               className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              transition={{ duration: 0.4, delay: Math.min(index, 8) * 0.05 }}
               whileHover={{ y: -5 }}
             >
               <div className="relative">
@@ -328,8 +431,8 @@ const Products = () => {
                     Featured
                   </div>
                 )}
-                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 text-xs font-medium">
-                  Stock: {product.stockQuantity || product.stock || 0}
+                <div className={`absolute top-3 right-3 backdrop-blur-sm rounded-full px-2 py-1 text-xs font-medium ${stockBadge(product).className}`}>
+                  {stockBadge(product).label}
                 </div>
               </div>
               
@@ -343,7 +446,7 @@ const Products = () => {
                       {product.description}
                     </p>
                     <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                      {getCategoryLabel(product.category)}
+                      {getCategoryLabel(product)}
                     </span>
                   </div>
                 </div>
@@ -377,7 +480,29 @@ const Products = () => {
         </AnimatePresence>
       </motion.div>
 
-      {filteredProducts.length === 0 && !loading && (
+      {pagination.totalPages > 1 && (
+        <div className="flex items-center justify-center gap-4">
+          <button
+            onClick={() => setPage(page - 1)}
+            disabled={page <= 1 || loading}
+            className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-gray-600">
+            Page {page} of {pagination.totalPages} · {pagination.totalProducts} products
+          </span>
+          <button
+            onClick={() => setPage(page + 1)}
+            disabled={page >= pagination.totalPages || loading}
+            className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
+
+      {products.length === 0 && !loading && !loadError && (
         <motion.div
           className="text-center py-12"
           initial={{ opacity: 0, scale: 0.9 }}
@@ -386,10 +511,16 @@ const Products = () => {
         >
           <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
-          <p className="text-gray-600 mb-6">Try adjusting your search or filter criteria</p>
-          <AnimatedButton onClick={() => setShowAddModal(true)}>
-            Add Your First Product
-          </AnimatedButton>
+          {filtersApplied ? (
+            <p className="text-gray-600 mb-6">Try adjusting your search or filters</p>
+          ) : (
+            <>
+              <p className="text-gray-600 mb-6">Your catalog is empty</p>
+              <AnimatedButton onClick={() => setShowAddModal(true)}>
+                Add Your First Product
+              </AnimatedButton>
+            </>
+          )}
         </motion.div>
       )}
 
