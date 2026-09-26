@@ -21,6 +21,43 @@ import {
 import api from '../../utils/axios';
 import LoadingSpinner from '../LoadingSpinner';
 
+// Status display helpers, shared by the order list and the order details modal
+const getStatusIcon = (status) => {
+  switch (status) {
+    case 'pending': return <Clock className="w-4 h-4" />;
+    case 'confirmed': return <CheckCircle className="w-4 h-4" />;
+    case 'processing': return <Package className="w-4 h-4" />;
+    case 'shipped': return <Truck className="w-4 h-4" />;
+    case 'delivered': return <CheckCircle className="w-4 h-4" />;
+    case 'cancelled': return <XCircle className="w-4 h-4" />;
+    default: return <Clock className="w-4 h-4" />;
+  }
+};
+
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    case 'confirmed': return 'bg-blue-100 text-blue-800 border-blue-200';
+    case 'processing': return 'bg-purple-100 text-purple-800 border-purple-200';
+    case 'shipped': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+    case 'delivered': return 'bg-green-100 text-green-800 border-green-200';
+    case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
+    default: return 'bg-gray-100 text-gray-800 border-gray-200';
+  }
+};
+
+const getStatusLabel = (status) => {
+  const labels = {
+    pending: 'En attente',
+    confirmed: 'Confirmée',
+    processing: 'En préparation',
+    shipped: 'Expédiée',
+    delivered: 'Livrée',
+    cancelled: 'Annulée'
+  };
+  return labels[status] || status;
+};
+
 const OrderManagement = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,42 +98,6 @@ const OrderManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'pending': return <Clock className="w-4 h-4" />;
-      case 'confirmed': return <CheckCircle className="w-4 h-4" />;
-      case 'processing': return <Package className="w-4 h-4" />;
-      case 'shipped': return <Truck className="w-4 h-4" />;
-      case 'delivered': return <CheckCircle className="w-4 h-4" />;
-      case 'cancelled': return <XCircle className="w-4 h-4" />;
-      default: return <Clock className="w-4 h-4" />;
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'confirmed': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'processing': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'shipped': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
-      case 'delivered': return 'bg-green-100 text-green-800 border-green-200';
-      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getStatusLabel = (status) => {
-    const labels = {
-      pending: 'En attente',
-      confirmed: 'Confirmée',
-      processing: 'En préparation',
-      shipped: 'Expédiée',
-      delivered: 'Livrée',
-      cancelled: 'Annulée'
-    };
-    return labels[status] || status;
   };
 
   const handleStatusUpdate = async (orderId, newStatus, trackingNumber = '', note = '', location = '') => {
