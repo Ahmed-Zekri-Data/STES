@@ -137,10 +137,24 @@ export const CustomerProvider = ({ children }) => {
     }
   };
 
+  // Returns the account's email, or throws when the link is invalid or expired
+  const checkResetLink = async (token) => {
+    const response = await axios.post('/api/customers/reset-password/check', { token });
+    return response.data.email;
+  };
+
+  // Sets the new password and logs the customer in
   const resetPassword = async (token, password) => {
     try {
       const response = await axios.post('/api/customers/reset-password', { token, password });
-      return { success: true, message: response.data.message };
+      const { token: sessionToken, customer: customerData } = response.data;
+
+      localStorage.setItem('customerToken', sessionToken);
+      setCustomer(customerData);
+      setIsAuthenticated(true);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${sessionToken}`;
+
+      return { success: true, message: response.data.message, customer: customerData };
     } catch (error) {
       console.error('Reset password error:', error);
       throw error;
@@ -236,6 +250,7 @@ export const CustomerProvider = ({ children }) => {
     updateProfile,
     changePassword,
     forgotPassword,
+    checkResetLink,
     resetPassword,
     verifyEmail,
     checkAuthStatus,

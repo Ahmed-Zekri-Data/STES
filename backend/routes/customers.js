@@ -5,6 +5,22 @@ const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const Customer = require('../models/Customer');
 const { customerAuth } = require('../middleware/customerAuth');
+const emailNotificationService = require('../services/emailNotificationService');
+
+// What the shop keeps about the logged-in customer
+const sessionCustomer = (customer) => ({
+  id: customer._id,
+  email: customer.email,
+  firstName: customer.firstName,
+  lastName: customer.lastName,
+  fullName: customer.fullName,
+  phone: customer.phone,
+  isEmailVerified: customer.isEmailVerified,
+  loyaltyPoints: customer.loyaltyPoints,
+  totalSpent: customer.totalSpent,
+  orderCount: customer.orderCount,
+  lastLogin: customer.lastLogin
+});
 
 // POST /api/customers/register - Customer registration
 router.post('/register', [
@@ -100,19 +116,7 @@ router.post('/login', [
     res.json({
       message: 'Login successful',
       token,
-      customer: {
-        id: customer._id,
-        email: customer.email,
-        firstName: customer.firstName,
-        lastName: customer.lastName,
-        fullName: customer.fullName,
-        phone: customer.phone,
-        isEmailVerified: customer.isEmailVerified,
-        loyaltyPoints: customer.loyaltyPoints,
-        totalSpent: customer.totalSpent,
-        orderCount: customer.orderCount,
-        lastLogin: customer.lastLogin
-      }
+      customer: sessionCustomer(customer)
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -236,7 +240,22 @@ router.post('/verify-email', [
   }
 });
 
-// POST /api/customers/forgot-password - Request password reset
+// Password reset links are valid for an hour. The database keeps only a
+// hash of the code in the link, so a copy of the database can't be used
+// to reset passwords.
+const RESET_LINK_MS = 60 * 60 * 1000;
+// A new request within this time doesn't send another email
+const RESET_RESEND_MS = 2 * 60 * 1000;
+const hashResetToken = (token) => crypto.createHash('sha256').update(String(token)).digest('hex');
+const RESET_REQUESTED_MESSAGE = 'If an account with that email exists, a password reset link has been sent.';
+
+const findByResetToken = (token) => Customer.findOne({
+  passwordResetToken: hashResetToken(token),
+  passwordResetExpires: { $gt: Date.now() },
+  isActive: true
+});
+
+// POST /api/customers/forgot-password - Email a password reset link
 router.post('/forgot-password', [
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required')
 ], async (req, res) => {
@@ -248,29 +267,56 @@ router.post('/forgot-password', [
 
     const { email } = req.body;
 
+    // The answer is the same whether or not the account exists
     const customer = await Customer.findOne({ email, isActive: true });
     if (!customer) {
-      // Don't reveal if email exists or not
-      return res.json({ message: 'If an account with that email exists, a password reset link has been sent.' });
+      return res.json({ message: RESET_REQUESTED_MESSAGE });
     }
 
-    // Generate reset token
+    const sentRecently = customer.passwordResetExpires
+      && customer.passwordResetExpires.getTime() - RESET_LINK_MS + RESET_RESEND_MS > Date.now();
+    if (sentRecently) {
+      return res.json({ message: RESET_REQUESTED_MESSAGE });
+    }
+
     const resetToken = crypto.randomBytes(32).toString('hex');
-    customer.passwordResetToken = resetToken;
-    customer.passwordResetExpires = Date.now() + 3600000; // 1 hour
+    customer.passwordResetToken = hashResetToken(resetToken);
+    customer.passwordResetExpires = Date.now() + RESET_LINK_MS;
     await customer.save();
 
-    // TODO: Send password reset email
-    console.log(`Password reset token for ${email}: ${resetToken}`);
+    // Sent in the background: the answer doesn't wait for the mail server
+    emailNotificationService.sendPasswordReset(customer, resetToken);
 
-    res.json({ message: 'If an account with that email exists, a password reset link has been sent.' });
+    res.json({ message: RESET_REQUESTED_MESSAGE });
   } catch (error) {
     console.error('Forgot password error:', error);
     res.status(500).json({ message: 'Error processing password reset request' });
   }
 });
 
-// POST /api/customers/reset-password - Reset password with token
+// POST /api/customers/reset-password/check - Is this reset link still valid?
+router.post('/reset-password/check', [
+  body('token').isLength({ min: 1 }).withMessage('Reset token is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const customer = await findByResetToken(req.body.token);
+    if (!customer) {
+      return res.status(400).json({ message: 'Invalid or expired reset token' });
+    }
+    res.json({ valid: true, email: customer.email });
+  } catch (error) {
+    console.error('Reset link check error:', error);
+    res.status(500).json({ message: 'Error checking reset link' });
+  }
+});
+
+// POST /api/customers/reset-password - Choose a new password from the link.
+// Logs the customer in and signs out every other session.
 router.post('/reset-password', [
   body('token').isLength({ min: 1 }).withMessage('Reset token is required'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
@@ -283,11 +329,7 @@ router.post('/reset-password', [
 
     const { token, password } = req.body;
 
-    const customer = await Customer.findOne({
-      passwordResetToken: token,
-      passwordResetExpires: { $gt: Date.now() }
-    });
-
+    const customer = await findByResetToken(token);
     if (!customer) {
       return res.status(400).json({ message: 'Invalid or expired reset token' });
     }
@@ -295,9 +337,19 @@ router.post('/reset-password', [
     customer.password = password;
     customer.passwordResetToken = undefined;
     customer.passwordResetExpires = undefined;
+    // Signs out every session started with the old password
+    customer.sessionVersion = (customer.sessionVersion || 0) + 1;
+    // The link proves the customer owns the email: lift a lockout
+    customer.loginAttempts = 0;
+    customer.lockUntil = undefined;
+    customer.lastLogin = new Date();
     await customer.save();
 
-    res.json({ message: 'Password reset successfully' });
+    res.json({
+      message: 'Password reset successfully',
+      token: signCustomerToken(customer),
+      customer: sessionCustomer(customer)
+    });
   } catch (error) {
     console.error('Password reset error:', error);
     res.status(500).json({ message: 'Error resetting password' });

@@ -3,9 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import CustomerLogin from './CustomerLogin';
 import CustomerRegister from './CustomerRegister';
+import ForgotPassword from './ForgotPassword';
 
 const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   const [mode, setMode] = useState(initialMode);
+  // Carried from the login form to the "forgot password" form
+  const [forgotEmail, setForgotEmail] = useState('');
 
   // Open in the mode the caller asked for ("S'inscrire" vs "Connexion")
   useEffect(() => {
@@ -22,6 +25,11 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
 
   const handleSwitchToLogin = () => {
     setMode('login');
+  };
+
+  const handleForgotPassword = (email) => {
+    setForgotEmail(email);
+    setMode('forgot');
   };
 
   const handleClose = () => {
@@ -87,17 +95,26 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
           {/* Content */}
           <div className="p-6">
             <AnimatePresence mode="wait">
-              {mode === 'login' ? (
+              {mode === 'login' && (
                 <CustomerLogin
                   key="login"
                   onClose={handleClose}
                   onSwitchToRegister={handleSwitchToRegister}
+                  onForgotPassword={handleForgotPassword}
                 />
-              ) : (
+              )}
+              {mode === 'register' && (
                 <CustomerRegister
                   key="register"
                   onClose={handleClose}
                   onSwitchToLogin={handleSwitchToLogin}
+                />
+              )}
+              {mode === 'forgot' && (
+                <ForgotPassword
+                  key="forgot"
+                  initialEmail={forgotEmail}
+                  onBack={handleSwitchToLogin}
                 />
               )}
             </AnimatePresence>

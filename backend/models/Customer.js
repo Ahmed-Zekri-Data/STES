@@ -116,6 +116,11 @@ const customerSchema = new mongoose.Schema({
   passwordResetExpires: {
     type: Date
   },
+  // Written into each login token; raising it signs out every session
+  sessionVersion: {
+    type: Number,
+    default: 0
+  },
   lastLogin: {
     type: Date
   },

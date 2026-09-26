@@ -16,6 +16,9 @@ const getBearerToken = (req) => {
   return parts[1];
 };
 
+// False for a session started before the password was last reset
+const isCurrentSession = (customer, decoded) => (decoded.v || 0) === (customer.sessionVersion || 0);
+
 // Routes read the authenticated customer's id as req.customer.customerId.
 const toRequestCustomer = (customer) => ({
   customerId: customer._id,
@@ -39,6 +42,10 @@ const customerAuth = async (req, res, next) => {
 
     if (!customer) {
       return res.status(401).json({ message: 'Token is not valid. Customer not found.' });
+    }
+
+    if (!isCurrentSession(customer, decoded)) {
+      return res.status(401).json({ message: 'Password changed. Please log in again.' });
     }
 
     if (!customer.isActive) {
@@ -78,7 +85,7 @@ const optionalCustomerAuth = async (req, res, next) => {
       const decoded = verifyCustomerToken(token);
       const customer = await Customer.findById(decoded.customerId).select('-password');
 
-      if (customer && customer.isActive && !customer.isLocked) {
+      if (customer && customer.isActive && !customer.isLocked && isCurrentSession(customer, decoded)) {
         req.customer = toRequestCustomer(customer);
       }
     }

@@ -8,7 +8,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import AnimatedButton from '../AnimatedButton';
 import LoadingSpinner from '../LoadingSpinner';
 
-const CustomerLogin = ({ onClose, onSwitchToRegister }) => {
+const CustomerLogin = ({ onClose, onSwitchToRegister, onForgotPassword }) => {
   const navigate = useNavigate();
   const { login } = useCustomer();
   const { login: adminLogin } = useAdmin();
@@ -215,6 +215,7 @@ const CustomerLogin = ({ onClose, onSwitchToRegister }) => {
         >
           <button
             type="button"
+            onClick={() => onForgotPassword(formData.email)}
             className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
           >
             {text.forgotPassword}
