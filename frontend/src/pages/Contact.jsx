@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { Phone, Mail, MapPin, Clock, MessageCircle, Send, CheckCircle } from 'lucide-react';
 import axios from 'axios';
+import { submitErrorMessage } from '../utils/forms';
 
 const Contact = () => {
   const { t, language } = useLanguage();
@@ -85,12 +86,7 @@ const Contact = () => {
     setLoading(true);
 
     try {
-      // TODO: Replace with actual API call
-      // await axios.post('/api/forms/contact', formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await axios.post('/api/forms/contact', formData);
       setSubmitted(true);
       setFormData({
         name: '',
@@ -101,7 +97,7 @@ const Contact = () => {
       });
     } catch (error) {
       console.error('Error submitting contact form:', error);
-      alert('Erreur lors de l\'envoi du message. Veuillez réessayer.');
+      alert(submitErrorMessage(error, 'Erreur lors de l\'envoi du message. Veuillez réessayer.'));
     } finally {
       setLoading(false);
     }
@@ -275,6 +271,7 @@ const Contact = () => {
                       value={formData.message}
                       onChange={handleInputChange}
                       required
+                      maxLength={1000}
                       rows={5}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="Votre message..."

@@ -72,6 +72,16 @@ const createApp = () => {
     message: limitMessage('Trop de comptes créés. Veuillez réessayer plus tard.')
   }));
 
+  // Every contact, quote or newsletter form lands in the admin's inbox
+  const formLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 10,
+    message: limitMessage('Trop de messages envoyés. Veuillez réessayer plus tard.')
+  });
+  for (const path of ['/api/forms/contact', '/api/forms/quote', '/api/forms/newsletter']) {
+    app.post(path, formLimiter);
+  }
+
   // CORS configuration
   app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',

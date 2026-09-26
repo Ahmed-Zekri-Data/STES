@@ -2,7 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult, query } = require('express-validator');
 const FormSubmission = require('../models/FormSubmission');
-const { auth } = require('../middleware/auth');
+const { auth, checkPermission } = require('../middleware/auth');
+const { containing } = require('../utils/text');
+
+// Reading and managing submissions needs the forms permission
+const formsAdmin = [auth, checkPermission('forms')];
 
 // POST /api/forms/contact - Submit contact form
 router.post('/contact', [
@@ -129,7 +133,7 @@ router.post('/newsletter', [
 });
 
 // GET /api/forms - Get all form submissions (Admin only)
-router.get('/', auth, [
+router.get('/', formsAdmin, [
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 100 }),
   query('type').optional().isIn(['contact', 'quote', 'newsletter']),
@@ -142,15 +146,7 @@ router.get('/', auth, [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const {
-      page = 1,
-      limit = 20,
-      type,
-      status,
-      search,
-      sortBy = 'createdAt',
-      sortOrder = 'desc'
-    } = req.query;
+    const { page = 1, limit = 20, type, status, search } = req.query;
 
     // Build filter
     const filter = {};
@@ -158,16 +154,19 @@ router.get('/', auth, [
     if (status) filter.status = status;
     
     if (search) {
+      const text = containing(search);
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { message: { $regex: search, $options: 'i' } }
+        { name: text },
+        { email: text },
+        { phone: text },
+        { subject: text },
+        { city: text },
+        { message: text }
       ];
     }
 
-    // Build sort
-    const sort = {};
-    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    // Newest first
+    const sort = { createdAt: -1 };
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -199,7 +198,7 @@ router.get('/', auth, [
 });
 
 // GET /api/forms/:id - Get single form submission (Admin only)
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', formsAdmin, async (req, res) => {
   try {
     const submission = await FormSubmission.findById(req.params.id);
     
@@ -223,7 +222,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // PUT /api/forms/:id/status - Update form submission status (Admin only)
-router.put('/:id/status', auth, [
+router.put('/:id/status', formsAdmin, [
   body('status').isIn(['new', 'read', 'replied', 'archived']).withMessage('Invalid status'),
   body('adminNotes').optional().isLength({ max: 500 }).withMessage('Admin notes cannot exceed 500 characters'),
   body('repliedBy').optional().trim().isLength({ max: 100 })
@@ -264,8 +263,25 @@ router.put('/:id/status', auth, [
   }
 });
 
+// DELETE /api/forms/:id - Delete a form submission, e.g. spam (Admin only)
+router.delete('/:id', formsAdmin, async (req, res) => {
+  try {
+    const submission = await FormSubmission.findByIdAndDelete(req.params.id);
+    if (!submission) {
+      return res.status(404).json({ message: 'Form submission not found' });
+    }
+    res.json({ message: 'Form submission deleted' });
+  } catch (error) {
+    console.error('Error deleting form submission:', error);
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid submission ID' });
+    }
+    res.status(500).json({ message: 'Error deleting form submission' });
+  }
+});
+
 // GET /api/forms/stats/summary - Get form submission statistics (Admin only)
-router.get('/stats/summary', auth, async (req, res) => {
+router.get('/stats/summary', formsAdmin, async (req, res) => {
   try {
     const stats = await FormSubmission.aggregate([
       {
