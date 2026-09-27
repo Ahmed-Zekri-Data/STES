@@ -9,7 +9,8 @@ import {
   Users,
   Settings,
   Truck,
-  MessageSquare
+  MessageSquare,
+  BarChart3
 } from 'lucide-react';
 
 const PageTitle = () => {
@@ -53,6 +54,12 @@ const PageTitle = () => {
         subtitle: 'Monitor order tracking and delivery status',
         icon: Truck,
         color: 'orange'
+      },
+      '/admin/reports': {
+        title: 'Reports',
+        subtitle: 'Sales over any period, with an export of the orders',
+        icon: BarChart3,
+        color: 'blue'
       },
       '/admin/forms': {
         title: 'Forms',

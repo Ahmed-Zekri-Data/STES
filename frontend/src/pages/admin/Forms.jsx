@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import AnimatedButton from '../../components/AnimatedButton';
 import adminApi from '../../utils/adminApi';
+import { downloadCsv } from '../../utils/csv';
 
 const PAGE_SIZE = 20;
 
@@ -83,11 +84,6 @@ const formatDate = (dateString) => new Date(dateString).toLocaleDateString('fr-F
   hour: '2-digit',
   minute: '2-digit'
 });
-
-// Quotes every cell, so commas, quotes and line breaks in messages stay in place
-const toCsv = (rows) => rows
-  .map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
-  .join('\r\n');
 
 const StatusSelect = ({ value, onChange }) => (
   <select
@@ -228,7 +224,7 @@ const Forms = () => {
         if (exportPage >= response.data.pagination.totalPages) break;
       }
 
-      const csv = toCsv([
+      downloadCsv('form-submissions.csv', [
         ['Date', 'Type', 'Status', 'Name', 'Email', 'Phone', 'City', 'Subject', 'Message'],
         ...all.map(form => [
           formatDate(form.createdAt),
@@ -242,15 +238,6 @@ const Forms = () => {
           form.message
         ])
       ]);
-
-      // The byte order mark makes Excel read accents correctly
-      const blob = new Blob(['﻿', csv], { type: 'text/csv;charset=utf-8' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'form-submissions.csv';
-      a.click();
-      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error exporting forms:', error);
       alert('The export failed. Please try again.');
