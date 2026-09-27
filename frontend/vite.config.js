@@ -21,6 +21,9 @@ export default defineConfig({
         // for all of them: splitting them further made one library run
         // before React, which it depends on.
         manualChunks(id) {
+          // three.js (the home page water, about 120 kB gzipped) is only
+          // downloaded with that page; it does not use React
+          if (id.includes('node_modules/three/')) return 'three';
           return id.includes('node_modules') ? 'vendor' : undefined;
         }
       }

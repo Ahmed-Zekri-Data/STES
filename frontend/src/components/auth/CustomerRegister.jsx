@@ -169,7 +169,7 @@ const CustomerRegister = ({ onClose, onSwitchToLogin }) => {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.2 }}
-          className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4"
+          className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-glow flex items-center justify-center mx-auto mb-4"
         >
           <UserPlus className="w-8 h-8 text-white" />
         </motion.div>
@@ -388,7 +388,7 @@ const CustomerRegister = ({ onClose, onSwitchToLogin }) => {
           <AnimatedButton
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-lg font-medium hover:from-green-600 hover:to-emerald-600 transition-all duration-200"
+            className="btn-brand w-full py-3.5"
           >
             {loading ? <LoadingSpinner size="sm" /> : text.register}
           </AnimatedButton>

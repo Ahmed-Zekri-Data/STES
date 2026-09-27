@@ -159,7 +159,7 @@ const Hero = ({ featured }) => {
               </motion.li>
             ))}
           </ul>
-          {webgl && (
+          {webgl && !reduce && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

@@ -310,7 +310,7 @@ const PaymentResult = () => {
                     to={`/track-order?order=${orderData.orderNumber}`}
                     className="flex-1"
                   >
-                    <AnimatedButton className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-lg font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 flex items-center justify-center">
+                    <AnimatedButton className="btn-brand w-full py-3.5 flex items-center justify-center">
                       <Package className="w-5 h-5 mr-2" />
                       Suivre ma commande
                     </AnimatedButton>

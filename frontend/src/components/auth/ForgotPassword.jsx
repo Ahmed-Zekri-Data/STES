@@ -101,7 +101,7 @@ const ForgotPassword = ({ initialEmail = '', onBack, showHeader = true }) => {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md mx-auto">
       {showHeader && <div className="text-center mb-6">
-        <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-glow flex items-center justify-center mx-auto mb-4">
           <KeyRound className="w-8 h-8 text-white" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">{text.title}</h2>
@@ -138,7 +138,7 @@ const ForgotPassword = ({ initialEmail = '', onBack, showHeader = true }) => {
           type="submit"
           loading={loading}
           disabled={loading}
-          className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-lg font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200"
+          className="btn-brand w-full py-3.5"
         >
           {text.send}
         </AnimatedButton>

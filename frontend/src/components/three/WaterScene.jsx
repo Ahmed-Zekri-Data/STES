@@ -303,7 +303,7 @@ const WaterScene = ({ eventSource, onReady, onError }) => {
     scene.add(ring);
     // Resting spot: lower right on wide screens (clear of the headline and
     // the featured product), centred further back on phones
-    const ringState = { x: small ? 0.8 : 3.4, z: small ? -2 : 1.2, vx: 0, vz: 0, spin: 0.15 };
+    const ringState = { x: small ? 1.4 : 3.4, z: small ? 1.6 : 1.2, vx: 0, vz: 0, spin: 0.15 };
     const ringHome = { x: ringState.x, z: ringState.z };
 
     const sun = new THREE.DirectionalLight(0xffffff, 1.4);
