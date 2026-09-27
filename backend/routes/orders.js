@@ -9,7 +9,7 @@ const { auth, checkPermission } = require('../middleware/auth');
 // Order pages in the admin: admins allowed to manage orders
 const ordersAdmin = [auth, checkPermission('orders')];
 const { optionalCustomerAuth } = require('../middleware/customerAuth');
-const { CheckoutError, priceOrderItems, quoteOrder, reserveStock, releaseStock, reserveOrderStock, releaseOrderStock } = require('../services/orderService');
+const { CheckoutError, priceOrderItems, quoteOrder, includedTax, TAX_RATE, reserveStock, releaseStock, reserveOrderStock, releaseOrderStock } = require('../services/orderService');
 
 // Delivery is priced by governorate when the address has one, else by city
 const deliveryPlace = (address) => address?.governorate || address?.city || 'tunis';
@@ -513,9 +513,8 @@ router.post('/admin', ordersAdmin, [
 
     const { orderItems, subtotal } = await priceOrderItems(items);
 
-    const taxRate = 0.19; // 19% VAT in Tunisia
-    const taxAmount = subtotal * taxRate;
-    const totalAmount = subtotal + shippingCost + taxAmount;
+    // Prices include VAT, so it is not added to the total
+    const totalAmount = subtotal + shippingCost;
 
     // Generate order number
     const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
@@ -542,8 +541,9 @@ router.post('/admin', ordersAdmin, [
       pricing: {
         subtotal,
         shippingCost,
-        taxAmount,
-        taxRate,
+        taxAmount: includedTax(subtotal),
+        taxRate: TAX_RATE,
+        taxIncluded: true,
         totalAmount
       },
       shippingCost,

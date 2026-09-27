@@ -23,6 +23,16 @@ export const ShopSettingsContext = createContext(DEFAULT_SHOP_SETTINGS);
 
 export const useShopSettings = () => useContext(ShopSettingsContext);
 
+// What the cart can say about delivery before the customer picks a
+// governorate. Mirrors the server (deliveryCost in backend/services/
+// orderService.js): free above the free-delivery amount, otherwise the base
+// cost times the governorate's factor, the lowest being 1 (Grand Tunis).
+export const deliveryEstimate = (subtotal, delivery) => (
+  subtotal > delivery.freeDeliveryOver
+    ? { free: true, from: 0 }
+    : { free: false, from: Math.round(delivery.baseCost) }
+);
+
 // "+216 98 765 432" → "https://wa.me/21698765432"; empty when there is no number
 export const whatsappLink = (number) => {
   const digits = String(number || '').replace(/\D/g, '');

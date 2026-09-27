@@ -93,11 +93,34 @@ describe('orders', () => {
       assert.deepEqual(quoted.body.pricing, {
         subtotal: 120,
         shippingCost: 8, // 7 × 1.2
-        taxAmount: 22.8,
+        taxAmount: 19.16, // the VAT inside the 120 TND: 120 × 0.19 / 1.19
         taxRate: 0.19,
+        taxIncluded: true,
         paymentFee: 5,
-        totalAmount: 155.8
+        totalAmount: 133 // prices include VAT: nothing is added for it
       });
+    });
+
+    it('does not add VAT to orders created by an admin', async () => {
+      const product = await createProduct({ price: 119 });
+      const token = await adminToken(app);
+
+      const res = await request(app).post('/api/orders/admin')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          customer: {
+            firstName: 'Sami', lastName: 'Ben Ali', email: 'sami@example.com', phone: '22123456',
+            address: { street: '1 Rue de Carthage', city: 'Tunis' }
+          },
+          items: [{ product: product._id, quantity: 2 }],
+          shippingCost: 7
+        })
+        .expect(201);
+
+      const { pricing } = res.body;
+      assert.equal(pricing.taxAmount, 38); // 238 × 0.19 / 1.19
+      assert.equal(pricing.taxIncluded, true);
+      assert.equal(pricing.totalAmount, 245);
     });
 
     it('does not take stock when quoting', async () => {

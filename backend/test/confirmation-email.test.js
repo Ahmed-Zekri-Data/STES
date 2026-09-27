@@ -55,10 +55,24 @@ describe('order confirmation email', () => {
     assert.equal(email.to, 'guest@example.com');
     assert.match(email.from, /shop@example\.tn/);
     assert.equal(email.subject, `Confirmation de votre commande ${orderNumber}`);
-    for (const expected of [orderNumber, trackingCode, 'Filtre à sable', '500.000 TND', 'Gratuite', '600.000 TND', 'Paiement à la livraison', 'Sousse']) {
+    // Prices include VAT: 500 + 5 cash-on-delivery fee, VAT shown but not added
+    for (const expected of [orderNumber, trackingCode, 'Filtre à sable', '500.000 TND', 'Gratuite', '505.000 TND', 'dont TVA (19%) : 79.832 TND', 'Paiement à la livraison', 'Sousse']) {
       assert.ok(email.html.includes(expected), `html should include ${expected}`);
     }
     assert.ok(email.text.includes(`/track-order?code=${trackingCode}`));
+    assert.ok(email.text.includes('Total : 505.000 TND\ndont TVA (19%) : 79.832 TND'));
+  });
+
+  it('still shows VAT as added on orders placed before prices included it', () => {
+    const { text } = emailService.generateOrderConfirmationEmail({
+      orderNumber: 'ORD-1', trackingCode: 'TRK-1', paymentMethod: 'cash_on_delivery',
+      customer: { name: 'Sami', address: { city: 'Tunis' } },
+      items: [{ name: 'Filtre', quantity: 1, price: 100 }],
+      pricing: { subtotal: 100, shippingCost: 7, taxAmount: 19, taxRate: 0.19, totalAmount: 126 }
+    });
+
+    assert.ok(text.includes('TVA (19%) : 19.000 TND\nTotal : 126.000 TND'));
+    assert.ok(!text.includes('dont TVA'));
   });
 
   it('escapes what the customer typed', async () => {

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
-import { useShopSettings } from '../context/shopSettings';
+import { useShopSettings, deliveryEstimate } from '../context/shopSettings';
 import { Plus, Minus, X, ShoppingBag, ArrowRight } from 'lucide-react';
 import { pickProducts } from '../utils/productPicks';
 import { showPlaceholderOnError } from '../utils/images';
@@ -77,6 +77,8 @@ const Cart = () => {
     addToCart
   } = useCart();
   const { t } = useLanguage();
+  const subtotal = getCartTotal();
+  const shipping = deliveryEstimate(subtotal, delivery);
 
   if (cartItems.length === 0) {
     return (
@@ -182,7 +184,7 @@ const Cart = () => {
                     Sous-total pour cet article:
                   </span>
                   <span className="text-lg font-semibold text-gray-900">
-                    {(item.price * item.quantity).toFixed(2)} {t('currency')}
+                    {(item.price * item.quantity).toFixed(3)} {t('currency')}
                   </span>
                 </div>
               </div>
@@ -200,13 +202,15 @@ const Cart = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Sous-total:</span>
                   <span className="font-medium">
-                    {getCartTotal().toFixed(2)} {t('currency')}
+                    {subtotal.toFixed(3)} {t('currency')}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Livraison:</span>
                   <span className="font-medium">
-                    10.00 {t('currency')}
+                    {shipping.free
+                      ? <span className="text-green-600">Gratuite</span>
+                      : `dès ${shipping.from.toFixed(3)} ${t('currency')}`}
                   </span>
                 </div>
                 <div className="border-t border-gray-200 pt-4">
@@ -215,9 +219,14 @@ const Cart = () => {
                       {t('total')}:
                     </span>
                     <span className="text-xl font-bold text-primary-600">
-                      {(getCartTotal() + 10).toFixed(2)} {t('currency')}
+                      {shipping.free ? '' : 'dès '}{(subtotal + shipping.from).toFixed(3)} {t('currency')}
                     </span>
                   </div>
+                  <p className="mt-2 text-xs text-gray-500">
+                    Prix TTC.
+                    {!shipping.free && ' La livraison dépend du gouvernorat : le prix exact s\'affiche à l\'étape Livraison.'}
+                    {delivery.cashOnDeliveryFee > 0 && ` Paiement à la livraison : +${delivery.cashOnDeliveryFee} ${t('currency')}.`}
+                  </p>
                 </div>
               </div>
 
