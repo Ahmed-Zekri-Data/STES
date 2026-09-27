@@ -11,6 +11,7 @@ const { CheckoutError, priceOrderItems, quoteOrder, reserveStock, releaseStock, 
 // Delivery is priced by governorate when the address has one, else by city
 const deliveryPlace = (address) => address?.governorate || address?.city || 'tunis';
 const emailNotificationService = require('../services/emailNotificationService');
+const paymentService = require('../services/paymentService');
 
 // POST /api/orders - Create new order
 router.post('/', optionalCustomerAuth, [
@@ -49,6 +50,11 @@ router.post('/', optionalCustomerAuth, [
     const customerName = customer.name || `${customer.firstName} ${customer.lastName}`;
     const shippingAddress = shipping || customer.address;
     const paymentMethodValue = payment?.method || paymentMethod || 'cash_on_delivery';
+    // Only what checkout offers: no bank transfer without the shop's account,
+    // no online gateway that isn't set up
+    if (!(await paymentService.isAvailable(paymentMethodValue))) {
+      return res.status(400).json({ message: "Ce mode de paiement n'est pas disponible." });
+    }
 
     // Prices come from the catalog, never from the request
     const { orderItems, pricing } = await quoteOrder({

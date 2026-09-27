@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { auth, checkPermission } = require('../middleware/auth');
 const { getSettings, updateSettings, publicSettings } = require('../services/settingsService');
+const { isValidRib, formatRib } = require('../utils/rib');
 
 // GET /api/settings - Contact details and delivery prices for the shop pages
 const publicRouter = express.Router();
@@ -38,6 +39,15 @@ adminRouter.put('/', [
     .custom(value => value === '' || PHONE.test(value)).withMessage('Enter a WhatsApp number, for example +216 98 765 432, or leave it empty'),
   body('contact.email').optional().trim().toLowerCase().isEmail().withMessage('Enter a valid contact email'),
   body('contact.address').optional().trim().isLength({ min: 1, max: 200 }).withMessage('The address is required (up to 200 characters)'),
+  body('bank.bankName').optional().isString().trim().isLength({ max: 100 }).withMessage('The bank name is too long (up to 100 characters)'),
+  body('bank.beneficiary').optional().isString().trim().isLength({ max: 100 }).withMessage('The account holder is too long (up to 100 characters)'),
+  // Empty stops offering bank transfer
+  body('bank.rib').optional().isString().trim()
+    .custom(value => value === '' || isValidRib(value))
+    .withMessage('Enter the 20-digit RIB exactly as on your bank statement (the last 2 digits are a check key)')
+    .customSanitizer(value => (value ? formatRib(value) : '')),
+  body('bank').optional().custom(bank => !bank?.rib || Boolean(String(bank.beneficiary || '').trim()))
+    .withMessage('Enter the account holder with the RIB'),
   price('delivery.freeDeliveryOver'),
   price('delivery.baseCost'),
   price('delivery.cashOnDeliveryFee'),

@@ -160,8 +160,8 @@ const ShopSettings = () => {
     setSaving(true);
     setResult(null);
     try {
-      const { contact, delivery, lowStockThreshold } = settings;
-      const response = await adminApi.put('/admin/settings', { contact, delivery, lowStockThreshold });
+      const { contact, bank, delivery, lowStockThreshold } = settings;
+      const response = await adminApi.put('/admin/settings', { contact, bank, delivery, lowStockThreshold });
       setSettings(response.data.settings);
       setResult({ ok: true, message: 'Saved. The shop shows the new values on the next page load.' });
     } catch (error) {
@@ -180,7 +180,7 @@ const ShopSettings = () => {
   }
   if (!settings) return <p className="text-gray-500">Loading…</p>;
 
-  const { contact, delivery } = settings;
+  const { contact, bank, delivery } = settings;
   return (
     <form onSubmit={save} className="space-y-6">
       <Section title="Contact details" description="Shown in the shop's footer, on the Contact and Services pages, and on the WhatsApp buttons.">
@@ -189,6 +189,14 @@ const ShopSettings = () => {
           <Field id="shop-whatsapp" label="WhatsApp" type="tel" value={contact.whatsapp} onChange={set('contact', 'whatsapp')} placeholder="+216 98 765 432" hint="Leave empty to hide the WhatsApp buttons." />
           <Field id="shop-email" label="Email" type="email" value={contact.email} onChange={set('contact', 'email')} required />
           <Field id="shop-address" label="Address" value={contact.address} onChange={set('contact', 'address')} required />
+        </div>
+      </Section>
+
+      <Section title="Bank transfer" description="The account customers pay into when they choose bank transfer, shown at checkout and in the order email. Bank transfer is only offered once the account holder and RIB are filled in; empty the RIB to stop offering it.">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Field id="bank-beneficiary" label="Account holder" value={bank.beneficiary} onChange={set('bank', 'beneficiary')} placeholder="STES SARL" />
+          <Field id="bank-name" label="Bank" value={bank.bankName} onChange={set('bank', 'bankName')} placeholder="BIAT, Attijari, BNA…" />
+          <Field id="bank-rib" label="RIB" value={bank.rib} onChange={set('bank', 'rib')} inputMode="numeric" placeholder="20 digits" hint="As on your bank statement. The IBAN (TN59…) is worked out from it." />
         </div>
       </Section>
 

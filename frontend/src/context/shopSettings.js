@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 
-// Contact details and delivery prices set in Admin → Settings → Shop.
+// Contact details, bank account and delivery prices set in Admin → Settings → Shop.
 // Until they load (or if they can't), the shop shows the same defaults as
 // the server. The provider is in ShopSettingsContext.jsx.
 export const DEFAULT_SHOP_SETTINGS = {
@@ -10,6 +10,8 @@ export const DEFAULT_SHOP_SETTINGS = {
     email: 'info@stes.tn',
     address: 'Tunis, Tunisie'
   },
+  // The account for bank transfers, or null when the shop has none
+  bank: null,
   delivery: {
     freeDeliveryOver: 200,
     baseCost: 7,

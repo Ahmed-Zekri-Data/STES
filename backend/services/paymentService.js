@@ -2,6 +2,7 @@ const axios = require('axios');
 const crypto = require('crypto');
 const Payment = require('../models/Payment');
 const Order = require('../models/Order');
+const { getSettings, bankTransferDetails } = require('./settingsService');
 
 class PaymentService {
   constructor() {
@@ -104,19 +105,17 @@ class PaymentService {
     };
   }
 
-  // Process Bank Transfer
+  // Process Bank Transfer: the customer pays into the account set in
+  // Admin → Settings → Shop, mentioning the order number
   async processBankTransfer(payment) {
+    const account = bankTransferDetails((await getSettings()).bank);
+    if (!account) {
+      throw new Error('Bank transfer is not available: no bank account in the shop settings');
+    }
     await payment.updateStatus('pending');
-    
-    const bankDetails = {
-      bankName: 'Banque Internationale Arabe de Tunisie (BIAT)',
-      accountNumber: '08104000123456789012',
-      rib: '08 104 0001234567890 12',
-      iban: 'TN59 08 104 0001234567890 12',
-      beneficiary: 'STES SARL',
-      reference: payment.paymentReference
-    };
-    
+
+    const bankDetails = { ...account, reference: payment.orderNumber };
+
     return {
       success: true,
       paymentId: payment._id,
@@ -124,7 +123,7 @@ class PaymentService {
       status: 'pending',
       message: 'Effectuez le virement bancaire avec les détails fournis.',
       bankDetails,
-      instructions: `Utilisez la référence ${payment.paymentReference} lors du virement.`
+      instructions: `Indiquez le numéro de commande ${payment.orderNumber} dans le motif du virement.`
     };
   }
 
@@ -434,18 +433,25 @@ class PaymentService {
   }
 
   // Get available payment methods
-  getAvailablePaymentMethods() {
+  // The payment methods offered at checkout: cash on delivery (with the fee
+  // from the shop settings), bank transfer once the shop's account is set,
+  // and the online gateways that are configured
+  async getAvailablePaymentMethods() {
+    const { delivery, bank } = await getSettings();
     const methods = [
       {
         id: 'cash_on_delivery',
         name: 'Paiement à la livraison',
         description: 'Payez en espèces lors de la réception',
         icon: '💵',
-        fee: 5,
+        fee: delivery.cashOnDeliveryFee,
         enabled: true,
         processingTime: 'À la livraison'
-      },
-      {
+      }
+    ];
+
+    if (bankTransferDetails(bank)) {
+      methods.push({
         id: 'bank_transfer',
         name: 'Virement bancaire',
         description: 'Transfert depuis votre banque',
@@ -453,8 +459,8 @@ class PaymentService {
         fee: 0,
         enabled: true,
         processingTime: '1-2 jours ouvrables'
-      }
-    ];
+      });
+    }
 
     // Add enabled gateways
     if (this.gateways.paymee.enabled) {
@@ -506,6 +512,10 @@ class PaymentService {
     }
 
     return methods;
+  }
+
+  async isAvailable(paymentMethod) {
+    return (await this.getAvailablePaymentMethods()).some(method => method.id === paymentMethod);
   }
 }
 

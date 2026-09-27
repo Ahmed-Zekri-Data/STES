@@ -25,6 +25,8 @@ const OrderConfirmationStep = () => {
   if (!orderConfirmation) {
     return null;
   }
+  // The shop's account and the order number to quote, from the server
+  const { bankDetails } = orderConfirmation.payment;
 
   const handleContinueShopping = () => {
     resetCheckout();
@@ -241,10 +243,17 @@ const OrderConfirmationStep = () => {
                     Instructions de virement:
                   </p>
                   <div className="text-sm text-yellow-700 space-y-1">
-                    <p><strong>RIB:</strong> 04 018 0000123456789 12</p>
-                    <p><strong>Référence:</strong> {orderConfirmation.orderId}</p>
+                    {bankDetails && (
+                      <>
+                        <p><strong>Bénéficiaire :</strong> {bankDetails.beneficiary}</p>
+                        {bankDetails.bankName && <p><strong>Banque :</strong> {bankDetails.bankName}</p>}
+                        <p><strong>RIB :</strong> {bankDetails.rib}</p>
+                        <p><strong>IBAN :</strong> {bankDetails.iban}</p>
+                      </>
+                    )}
+                    <p><strong>Motif du virement :</strong> {bankDetails?.reference || orderConfirmation.orderId}</p>
                     <p className="text-xs mt-2">
-                      Votre commande sera traitée après réception du paiement.
+                      Votre commande sera traitée après réception du paiement. Ces informations vous ont aussi été envoyées par email.
                     </p>
                   </div>
                 </div>

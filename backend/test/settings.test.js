@@ -33,6 +33,8 @@ describe('shop settings', () => {
     const res = await request(app).get('/api/settings').expect(200);
     assert.deepEqual(res.body, {
       contact: { phone: '+216 12 345 678', whatsapp: '+216 12 345 678', email: 'info@stes.tn', address: 'Tunis, Tunisie' },
+      // No bank account yet: bank transfer is not offered
+      bank: null,
       delivery: { freeDeliveryOver: 200, baseCost: 7, cashOnDeliveryFee: 5 }
     });
   });

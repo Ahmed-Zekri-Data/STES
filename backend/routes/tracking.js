@@ -15,23 +15,14 @@ router.get('/:identifier', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { identifier } = req.params;
-    let order;
-
-    // Try to find by tracking code first, then by order number
-    if (identifier.startsWith('TRK-')) {
-      order = await Order.findByTrackingCode(identifier);
-    } else if (identifier.startsWith('ORD-')) {
-      order = await Order.findByOrderNumber(identifier);
-    } else {
-      // Try both if format is unclear
-      order = await Order.findByTrackingCode(identifier) ||
-              await Order.findByOrderNumber(identifier);
-    }
+    // Only the tracking code, which is sent to the customer alone. An order
+    // number is also on invoices and in conversations: with it, the search
+    // below also asks for the email address.
+    const order = await Order.findByTrackingCode(req.params.identifier.trim().toUpperCase());
 
     if (!order) {
       return res.status(404).json({ 
-        message: 'Commande non trouvée. Vérifiez votre numéro de commande ou code de suivi.' 
+        message: 'Commande non trouvée. Vérifiez votre code de suivi (TRK-…), ou cherchez avec votre email et votre numéro de commande.'
       });
     }
 
@@ -83,9 +74,12 @@ router.get('/:identifier', [
       },
       timeline,
       tracking: {
-        lastUpdate: order.statusHistory[order.statusHistory.length - 1],
+        lastUpdate: (({ status, timestamp, note, location }) => ({ status, timestamp, note, location }))(order.statusHistory[order.statusHistory.length - 1]),
         totalEvents: order.statusHistory.length,
-        history: order.statusHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        // Without who made each change (admin usernames stay private)
+        history: order.statusHistory
+          .map(({ status, timestamp, note, location }) => ({ status, timestamp, note, location }))
+          .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
       }
     });
   } catch (error) {
@@ -184,7 +178,7 @@ router.get('/customer/orders', customerAuth, async (req, res) => {
         isDelayed: order.estimatedDelivery && 
                   new Date() > order.estimatedDelivery && 
                   !['delivered', 'cancelled'].includes(order.status),
-        lastUpdate: order.statusHistory[order.statusHistory.length - 1],
+        lastUpdate: (({ status, timestamp, note, location }) => ({ status, timestamp, note, location }))(order.statusHistory[order.statusHistory.length - 1]),
         items: order.items
       };
     });

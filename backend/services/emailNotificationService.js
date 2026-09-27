@@ -11,6 +11,16 @@ const escapeHtml = (value) => String(value ?? '')
 
 const formatTND = (amount) => `${Number(amount || 0).toFixed(3)} TND`;
 
+// The account and amount for a bank transfer, with the order number to quote
+const bankLines = (bank, order) => [
+  ['Bénéficiaire', bank.beneficiary],
+  ...(bank.bankName ? [['Banque', bank.bankName]] : []),
+  ['RIB', bank.rib],
+  ['IBAN', bank.iban],
+  ['Montant', formatTND(order.pricing?.totalAmount ?? order.totalAmount)],
+  ['Motif', order.orderNumber]
+];
+
 const PAYMENT_METHOD_LABELS = {
   cash_on_delivery: 'Paiement à la livraison',
   bank_transfer: 'Virement bancaire',
@@ -86,7 +96,10 @@ class EmailNotificationService {
     }
 
     try {
-      const content = this.generateOrderConfirmationEmail(order);
+      // Bank transfer orders get the account to pay into
+      const { getSettings, bankTransferDetails } = require('./settingsService');
+      const bank = order.paymentMethod === 'bank_transfer' ? bankTransferDetails((await getSettings()).bank) : null;
+      const content = this.generateOrderConfirmationEmail(order, { bank });
       const result = await this.transporter.sendMail({
         from: `"STES Piscines" <${process.env.EMAIL_USER}>`,
         to: order.customer.email,
@@ -331,7 +344,7 @@ class EmailNotificationService {
     return { subject, html, text };
   }
 
-  generateOrderConfirmationEmail(order) {
+  generateOrderConfirmationEmail(order, { bank } = {}) {
     const pricing = order.pricing || {};
     const address = order.customer.address || {};
     const trackingUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/track-order?code=${encodeURIComponent(order.trackingCode)}`;
@@ -384,6 +397,11 @@ class EmailNotificationService {
         <tr style="font-weight:bold;border-top:1px solid #e5e7eb"><td style="padding:8px 0">Total</td><td style="padding:8px 0;text-align:right">${formatTND(pricing.totalAmount ?? order.totalAmount)}</td></tr>
       </table>
       <p><strong>Paiement :</strong> ${escapeHtml(paymentLabel)}</p>
+      ${bank ? `<p style="background:#fefce8;padding:12px;border-radius:8px">
+        <strong>Virement à effectuer</strong><br>
+        ${bankLines(bank, order).map(([label, value]) => `${label} : <strong>${escapeHtml(value)}</strong>`).join('<br>')}<br>
+        Votre commande est préparée dès réception du virement.
+      </p>` : ''}
       <p><strong>Livraison à :</strong><br>${addressLines.map(escapeHtml).join('<br>')}</p>
       ${estimatedDelivery ? `<p><strong>Livraison estimée :</strong> ${escapeHtml(estimatedDelivery)}</p>` : ''}
       <p style="text-align:center;margin:24px 0">
@@ -410,6 +428,7 @@ class EmailNotificationService {
       `Total : ${formatTND(pricing.totalAmount ?? order.totalAmount)}`,
       '',
       `Paiement : ${paymentLabel}`,
+      ...(bank ? ['', 'Virement à effectuer :', ...bankLines(bank, order).map(([label, value]) => `${label} : ${value}`), 'Votre commande est préparée dès réception du virement.'] : []),
       `Livraison à : ${addressLines.join(', ')}`,
       ...(estimatedDelivery ? [`Livraison estimée : ${estimatedDelivery}`] : []),
       '',
