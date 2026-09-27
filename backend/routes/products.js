@@ -3,7 +3,6 @@ const router = express.Router();
 const { body, validationResult, query } = require('express-validator');
 const Product = require('../models/Product');
 const { auth, checkPermission } = require('../middleware/auth');
-const { customerAuth } = require('../middleware/customerAuth');
 const { searchFilters } = require('../config/productCategories');
 const { categoryExists, slugsWithin, categoryNames, shopCategories } = require('../services/categoryService');
 const { findBrand, shopBrands } = require('../services/brandService');
@@ -153,6 +152,7 @@ router.get('/', [
         .sort(sort)
         .skip(skip)
         .limit(parseInt(limit))
+        .select('-reviews')
         .lean(),
       Product.countDocuments(filter)
     ]);
@@ -178,7 +178,7 @@ router.get('/', [
 // GET /api/products/featured - Get featured products
 router.get('/featured', async (req, res) => {
   try {
-    const products = await Product.getFeatured();
+    const products = await Product.getFeatured().select('-reviews');
     res.json(products);
   } catch (error) {
     console.error('Error fetching featured products:', error);
@@ -271,7 +271,7 @@ router.get('/search/suggestions', [
 // GET /api/products/:id - Get single product
 router.get('/:id', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).lean();
+    const product = await Product.findById(req.params.id).select('-reviews').lean();
 
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
@@ -374,119 +374,6 @@ router.delete('/:id', auth, checkPermission('products'), async (req, res) => {
       return res.status(400).json({ message: 'Invalid product ID' });
     }
     res.status(500).json({ message: 'Error deleting product' });
-  }
-});
-
-// POST /api/products/:id/reviews - Add a review to a product
-router.post('/:id/reviews', customerAuth, [
-  body('rating').isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5'),
-  body('title').trim().isLength({ min: 1, max: 100 }).withMessage('Title is required and must be less than 100 characters'),
-  body('comment').trim().isLength({ min: 1, max: 1000 }).withMessage('Comment is required and must be less than 1000 characters')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { rating, title, comment } = req.body;
-    const productId = req.params.id;
-    const customerId = req.customer.customerId;
-
-    const product = await Product.findById(productId);
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
-
-    try {
-      await product.addReview(customerId, rating, title, comment);
-
-      // Get updated product with reviews
-      const updatedProduct = await Product.findById(productId)
-        .populate('reviews.customer', 'firstName lastName avatar');
-
-      res.status(201).json({
-        message: 'Review added successfully',
-        review: updatedProduct.reviews[updatedProduct.reviews.length - 1],
-        ratingStats: updatedProduct.ratingStats
-      });
-    } catch (reviewError) {
-      if (reviewError.message === 'You have already reviewed this product') {
-        return res.status(400).json({ message: reviewError.message });
-      }
-      throw reviewError;
-    }
-  } catch (error) {
-    console.error('Error adding review:', error);
-    res.status(500).json({ message: 'Error adding review' });
-  }
-});
-
-// GET /api/products/:id/reviews - Get reviews for a product
-router.get('/:id/reviews', [
-  query('page').optional().isInt({ min: 1 }),
-  query('limit').optional().isInt({ min: 1, max: 50 }),
-  query('sortBy').optional().isIn(['rating', 'createdAt', 'helpful']),
-  query('sortOrder').optional().isIn(['asc', 'desc'])
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const {
-      page = 1,
-      limit = 10,
-      sortBy = 'createdAt',
-      sortOrder = 'desc'
-    } = req.query;
-
-    const product = await Product.findById(req.params.id)
-      .populate('reviews.customer', 'firstName lastName avatar');
-
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
-
-    // Sort reviews
-    let reviews = [...product.reviews];
-    reviews.sort((a, b) => {
-      let comparison;
-      switch (sortBy) {
-        case 'rating':
-          comparison = a.rating - b.rating;
-          break;
-        case 'helpful': {
-          const aHelpful = a.helpful.filter(h => h.isHelpful).length;
-          const bHelpful = b.helpful.filter(h => h.isHelpful).length;
-          comparison = aHelpful - bHelpful;
-          break;
-        }
-        default:
-          comparison = new Date(a.createdAt) - new Date(b.createdAt);
-      }
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
-
-    // Paginate reviews
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const paginatedReviews = reviews.slice(skip, skip + parseInt(limit));
-
-    res.json({
-      reviews: paginatedReviews,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(reviews.length / parseInt(limit)),
-        totalReviews: reviews.length,
-        hasNext: skip + parseInt(limit) < reviews.length,
-        hasPrev: parseInt(page) > 1
-      },
-      ratingStats: product.ratingStats
-    });
-  } catch (error) {
-    console.error('Error fetching reviews:', error);
-    res.status(500).json({ message: 'Error fetching reviews' });
   }
 });
 

@@ -8,7 +8,8 @@ import {
   FileText,
   Users,
   Settings,
-  Truck
+  Truck,
+  MessageSquare
 } from 'lucide-react';
 
 const PageTitle = () => {
@@ -33,6 +34,12 @@ const PageTitle = () => {
         title: 'Products',
         subtitle: 'Manage your product catalog',
         icon: Package,
+        color: 'green'
+      },
+      '/admin/reviews': {
+        title: 'Reviews',
+        subtitle: 'What customers say about your products',
+        icon: MessageSquare,
         color: 'green'
       },
       '/admin/orders': {

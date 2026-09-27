@@ -24,7 +24,8 @@ import {
   Tag,
   Award,
   UserCog,
-  Truck
+  Truck,
+  MessageSquare
 } from 'lucide-react';
 
 // Tailwind's lg breakpoint: from here the sidebar is always shown
@@ -55,6 +56,7 @@ const AdminLayout = () => {
     { name: 'Products', href: '/admin/products', icon: Package },
     { name: 'Categories', href: '/admin/categories', icon: Tag },
     { name: 'Brands', href: '/admin/brands', icon: Award },
+    { name: 'Reviews', href: '/admin/reviews', icon: MessageSquare },
     { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
     { name: 'Tracking', href: '/admin/tracking', icon: Truck },
     { name: 'Customers', href: '/admin/customers', icon: Users },
