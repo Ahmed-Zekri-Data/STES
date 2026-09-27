@@ -13,96 +13,126 @@ const { getSettings } = require('../services/settingsService');
 const can = (admin, permission) =>
   admin.role === 'super_admin' || admin.permissions.includes(permission);
 
-// GET /api/admin/dashboard - Get dashboard statistics
-router.get('/dashboard', auth, async (req, res) => {
+const DAY_MS = 24 * 60 * 60 * 1000;
+const DASHBOARD_PERIODS = [7, 30, 90, 365];
+const IN_PROGRESS = ['confirmed', 'processing', 'shipped'];
+// Orders that count as sales: not cancelled and not refunded
+const SOLD = { status: { $ne: 'cancelled' }, paymentStatus: { $nin: ['refunded'] } };
+
+const roundMillimes = (amount) => Math.round((amount || 0) * 1000) / 1000;
+
+const salesBetween = async (from, to) => {
+  const [totals] = await Order.aggregate([
+    { $match: { ...SOLD, createdAt: { $gte: from, $lt: to } } },
+    { $group: { _id: null, revenue: { $sum: '$totalAmount' }, orders: { $sum: 1 } } }
+  ]);
+  return { revenue: roundMillimes(totals?.revenue), orders: totals?.orders || 0 };
+};
+
+// Best sellers by units sold in the period, with the revenue from their order lines
+const topProductsBetween = async (from, to, limit = 5) => {
+  const rows = await Order.aggregate([
+    { $match: { ...SOLD, createdAt: { $gte: from, $lt: to } } },
+    { $unwind: '$items' },
+    {
+      $group: {
+        _id: '$items.product',
+        name: { $last: '$items.name' },
+        quantity: { $sum: '$items.quantity' },
+        revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+      }
+    },
+    { $sort: { quantity: -1, revenue: -1 } },
+    { $limit: limit },
+    { $lookup: { from: 'products', localField: '_id', foreignField: '_id', as: 'product' } }
+  ]);
+  return rows.map(row => ({
+    id: row._id,
+    // The current name if the product still exists, else the name when sold
+    name: row.product[0]?.name || row.name,
+    image: row.product[0]?.image || null,
+    stillInCatalog: row.product.length > 0,
+    quantity: row.quantity,
+    revenue: roundMillimes(row.revenue)
+  }));
+};
+
+// GET /api/admin/dashboard?days=30 - Figures for the dashboard over the last
+// `days` days, compared with the days before. Each part is only sent to
+// admins with the matching permission.
+router.get('/dashboard', auth, [
+  query('days').optional().isIn(DASHBOARD_PERIODS.map(String)).withMessage(`days must be one of ${DASHBOARD_PERIODS.join(', ')}`)
+], async (req, res) => {
   try {
-    // Get basic counts
-    const [
-      totalProducts,
-      totalOrders,
-      totalSubmissions,
-      pendingOrders,
-      unreadSubmissions,
-      recentOrders,
-      recentSubmissions
-    ] = await Promise.all([
-      Product.countDocuments(),
-      Order.countDocuments(),
-      FormSubmission.countDocuments(),
-      Order.countDocuments({ status: 'pending' }),
-      FormSubmission.countDocuments({ status: 'new' }),
-      Order.find().sort({ createdAt: -1 }).limit(5).populate('items.product', 'name'),
-      FormSubmission.find().sort({ createdAt: -1 }).limit(5)
-    ]);
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: errors.array()[0].msg });
+    }
 
-    // Get revenue statistics
-    const revenueStats = await Order.aggregate([
-      {
-        $match: {
-          status: { $in: ['delivered', 'shipped'] },
-          createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Last 30 days
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          totalRevenue: { $sum: '$totalAmount' },
-          orderCount: { $sum: 1 }
-        }
-      }
-    ]);
+    const days = Number(req.query.days || 30);
+    const to = new Date();
+    const from = new Date(to.getTime() - days * DAY_MS);
+    const previousFrom = new Date(from.getTime() - days * DAY_MS);
+    const result = { period: { days, from, to } };
 
-    // Get order status breakdown
-    const orderStatusStats = await Order.aggregate([
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
+    if (can(req.admin, 'orders')) {
+      const [current, previous, statusCounts, recentOrders, topProducts] = await Promise.all([
+        salesBetween(from, to),
+        salesBetween(previousFrom, from),
+        Order.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+        Order.find().sort({ createdAt: -1 }).limit(5)
+          .select('orderNumber customer.name customer.email totalAmount status createdAt').lean(),
+        topProductsBetween(from, to)
+      ]);
+      const count = (statuses) => statusCounts
+        .filter(row => statuses.includes(row._id))
+        .reduce((sum, row) => sum + row.count, 0);
 
-    // Get popular products
-    const popularProducts = await Order.aggregate([
-      { $unwind: '$items' },
-      {
-        $group: {
-          _id: '$items.product',
-          totalSold: { $sum: '$items.quantity' },
-          revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
-        }
-      },
-      { $sort: { totalSold: -1 } },
-      { $limit: 5 },
-      {
-        $lookup: {
-          from: 'products',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'product'
-        }
-      },
-      { $unwind: '$product' }
-    ]);
+      result.sales = {
+        ...current,
+        averageOrder: current.orders ? roundMillimes(current.revenue / current.orders) : 0,
+        previous
+      };
+      result.orderStatus = {
+        pending: count(['pending']),
+        inProgress: count(IN_PROGRESS),
+        delivered: count(['delivered']),
+        cancelled: count(['cancelled'])
+      };
+      result.recentOrders = recentOrders.map(order => ({
+        id: order._id,
+        orderNumber: order.orderNumber,
+        customerName: order.customer?.name || order.customer?.email || '',
+        totalAmount: order.totalAmount,
+        status: order.status,
+        createdAt: order.createdAt
+      }));
+      result.topProducts = topProducts;
+    }
 
-    res.json({
-      overview: {
-        totalProducts,
-        totalOrders,
-        totalSubmissions,
-        pendingOrders,
-        unreadSubmissions,
-        monthlyRevenue: revenueStats[0]?.totalRevenue || 0,
-        monthlyOrders: revenueStats[0]?.orderCount || 0
-      },
-      orderStatusStats,
-      popularProducts,
-      recentOrders,
-      recentSubmissions
-    });
+    if (can(req.admin, 'products')) {
+      const { lowStockThreshold } = await getSettings();
+      const [total, outOfStock, lowStock] = await Promise.all([
+        Product.countDocuments(),
+        Product.countDocuments({ stockQuantity: { $lte: 0 } }),
+        Product.countDocuments({ stockQuantity: { $gt: 0, $lte: lowStockThreshold } })
+      ]);
+      result.products = { total, outOfStock, lowStock, lowStockThreshold };
+    }
+
+    if (can(req.admin, 'users')) {
+      const [total, newInPeriod, previousNew] = await Promise.all([
+        Customer.countDocuments(),
+        Customer.countDocuments({ createdAt: { $gte: from, $lt: to } }),
+        Customer.countDocuments({ createdAt: { $gte: previousFrom, $lt: from } })
+      ]);
+      result.customers = { total, new: newInPeriod, previousNew };
+    }
+
+    res.json(result);
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
-    res.status(500).json({ message: 'Error fetching dashboard data' });
+    res.status(500).json({ message: 'Error loading the dashboard' });
   }
 });
 

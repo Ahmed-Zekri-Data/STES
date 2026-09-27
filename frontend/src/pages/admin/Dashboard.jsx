@@ -1,185 +1,157 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Package,
   ShoppingCart,
-  FileText,
   Users,
   TrendingUp,
   TrendingDown,
   DollarSign,
-  Eye,
-  Calendar,
   Clock,
   CheckCircle,
+  Truck,
+  XCircle,
   AlertCircle,
-  XCircle
+  RefreshCw
 } from 'lucide-react';
-import adminApi from '../../utils/adminApi';
+import adminApi, { errorMessage } from '../../utils/adminApi';
+import { useAdmin } from '../../context/AdminContext';
 import AnimatedCounter from '../../components/AnimatedCounter';
 
+const PERIODS = [
+  { days: 7, label: 'Last 7 days' },
+  { days: 30, label: 'Last 30 days' },
+  { days: 90, label: 'Last 90 days' },
+  { days: 365, label: 'Last 12 months' }
+];
+
+const STATUS = {
+  pending: { label: 'Pending', className: 'bg-yellow-100 text-yellow-800', icon: Clock },
+  confirmed: { label: 'Confirmed', className: 'bg-blue-100 text-blue-800', icon: CheckCircle },
+  processing: { label: 'Processing', className: 'bg-blue-100 text-blue-800', icon: AlertCircle },
+  shipped: { label: 'Shipped', className: 'bg-indigo-100 text-indigo-800', icon: Truck },
+  delivered: { label: 'Delivered', className: 'bg-green-100 text-green-800', icon: CheckCircle },
+  cancelled: { label: 'Cancelled', className: 'bg-red-100 text-red-800', icon: XCircle }
+};
+
+const formatTND = (amount) => `${Number(amount || 0).toLocaleString('fr-FR', { maximumFractionDigits: 3 })} TND`;
+const formatDate = (date) => new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+
+// Change against the previous period, e.g. +12%. Nothing when there is
+// nothing to compare with.
+const Change = ({ current, previous, days }) => {
+  if (!previous) return null;
+  const percent = Math.round(((current - previous) / previous) * 100);
+  const up = percent >= 0;
+  const Icon = up ? TrendingUp : TrendingDown;
+  return (
+    <span
+      className={`inline-flex items-center text-sm ${up ? 'text-green-600' : 'text-red-600'}`}
+      title={`Compared with the ${days} days before`}
+    >
+      <Icon className="w-4 h-4 mr-1" />
+      {up ? '+' : ''}{percent}%
+    </span>
+  );
+};
+
+const StatCard = ({ title, value, suffix, icon: Icon, color, change, detail, to, index }) => {
+  const body = (
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
+        <div className="flex flex-wrap items-center gap-x-2">
+          <AnimatedCounter end={value} duration={1.5} suffix={suffix || ''} className="text-2xl font-bold text-gray-900 whitespace-nowrap" />
+          {change}
+        </div>
+        {detail && <p className="text-xs text-gray-500 mt-1">{detail}</p>}
+      </div>
+      <div className={`w-12 h-12 shrink-0 bg-gradient-to-r ${color} rounded-xl flex items-center justify-center shadow-lg`}>
+        <Icon className="w-6 h-6 text-white" />
+      </div>
+    </div>
+  );
+  return (
+    <motion.div
+      className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: index * 0.08 }}
+    >
+      {to ? <Link to={to} className="block">{body}</Link> : body}
+    </motion.div>
+  );
+};
+
 const Dashboard = () => {
-  const [stats, setStats] = useState({
-    totalProducts: 0,
-    totalOrders: 0,
-    totalRevenue: 0,
-    totalUsers: 0,
-    pendingOrders: 0,
-    completedOrders: 0,
-    cancelledOrders: 0,
-    recentOrders: [],
-    topProducts: []
-  });
+  const { admin } = useAdmin();
+  const [days, setDays] = useState(30);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
+  const load = async (period = days) => {
     try {
       setLoading(true);
-
-      // Fetch data from multiple endpoints
-      const [productsRes, ordersRes, customersRes] = await Promise.all([
-        adminApi.get('/products'),
-        adminApi.get('/orders'),
-        adminApi.get('/admin/customers').catch(() => ({ data: { customers: [] } }))
-      ]);
-
-      const products = productsRes.data.products || productsRes.data || [];
-      const orders = ordersRes.data.orders || ordersRes.data || [];
-      const customers = customersRes.data.customers || [];
-
-      // Calculate statistics
-      const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
-      const pendingOrders = orders.filter(order => order.status === 'pending').length;
-      const completedOrders = orders.filter(order => order.status === 'delivered' || order.status === 'completed').length;
-      const cancelledOrders = orders.filter(order => order.status === 'cancelled').length;
-
-      // Get recent orders (last 5)
-      const recentOrders = orders
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, 5)
-        .map(order => ({
-          id: order._id,
-          customer: `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim() || order.customer?.email || 'Unknown Customer',
-          total: order.totalAmount || 0,
-          status: order.status,
-          date: new Date(order.createdAt).toLocaleDateString('fr-FR')
-        }));
-
-      // Calculate top products (mock for now, would need order items analysis)
-      const topProducts = products
-        .sort((a, b) => (b.stockQuantity || 0) - (a.stockQuantity || 0))
-        .slice(0, 4)
-        .map(product => ({
-          name: product.name,
-          sales: Math.floor(Math.random() * 50) + 10, // Mock sales data
-          revenue: Math.floor(Math.random() * 10000) + 5000 // Mock revenue data
-        }));
-
-      setStats({
-        totalProducts: products.length,
-        totalOrders: orders.length,
-        totalRevenue: Math.round(totalRevenue),
-        totalUsers: customers.length,
-        pendingOrders,
-        completedOrders,
-        cancelledOrders,
-        recentOrders,
-        topProducts
-      });
-
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      setError('');
+      const response = await adminApi.get('/admin/dashboard', { params: { days: period } });
+      setData(response.data);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
       setLoading(false);
     }
   };
 
-  const statCards = [
-    {
-      title: 'Total Products',
-      value: stats.totalProducts,
-      icon: Package,
-      color: 'from-blue-500 to-blue-600',
-      change: '+12%',
-      changeType: 'increase'
-    },
-    {
-      title: 'Total Orders',
-      value: stats.totalOrders,
-      icon: ShoppingCart,
-      color: 'from-green-500 to-green-600',
-      change: '+8%',
-      changeType: 'increase'
-    },
-    {
-      title: 'Revenue',
-      value: stats.totalRevenue,
-      icon: DollarSign,
-      color: 'from-purple-500 to-purple-600',
-      change: '+15%',
-      changeType: 'increase',
-      prefix: '',
-      suffix: ' TND'
-    },
-    {
-      title: 'Total Users',
-      value: stats.totalUsers,
-      icon: Users,
-      color: 'from-orange-500 to-orange-600',
-      change: '+5%',
-      changeType: 'increase'
-    }
-  ];
+  useEffect(() => {
+    load(days);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [days]);
 
-  const orderStatusCards = [
-    {
-      title: 'Pending Orders',
-      value: stats.pendingOrders,
-      icon: Clock,
-      color: 'from-yellow-500 to-yellow-600'
-    },
-    {
-      title: 'Completed Orders',
-      value: stats.completedOrders,
-      icon: CheckCircle,
-      color: 'from-green-500 to-green-600'
-    },
-    {
-      title: 'Cancelled Orders',
-      value: stats.cancelledOrders,
-      icon: XCircle,
-      color: 'from-red-500 to-red-600'
-    }
-  ];
+  const periodLabel = PERIODS.find(p => p.days === days)?.label.toLowerCase();
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'processing': return 'bg-blue-100 text-blue-800';
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const header = (
+    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Welcome back{admin?.firstName ? `, ${admin.firstName}` : ''}! 👋
+        </h1>
+        <p className="text-gray-600">Here's how the shop is doing.</p>
+      </div>
+      <div>
+        <label htmlFor="dashboard-period" className="sr-only">Period</label>
+        <select
+          id="dashboard-period"
+          value={days}
+          onChange={(e) => setDays(Number(e.target.value))}
+          className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm"
+        >
+          {PERIODS.map(p => <option key={p.days} value={p.days}>{p.label}</option>)}
+        </select>
+      </div>
+    </div>
+  );
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'pending': return <Clock className="w-4 h-4" />;
-      case 'processing': return <AlertCircle className="w-4 h-4" />;
-      case 'completed': return <CheckCircle className="w-4 h-4" />;
-      case 'cancelled': return <XCircle className="w-4 h-4" />;
-      default: return <Clock className="w-4 h-4" />;
-    }
-  };
-
-  if (loading) {
+  if (error) {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="space-y-8">
+        {header}
+        <div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          The dashboard could not be loaded: {error}
+          <button type="button" onClick={() => load()} className="inline-flex items-center gap-1 ml-3 underline">
+            <RefreshCw className="w-4 h-4" /> Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading && !data) {
+    return (
+      <div className="space-y-8">
+        {header}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="bg-white rounded-2xl p-6 shadow-lg animate-pulse">
               <div className="h-4 bg-gray-300 rounded mb-4"></div>
@@ -192,200 +164,164 @@ const Dashboard = () => {
     );
   }
 
+  const { sales, orderStatus, recentOrders, topProducts, products, customers } = data;
+
+  const statCards = [
+    sales && {
+      title: `Sales, ${periodLabel}`,
+      value: Math.round(sales.revenue),
+      suffix: ' TND',
+      icon: DollarSign,
+      color: 'from-purple-500 to-purple-600',
+      change: <Change current={sales.revenue} previous={sales.previous.revenue} days={days} />,
+      detail: sales.orders ? `Average order ${formatTND(sales.averageOrder)}` : 'No sales in this period',
+      to: '/admin/orders'
+    },
+    sales && {
+      title: `Orders, ${periodLabel}`,
+      value: sales.orders,
+      icon: ShoppingCart,
+      color: 'from-green-500 to-green-600',
+      change: <Change current={sales.orders} previous={sales.previous.orders} days={days} />,
+      detail: 'Not counting cancelled or refunded orders',
+      to: '/admin/orders'
+    },
+    products && {
+      title: 'Products',
+      value: products.total,
+      icon: Package,
+      color: 'from-blue-500 to-blue-600',
+      detail: `${products.outOfStock} out of stock · ${products.lowStock} running low`,
+      to: products.outOfStock ? '/admin/products?stock=out' : '/admin/products'
+    },
+    customers && {
+      title: 'Customer accounts',
+      value: customers.total,
+      icon: Users,
+      color: 'from-orange-500 to-orange-600',
+      change: <Change current={customers.new} previous={customers.previousNew} days={days} />,
+      detail: `${customers.new} new, ${periodLabel}`,
+      to: '/admin/customers'
+    }
+  ].filter(Boolean);
+
+  const statusCards = orderStatus ? [
+    { title: 'Waiting to be handled', value: orderStatus.pending, icon: Clock, color: 'from-yellow-500 to-yellow-600', to: '/admin/orders?status=pending' },
+    { title: 'In progress', value: orderStatus.inProgress, icon: Truck, color: 'from-blue-500 to-blue-600', detail: 'Confirmed, processing or shipped', to: '/admin/orders' },
+    { title: 'Delivered', value: orderStatus.delivered, icon: CheckCircle, color: 'from-green-500 to-green-600', to: '/admin/orders?status=delivered' },
+    { title: 'Cancelled', value: orderStatus.cancelled, icon: XCircle, color: 'from-red-500 to-red-600', to: '/admin/orders?status=cancelled' }
+  ] : [];
+
+  const bestSeller = topProducts?.[0]?.quantity || 1;
+
   return (
-    <div className="space-y-8">
-      {/* Welcome Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Welcome back, Admin! 👋
-        </h1>
-        <p className="text-gray-600">
-          Here's what's happening with your store today.
-        </p>
-      </motion.div>
+    <div className={`space-y-8 ${loading ? 'opacity-60 transition-opacity' : ''}`}>
+      {header}
 
-      {/* Main Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <motion.div
-              key={stat.title}
-              className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              whileHover={{ y: -5 }}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">
-                    {stat.title}
-                  </p>
-                  <div className="flex items-center space-x-2">
-                    <AnimatedCounter
-                      end={stat.value}
-                      duration={2}
-                      prefix={stat.prefix || ''}
-                      suffix={stat.suffix || ''}
-                      className="text-2xl font-bold text-gray-900"
-                    />
-                    <div className={`flex items-center text-sm ${
-                      stat.changeType === 'increase' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {stat.changeType === 'increase' ? (
-                        <TrendingUp className="w-4 h-4 mr-1" />
-                      ) : (
-                        <TrendingDown className="w-4 h-4 mr-1" />
-                      )}
-                      {stat.change}
-                    </div>
-                  </div>
-                </div>
-                <motion.div
-                  className={`w-12 h-12 bg-gradient-to-r ${stat.color} rounded-xl flex items-center justify-center shadow-lg`}
-                  whileHover={{ scale: 1.1, rotate: 360 }}
-                  transition={{ duration: 0.6 }}
-                >
-                  <Icon className="w-6 h-6 text-white" />
-                </motion.div>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
+      {!statCards.length && !statusCards.length && (
+        <p className="text-gray-600">Your account has no access to orders, products or customers, so there are no figures to show.</p>
+      )}
 
-      {/* Order Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {orderStatusCards.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <motion.div
-              key={stat.title}
-              className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 + index * 0.1 }}
-              whileHover={{ y: -3 }}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">
-                    {stat.title}
-                  </p>
-                  <AnimatedCounter
-                    end={stat.value}
-                    duration={1.5}
-                    className="text-3xl font-bold text-gray-900"
-                  />
-                </div>
-                <motion.div
-                  className={`w-12 h-12 bg-gradient-to-r ${stat.color} rounded-xl flex items-center justify-center shadow-lg`}
-                  whileHover={{ scale: 1.1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Icon className="w-6 h-6 text-white" />
-                </motion.div>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
+      {statCards.length > 0 && (
+        <div key={days} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          {statCards.map((card, index) => <StatCard key={card.title} index={index} {...card} />)}
+        </div>
+      )}
 
-      {/* Recent Orders & Top Products */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Orders */}
-        <motion.div
-          className="bg-white rounded-2xl shadow-lg border border-gray-100"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-        >
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <ShoppingCart className="w-5 h-5 mr-2 text-blue-600" />
-              Recent Orders
-            </h3>
+      {statusCards.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">All orders by status</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            {statusCards.map((card, index) => <StatCard key={card.title} index={index + 4} {...card} />)}
           </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              {stats.recentOrders.map((order, index) => (
-                <motion.div
-                  key={order.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-300"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 1 + index * 0.1 }}
-                >
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">{order.customer}</p>
-                    <p className="text-sm text-gray-500">{order.date}</p>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="font-semibold text-gray-900">
-                      {order.total} TND
-                    </span>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                      {getStatusIcon(order.status)}
-                      <span className="ml-1 capitalize">{order.status}</span>
-                    </span>
-                  </div>
-                </motion.div>
-              ))}
+        </section>
+      )}
+
+      {sales && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Recent Orders */}
+          <section className="bg-white rounded-2xl shadow-lg border border-gray-100">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <ShoppingCart className="w-5 h-5 mr-2 text-blue-600" />
+                Recent orders
+              </h3>
+              <Link to="/admin/orders" className="text-sm text-blue-600 hover:text-blue-700">See all</Link>
             </div>
-          </div>
-        </motion.div>
-
-        {/* Top Products */}
-        <motion.div
-          className="bg-white rounded-2xl shadow-lg border border-gray-100"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-        >
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <Package className="w-5 h-5 mr-2 text-green-600" />
-              Top Products
-            </h3>
-          </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              {stats.topProducts.map((product, index) => (
-                <motion.div
-                  key={product.name}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-300"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 1 + index * 0.1 }}
-                >
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">{product.name}</p>
-                    <p className="text-sm text-gray-500">{product.sales} sales</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-gray-900">
-                      {product.revenue} TND
-                    </p>
-                    <div className="w-20 bg-gray-200 rounded-full h-2 mt-1">
-                      <motion.div
-                        className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${(product.sales / 50) * 100}%` }}
-                        transition={{ duration: 1, delay: 1.2 + index * 0.1 }}
-                      />
+            <div className="p-6 space-y-3">
+              {!recentOrders.length && <p className="text-gray-500 text-sm">No orders yet.</p>}
+              {recentOrders.map(order => {
+                const status = STATUS[order.status] || STATUS.pending;
+                const StatusIcon = status.icon;
+                return (
+                  <Link
+                    key={order.id}
+                    to={`/admin/orders?search=${encodeURIComponent(order.orderNumber)}`}
+                    className="flex items-center justify-between gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{order.customerName || 'Customer'}</p>
+                      <p className="text-sm text-gray-500 truncate">{order.orderNumber} · {formatDate(order.createdAt)}</p>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-3 shrink-0">
+                      <span className="font-semibold text-gray-900 whitespace-nowrap">{formatTND(order.totalAmount)}</span>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.className}`}>
+                        <StatusIcon className="w-3.5 h-3.5 mr-1" />
+                        {status.label}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
-          </div>
-        </motion.div>
-      </div>
+          </section>
+
+          {/* Top Products */}
+          <section className="bg-white rounded-2xl shadow-lg border border-gray-100">
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <Package className="w-5 h-5 mr-2 text-green-600" />
+                Best sellers, {periodLabel}
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">By units sold, not counting cancelled or refunded orders</p>
+            </div>
+            <div className="p-6 space-y-3">
+              {!topProducts.length && <p className="text-gray-500 text-sm">No products sold in this period.</p>}
+              {topProducts.map((product, index) => {
+                const content = (
+                  <>
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{index + 1}. {product.name}</p>
+                      <p className="text-sm text-gray-500">
+                        {product.quantity} sold{!product.stillInCatalog && ' · no longer in the catalog'}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-semibold text-gray-900 whitespace-nowrap">{formatTND(product.revenue)}</p>
+                      <div className="w-24 bg-gray-200 rounded-full h-2 mt-1 ml-auto">
+                        <motion.div
+                          className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(product.quantity / bestSeller) * 100}%` }}
+                          transition={{ duration: 0.8, delay: 0.2 + index * 0.1 }}
+                        />
+                      </div>
+                    </div>
+                  </>
+                );
+                const className = 'flex items-center justify-between gap-3 p-4 bg-gray-50 rounded-xl';
+                return product.stillInCatalog ? (
+                  <Link key={product.id} to={`/admin/products?search=${encodeURIComponent(product.name)}`} className={`${className} hover:bg-gray-100 transition-colors`}>
+                    {content}
+                  </Link>
+                ) : (
+                  <div key={product.id} className={className}>{content}</div>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 };
