@@ -83,7 +83,7 @@ const ThemeToggle = ({ variant = 'button', className = '' }) => {
 };
 
 const ThemeDropdown = ({ className = '' }) => {
-  const { theme, setLightTheme, setDarkTheme, isTransitioning } = useTheme();
+  const { theme, preference, setLightTheme, setDarkTheme, setSystemTheme, isTransitioning } = useTheme();
   const [isOpen, setIsOpen] = React.useState(false);
 
   const themes = [
@@ -95,11 +95,8 @@ const ThemeDropdown = ({ className = '' }) => {
   const handleThemeSelect = (themeId) => {
     if (themeId === 'light') setLightTheme();
     if (themeId === 'dark') setDarkTheme();
-    if (themeId === 'system') {
-      // TODO: Implement system theme detection
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      prefersDark ? setDarkTheme() : setLightTheme();
-    }
+    // Follows the device's setting, also when it changes later
+    if (themeId === 'system') setSystemTheme();
     setIsOpen(false);
   };
 
@@ -119,9 +116,8 @@ const ThemeDropdown = ({ className = '' }) => {
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
       >
-        {theme === 'light' && <Sun className="w-4 h-4" />}
-        {theme === 'dark' && <Moon className="w-4 h-4" />}
-        <span className="capitalize">{theme}</span>
+        {preference === 'system' ? <Monitor className="w-4 h-4" /> : theme === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+        <span className="capitalize">{preference}</span>
       </motion.button>
 
       <AnimatePresence>
@@ -142,7 +138,7 @@ const ThemeDropdown = ({ className = '' }) => {
           >
             {themes.map((themeOption) => {
               const Icon = themeOption.icon;
-              const isActive = theme === themeOption.id;
+              const isActive = preference === themeOption.id;
               
               return (
                 <motion.button

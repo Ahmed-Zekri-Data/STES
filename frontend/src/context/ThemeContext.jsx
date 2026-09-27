@@ -10,74 +10,62 @@ export const useTheme = () => {
   return context;
 };
 
+const DARK_QUERY = '(prefers-color-scheme: dark)';
+const deviceTheme = () => (window.matchMedia?.(DARK_QUERY).matches ? 'dark' : 'light');
+
+// The choice saved in the browser, or 'system' to follow the device
+const savedPreference = () => {
+  try {
+    const saved = localStorage.getItem('theme');
+    return saved === 'light' || saved === 'dark' ? saved : 'system';
+  } catch {
+    return 'system';
+  }
+};
+
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState('light');
+  const [preference, setPreference] = useState(savedPreference);
+  const [device, setDevice] = useState(deviceTheme);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  // Follow the device's light/dark setting while it changes
   useEffect(() => {
-    // Check for saved theme preference or default to 'light'
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
-    setTheme(initialTheme);
-    
-    // Apply theme to document
-    if (initialTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    const query = window.matchMedia?.(DARK_QUERY);
+    if (!query) return undefined;
+    const update = () => setDevice(query.matches ? 'dark' : 'light');
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
   }, []);
 
-  const toggleTheme = () => {
+  const theme = preference === 'system' ? device : preference;
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, [theme]);
+
+  const choose = (next) => {
+    if (next === preference) return;
     setIsTransitioning(true);
-    
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    
-    // Save to localStorage
-    localStorage.setItem('theme', newTheme);
-    
-    // Apply to document with smooth transition
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    setPreference(next);
+    try {
+      if (next === 'system') localStorage.removeItem('theme');
+      else localStorage.setItem('theme', next);
+    } catch {
+      // Storage blocked: the choice lasts until the page is closed
     }
-    
-    // Reset transition state after animation
     setTimeout(() => setIsTransitioning(false), 300);
   };
 
-  const setLightTheme = () => {
-    if (theme !== 'light') {
-      setIsTransitioning(true);
-      setTheme('light');
-      localStorage.setItem('theme', 'light');
-      document.documentElement.classList.remove('dark');
-      setTimeout(() => setIsTransitioning(false), 300);
-    }
-  };
-
-  const setDarkTheme = () => {
-    if (theme !== 'dark') {
-      setIsTransitioning(true);
-      setTheme('dark');
-      localStorage.setItem('theme', 'dark');
-      document.documentElement.classList.add('dark');
-      setTimeout(() => setIsTransitioning(false), 300);
-    }
-  };
-
   const value = {
-    theme,
+    theme, // what is shown: 'light' or 'dark'
+    preference, // what was chosen: 'light', 'dark' or 'system'
     isDark: theme === 'dark',
     isLight: theme === 'light',
     isTransitioning,
-    toggleTheme,
-    setLightTheme,
-    setDarkTheme,
+    toggleTheme: () => choose(theme === 'light' ? 'dark' : 'light'),
+    setLightTheme: () => choose('light'),
+    setDarkTheme: () => choose('dark'),
+    setSystemTheme: () => choose('system')
   };
 
   return (

@@ -42,6 +42,8 @@ export const CustomerProvider = ({ children }) => {
   // Check if customer is logged in on app start
   useEffect(() => {
     checkAuthStatus();
+    // Only once, when the app starts
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkAuthStatus = async () => {

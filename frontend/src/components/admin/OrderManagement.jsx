@@ -91,6 +91,8 @@ const OrderManagement = () => {
 
   useEffect(() => {
     fetchOrders();
+    // Reload when the status, page or linked filters change; the search box applies on submit, not on every keystroke
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.status, filters.page, linkedFilters]);
 
   const fetchOrders = async () => {

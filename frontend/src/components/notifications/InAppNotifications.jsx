@@ -54,22 +54,33 @@ const InAppNotifications = () => {
     }
   };
 
+  // Shown as read right away, then saved on the server; put back as
+  // unread if saving fails
   const markAsRead = async (notificationId) => {
+    const before = notifications;
+    setNotifications(prev =>
+      prev.map(n => (n._id === notificationId ? { ...n, status: 'read', readAt: new Date() } : n))
+    );
+    setUnreadCount(prev => Math.max(0, prev - 1));
     try {
-      // Update local state immediately
-      setNotifications(prev => 
-        prev.map(n => 
-          n._id === notificationId ? { ...n, status: 'read', readAt: new Date() } : n
-        )
-      );
-      
-      // Update unread count
-      setUnreadCount(prev => Math.max(0, prev - 1));
-      
-      // TODO: Call API to mark as read on server
-      // await api.patch(`/notifications/${notificationId}/read`);
+      await notificationService.markAsRead(notificationId);
     } catch (error) {
       console.error('Error marking notification as read:', error);
+      setNotifications(before);
+      setUnreadCount(before.filter(n => n.status !== 'read').length);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    const before = notifications;
+    setNotifications(prev => prev.map(n => ({ ...n, status: 'read', readAt: n.readAt || new Date() })));
+    setUnreadCount(0);
+    try {
+      await notificationService.markAllAsRead();
+    } catch (error) {
+      console.error('Error marking notifications as read:', error);
+      setNotifications(before);
+      setUnreadCount(before.filter(n => n.status !== 'read').length);
     }
   };
 
@@ -160,12 +171,23 @@ const InAppNotifications = () => {
               {/* Header */}
               <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-3">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={markAllAsRead}
+                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Tout marquer comme lu
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    aria-label="Fermer"
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               {/* Notifications List */}

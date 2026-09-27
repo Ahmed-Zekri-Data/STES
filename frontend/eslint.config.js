@@ -45,4 +45,10 @@ export default [
       ],
     },
   },
+  // Context files export their provider together with its useX() hook, the
+  // usual pattern; editing one reloads the page instead of hot-swapping it
+  {
+    files: ['src/context/*.jsx', 'src/components/animations/AnimationProvider.jsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
 ]

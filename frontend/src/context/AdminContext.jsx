@@ -28,6 +28,8 @@ export const AdminProvider = ({ children }) => {
   // Check if admin is logged in on app start
   useEffect(() => {
     checkAuthStatus();
+    // Only once, when the app starts
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkAuthStatus = async () => {

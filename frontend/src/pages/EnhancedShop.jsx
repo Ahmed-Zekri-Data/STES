@@ -47,6 +47,8 @@ const EnhancedShop = () => {
 
   useEffect(() => {
     fetchProducts();
+    // Reload when the filters change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   useEffect(() => {
