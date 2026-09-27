@@ -1,5 +1,4 @@
 const { describe, it, before, after, beforeEach } = require('node:test');
-const assert = require('node:assert/strict');
 const request = require('supertest');
 const {
   startDatabase, stopDatabase, clearDatabase, createApp, createProduct, adminToken, orderPayload
