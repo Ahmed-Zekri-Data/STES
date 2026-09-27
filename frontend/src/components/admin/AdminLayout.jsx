@@ -8,6 +8,7 @@ import PageLoader from '../PageLoader';
 import QuickActions from './QuickActions';
 import AdminSearch from './AdminSearch';
 import NotificationsMenu from './NotificationsMenu';
+import { canOpen } from './adminPermissions';
 import {
   LayoutDashboard,
   Package,
@@ -46,7 +47,7 @@ const useIsDesktop = () => {
 };
 
 const AdminLayout = () => {
-  const { admin, logout } = useAdmin();
+  const { admin, logout, hasPermission } = useAdmin();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isDesktop = useIsDesktop();
   const location = useLocation();
@@ -67,7 +68,8 @@ const AdminLayout = () => {
     // Only super admins manage admin accounts
     ...(admin?.role === 'super_admin' ? [{ name: 'Admin Users', href: '/admin/users', icon: UserCog }] : []),
     { name: 'Settings', href: '/admin/settings', icon: Settings },
-  ];
+  ].filter(item => canOpen(hasPermission, item.href));
+  const allowed = canOpen(hasPermission, location.pathname);
 
   const roleLabel = admin?.role === 'super_admin' ? 'Super admin' : 'Admin';
 
@@ -290,7 +292,12 @@ const AdminLayout = () => {
             {/* Keeps the admin menu usable when a page fails */}
             <ErrorBoundary homePath="/admin/dashboard" homeLabel="Retour au tableau de bord">
               <Suspense fallback={<PageLoader />}>
-                <Outlet />
+                {allowed ? <Outlet /> : (
+                  <div role="alert" className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-700">
+                    <p className="font-semibold text-gray-900 mb-1">You don't have access to this page.</p>
+                    <p>A super admin can give you the permission in Admin Users.</p>
+                  </div>
+                )}
               </Suspense>
             </ErrorBoundary>
           </motion.div>

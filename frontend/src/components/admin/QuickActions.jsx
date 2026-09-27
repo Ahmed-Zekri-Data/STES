@@ -1,9 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, ShoppingCart, FileText, Package, Users } from 'lucide-react';
+import { Plus, ShoppingCart, FileText, Package } from 'lucide-react';
+import { useAdmin } from '../../context/AdminContext';
+import { canOpen } from './adminPermissions';
 
 const QuickActions = () => {
+  const { hasPermission } = useAdmin();
   const quickActions = [
     {
       name: 'Add Product',
@@ -33,7 +36,7 @@ const QuickActions = () => {
       color: 'orange',
       description: 'Manage inventory'
     }
-  ];
+  ].filter(action => canOpen(hasPermission, action.href));
 
   const getColorClasses = (color) => {
     const colors = {

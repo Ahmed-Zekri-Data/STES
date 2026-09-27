@@ -2,7 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const Page = require('../models/Page');
-const { auth } = require('../middleware/auth');
+const { auth, checkPermission } = require('../middleware/auth');
+
+// Editing the About and Contact pages is part of the shop settings
+const pagesAdmin = [auth, checkPermission('settings')];
 
 // GET /api/pages - Get all pages (public)
 router.get('/', async (req, res) => {
@@ -32,7 +35,7 @@ router.get('/:slug', async (req, res) => {
 });
 
 // GET /api/pages/admin/all - Get all pages for admin (Admin only)
-router.get('/admin/all', auth, async (req, res) => {
+router.get('/admin/all', pagesAdmin, async (req, res) => {
   try {
     const pages = await Page.find({})
       .populate('lastModifiedBy', 'username email')
@@ -46,7 +49,7 @@ router.get('/admin/all', auth, async (req, res) => {
 });
 
 // PUT /api/pages/:slug - Update page (Admin only)
-router.put('/:slug', auth, [
+router.put('/:slug', pagesAdmin, [
   body('title').trim().isLength({ min: 1, max: 200 }).withMessage('Title is required and must be less than 200 characters'),
   body('titleEn').optional().trim().isLength({ max: 200 }).withMessage('English title must be less than 200 characters'),
   body('titleAr').optional().trim().isLength({ max: 200 }).withMessage('Arabic title must be less than 200 characters'),
@@ -91,7 +94,7 @@ router.put('/:slug', auth, [
 });
 
 // POST /api/pages/initialize - Initialize default pages (Admin only)
-router.post('/initialize', auth, async (req, res) => {
+router.post('/initialize', pagesAdmin, async (req, res) => {
   try {
     await Page.initializeDefaultPages();
     res.json({ message: 'Default pages initialized successfully' });

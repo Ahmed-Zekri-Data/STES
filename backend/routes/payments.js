@@ -5,7 +5,7 @@ const Payment = require('../models/Payment');
 const Order = require('../models/Order');
 const paymentService = require('../services/paymentService');
 const { customerAuth } = require('../middleware/customerAuth');
-const { auth } = require('../middleware/auth');
+const { auth, checkPermission } = require('../middleware/auth');
 
 // GET /api/payments/methods - Get available payment methods
 router.get('/methods', async (req, res) => {
@@ -289,7 +289,7 @@ router.post('/webhook/paymee', handleGatewayWebhook('paymee', body => body.order
 router.post('/webhook/flouci', handleGatewayWebhook('flouci', body => body.developer_tracking_id));
 
 // GET /api/payments/stats - Get payment statistics (admin only)
-router.get('/stats', auth, async (req, res) => {
+router.get('/stats', auth, checkPermission('orders'), async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
