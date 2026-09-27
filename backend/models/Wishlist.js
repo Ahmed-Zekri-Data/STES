@@ -53,12 +53,13 @@ wishlistSchema.virtual('itemsCount').get(function() {
   return this.items.length;
 });
 
+// The product id of an item, whether or not the product is loaded
+const itemProductId = (item) => String(item.product?._id || item.product);
+
 // Method to add item to wishlist
 wishlistSchema.methods.addItem = function(productId, productSnapshot) {
   // Check if item already exists
-  const existingItem = this.items.find(item => 
-    item.product.toString() === productId.toString()
-  );
+  const existingItem = this.items.find(item => itemProductId(item) === String(productId));
   
   if (existingItem) {
     throw new Error('Product already in wishlist');
@@ -74,18 +75,14 @@ wishlistSchema.methods.addItem = function(productId, productSnapshot) {
 
 // Method to remove item from wishlist
 wishlistSchema.methods.removeItem = function(productId) {
-  this.items = this.items.filter(item => 
-    item.product.toString() !== productId.toString()
-  );
+  this.items = this.items.filter(item => itemProductId(item) !== String(productId));
   
   return this.save();
 };
 
 // Method to check if product is in wishlist
 wishlistSchema.methods.hasProduct = function(productId) {
-  return this.items.some(item => 
-    item.product.toString() === productId.toString()
-  );
+  return this.items.some(item => itemProductId(item) === String(productId));
 };
 
 // Method to clear all items
@@ -96,7 +93,7 @@ wishlistSchema.methods.clearAll = function() {
 
 // Static method to find or create wishlist for customer
 wishlistSchema.statics.findOrCreateForCustomer = async function(customerId) {
-  let wishlist = await this.findOne({ customer: customerId }).populate('items.product');
+  let wishlist = await this.findOne({ customer: customerId });
   
   if (!wishlist) {
     wishlist = new this({
@@ -110,12 +107,19 @@ wishlistSchema.statics.findOrCreateForCustomer = async function(customerId) {
 };
 
 // Static method to get wishlist with populated products
+// Products deleted from the catalog are dropped from the list: they can no
+// longer be bought
 wishlistSchema.statics.getWithProducts = async function(customerId) {
-  return this.findOne({ customer: customerId })
+  const wishlist = await this.findOne({ customer: customerId })
     .populate({
       path: 'items.product',
-      select: 'name price images category inStock'
+      select: 'name price image category inStock stockQuantity'
     });
+  if (wishlist && wishlist.items.some(item => !item.product)) {
+    wishlist.items = wishlist.items.filter(item => item.product);
+    await wishlist.save();
+  }
+  return wishlist;
 };
 
 module.exports = mongoose.model('Wishlist', wishlistSchema);

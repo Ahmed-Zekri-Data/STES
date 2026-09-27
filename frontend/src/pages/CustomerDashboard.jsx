@@ -10,6 +10,7 @@ import NotificationPreferences from '../components/notifications/NotificationPre
 import ResendVerification from '../components/auth/ResendVerification';
 import AccountSettings from '../components/customer/AccountSettings';
 import AddressBook from '../components/customer/AddressBook';
+import WishlistTab from '../components/customer/WishlistTab';
 
 const CustomerDashboard = () => {
   const { customer, isAuthenticated, loading } = useCustomer();
@@ -206,12 +207,7 @@ const CustomerDashboard = () => {
       case 'addresses':
         return <AddressBook />;
       case 'wishlist':
-        return (
-          <div className="bg-white rounded-xl p-6 shadow-lg">
-            <h3 className="text-lg font-semibold mb-4">Ma liste de souhaits</h3>
-            <p className="text-gray-600">Votre liste de souhaits est vide.</p>
-          </div>
-        );
+        return <WishlistTab />;
       case 'settings':
         return <AccountSettings />;
       default:

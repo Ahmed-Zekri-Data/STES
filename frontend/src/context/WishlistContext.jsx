@@ -75,7 +75,7 @@ export const WishlistProvider = ({ children }) => {
 
   const isInWishlist = (productId) => {
     if (!wishlist || !wishlist.items) return false;
-    return wishlist.items.some(item => item.product._id === productId || item.product === productId);
+    return wishlist.items.some(item => item.product?._id === productId || item.product === productId);
   };
 
   const toggleWishlist = async (productId) => {
