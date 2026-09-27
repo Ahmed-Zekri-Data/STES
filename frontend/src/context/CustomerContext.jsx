@@ -117,14 +117,14 @@ export const CustomerProvider = ({ children }) => {
     }
   };
 
+  // Signs out the customer's other devices; this one continues with the
+  // new token the server sends back
   const changePassword = async (passwordData) => {
-    try {
-      const response = await axios.put('/api/customers/change-password', passwordData);
-      return { success: true, message: response.data.message };
-    } catch (error) {
-      console.error('Change password error:', error);
-      throw error;
-    }
+    const response = await axios.put('/api/customers/change-password', passwordData);
+    const { token } = response.data;
+    localStorage.setItem('customerToken', token);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    return { success: true, message: response.data.message };
   };
 
   const forgotPassword = async (email) => {
