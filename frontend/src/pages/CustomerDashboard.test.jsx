@@ -36,14 +36,14 @@ describe('customer account page', () => {
   // The account menu links to /account?tab=settings and /account?tab=orders
   it('opens the tab named in the address', async () => {
     renderAt('/account?tab=settings');
-    expect(await screen.findByText('Paramètres du compte')).toBeTruthy();
+    expect(await screen.findByText('Informations personnelles')).toBeTruthy();
   });
 
   it('puts the chosen tab in the address', async () => {
     renderAt('/account');
     fireEvent.click(await screen.findByRole('button', { name: 'Paramètres' }));
 
-    expect(await screen.findByText('Paramètres du compte')).toBeTruthy();
+    expect(await screen.findByText('Informations personnelles')).toBeTruthy();
     expect(screen.getByTestId('location').textContent).toBe('?tab=settings');
   });
 });

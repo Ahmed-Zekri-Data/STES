@@ -8,6 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import OrderHistory from '../components/customer/OrderHistory';
 import NotificationPreferences from '../components/notifications/NotificationPreferences';
 import ResendVerification from '../components/auth/ResendVerification';
+import AccountSettings from '../components/customer/AccountSettings';
 
 const CustomerDashboard = () => {
   const { customer, isAuthenticated, loading } = useCustomer();
@@ -216,12 +217,7 @@ const CustomerDashboard = () => {
           </div>
         );
       case 'settings':
-        return (
-          <div className="bg-white rounded-xl p-6 shadow-lg">
-            <h3 className="text-lg font-semibold mb-4">Paramètres du compte</h3>
-            <p className="text-gray-600">Paramètres à venir...</p>
-          </div>
-        );
+        return <AccountSettings />;
       default:
         return renderOverview();
     }

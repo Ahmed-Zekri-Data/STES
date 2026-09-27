@@ -31,6 +31,29 @@ const sendVerificationLink = async (customer) => {
   return true;
 };
 
+// Everything the account page shows (GET /me and after a profile save)
+const accountView = (customer) => ({
+  id: customer._id,
+  email: customer.email,
+  firstName: customer.firstName,
+  lastName: customer.lastName,
+  fullName: customer.fullName,
+  phone: customer.phone,
+  dateOfBirth: customer.dateOfBirth,
+  gender: customer.gender,
+  isEmailVerified: customer.isEmailVerified,
+  addresses: customer.addresses,
+  preferences: customer.preferences,
+  loyaltyPoints: customer.loyaltyPoints,
+  totalSpent: customer.totalSpent,
+  orderCount: customer.orderCount,
+  lastLogin: customer.lastLogin,
+  avatar: customer.avatar
+});
+
+// "+216 98 765 432", "98.765.432" → "+21698765432", "98765432"
+const compactPhone = (value) => String(value || '').replace(/[\s.()-]/g, '');
+
 // What the shop keeps about the logged-in customer
 const sessionCustomer = (customer) => ({
   id: customer._id,
@@ -52,7 +75,9 @@ router.post('/register', [
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('firstName').trim().isLength({ min: 1, max: 50 }).withMessage('First name is required'),
   body('lastName').trim().isLength({ min: 1, max: 50 }).withMessage('Last name is required'),
-  body('phone').optional().matches(/^(\+216)?[0-9]{8}$/).withMessage('Please enter a valid Tunisian phone number')
+  // Spaces, dots and dashes are fine: "+216 12 345 678"
+  body('phone').optional({ values: 'falsy' }).customSanitizer(compactPhone)
+    .matches(/^(\+216)?[0-9]{8}$/).withMessage('Please enter a valid Tunisian phone number (8 digits)')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -153,26 +178,7 @@ router.get('/me', customerAuth, async (req, res) => {
       return res.status(404).json({ message: 'Customer not found' });
     }
 
-    res.json({
-      customer: {
-        id: customer._id,
-        email: customer.email,
-        firstName: customer.firstName,
-        lastName: customer.lastName,
-        fullName: customer.fullName,
-        phone: customer.phone,
-        dateOfBirth: customer.dateOfBirth,
-        gender: customer.gender,
-        isEmailVerified: customer.isEmailVerified,
-        addresses: customer.addresses,
-        preferences: customer.preferences,
-        loyaltyPoints: customer.loyaltyPoints,
-        totalSpent: customer.totalSpent,
-        orderCount: customer.orderCount,
-        lastLogin: customer.lastLogin,
-        avatar: customer.avatar
-      }
-    });
+    res.json({ customer: accountView(customer) });
   } catch (error) {
     console.error('Error fetching customer info:', error);
     res.status(500).json({ message: 'Error fetching customer information' });
@@ -183,8 +189,11 @@ router.get('/me', customerAuth, async (req, res) => {
 router.put('/profile', customerAuth, [
   body('firstName').optional().trim().isLength({ min: 1, max: 50 }).withMessage('First name must be 1-50 characters'),
   body('lastName').optional().trim().isLength({ min: 1, max: 50 }).withMessage('Last name must be 1-50 characters'),
-  body('phone').optional().matches(/^(\+216)?[0-9]{8}$/).withMessage('Please enter a valid Tunisian phone number'),
-  body('dateOfBirth').optional().isISO8601().withMessage('Please enter a valid date'),
+  // Empty clears the phone number or date of birth
+  body('phone').optional({ values: 'falsy' }).customSanitizer(compactPhone)
+    .matches(/^(\+216)?[0-9]{8}$/).withMessage('Please enter a valid Tunisian phone number (8 digits)'),
+  body('dateOfBirth').optional({ values: 'falsy' }).isISO8601().withMessage('Please enter a valid date')
+    .custom(value => new Date(value) < new Date()).withMessage('The date of birth must be in the past'),
   body('gender').optional().isIn(['male', 'female', 'other']).withMessage('Invalid gender')
 ], async (req, res) => {
   try {
@@ -203,8 +212,8 @@ router.put('/profile', customerAuth, [
     // Update fields
     if (firstName !== undefined) customer.firstName = firstName;
     if (lastName !== undefined) customer.lastName = lastName;
-    if (phone !== undefined) customer.phone = phone;
-    if (dateOfBirth !== undefined) customer.dateOfBirth = dateOfBirth;
+    if (phone !== undefined) customer.phone = phone || undefined;
+    if (dateOfBirth !== undefined) customer.dateOfBirth = dateOfBirth || undefined;
     if (gender !== undefined) customer.gender = gender;
     if (preferences !== undefined) {
       customer.preferences = { ...customer.preferences, ...preferences };
@@ -212,20 +221,7 @@ router.put('/profile', customerAuth, [
 
     await customer.save();
 
-    res.json({
-      message: 'Profile updated successfully',
-      customer: {
-        id: customer._id,
-        email: customer.email,
-        firstName: customer.firstName,
-        lastName: customer.lastName,
-        fullName: customer.fullName,
-        phone: customer.phone,
-        dateOfBirth: customer.dateOfBirth,
-        gender: customer.gender,
-        preferences: customer.preferences
-      }
-    });
+    res.json({ message: 'Profile updated successfully', customer: accountView(customer) });
   } catch (error) {
     console.error('Profile update error:', error);
     res.status(500).json({ message: 'Error updating profile' });
@@ -416,10 +412,12 @@ router.put('/change-password', customerAuth, [
       return res.status(400).json({ message: 'Current password is incorrect' });
     }
 
+    // Signs out the customer's other devices; this one continues with a new token
     customer.password = newPassword;
+    customer.sessionVersion = (customer.sessionVersion || 0) + 1;
     await customer.save();
 
-    res.json({ message: 'Password changed successfully' });
+    res.json({ message: 'Password changed successfully', token: signCustomerToken(customer) });
   } catch (error) {
     console.error('Change password error:', error);
     res.status(500).json({ message: 'Error changing password' });
