@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult, query } = require('express-validator');
 const Order = require('../models/Order');
+const Product = require('../models/Product');
 const Customer = require('../models/Customer');
 const { auth } = require('../middleware/auth');
 const { optionalCustomerAuth } = require('../middleware/customerAuth');
@@ -126,7 +127,7 @@ router.post('/', optionalCustomerAuth, [
     // checkout. Failures are logged by the service.
     emailNotificationService.sendOrderConfirmation(order);
 
-    await order.populate('items.product');
+    await order.populate('items.product', '-reviews');
 
     res.status(201).json({
       message: 'Order created successfully',
@@ -251,6 +252,60 @@ router.get('/', auth, [
   }
 });
 
+// The period's performance figures, null when there is nothing to measure:
+// - customerSatisfaction: share of product reviews rated 4 or 5 stars
+// - repeatCustomers: share of the period's customers with more than one order
+// - coverageAreas: governorates (or cities) delivered to
+const performanceMetrics = async (startDate) => {
+  const inPeriod = { createdAt: { $gte: startDate }, status: { $ne: 'cancelled' } };
+  const [[reviews], [customers], areas] = await Promise.all([
+    Product.aggregate([
+      { $unwind: '$reviews' },
+      { $match: { 'reviews.createdAt': { $gte: startDate } } },
+      { $group: { _id: null, total: { $sum: 1 }, happy: { $sum: { $cond: [{ $gte: ['$reviews.rating', 4] }, 1, 0] } } } }
+    ]),
+    Order.aggregate([
+      { $match: inPeriod },
+      { $group: { _id: '$customer.email' } },
+      { $lookup: { from: 'orders', localField: '_id', foreignField: 'customer.email', as: 'orders' } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          repeat: {
+            $sum: {
+              $cond: [{ $gt: [{ $size: { $filter: { input: '$orders', cond: { $ne: ['$$this.status', 'cancelled'] } } } }, 1] }, 1, 0]
+            }
+          }
+        }
+      }
+    ]),
+    Order.aggregate([
+      { $match: inPeriod },
+      {
+        $group: {
+          _id: {
+            $toLower: {
+              $cond: [
+                { $gt: [{ $strLenCP: { $ifNull: ['$customer.address.governorate', ''] } }, 0] },
+                '$customer.address.governorate',
+                '$customer.address.city'
+              ]
+            }
+          }
+        }
+      }
+    ])
+  ]);
+
+  const share = (part, total) => (total > 0 ? Math.round((part / total) * 100) : null);
+  return {
+    customerSatisfaction: share(reviews?.happy, reviews?.total),
+    repeatCustomers: share(customers?.repeat, customers?.total),
+    coverageAreas: areas.filter(area => area._id).length
+  };
+};
+
 // GET /api/orders/stats - Get order statistics for tracking dashboard
 router.get('/stats', auth, async (req, res) => {
   try {
@@ -353,7 +408,8 @@ router.get('/stats', auth, async (req, res) => {
     });
 
     const deliveryData = deliveryStats[0] || {};
-    const avgDeliveryTime = Math.round(deliveryData.avgDeliveryTime || 4);
+    // No delivered orders yet: nothing to measure (shown as "—")
+    const avgDeliveryTime = deliveryData.totalDelivered > 0 ? Math.round(deliveryData.avgDeliveryTime) : null;
     const onTimeDelivery = deliveryData.totalDelivered > 0
       ? Math.round((deliveryData.onTimeCount / deliveryData.totalDelivered) * 100)
       : 0;
@@ -363,10 +419,7 @@ router.get('/stats', auth, async (req, res) => {
       ? Math.round(((totalOrders - previousPeriodOrders) / previousPeriodOrders) * 100)
       : 0;
 
-    // Additional metrics
-    const customerSatisfaction = 95; // This would come from reviews/feedback
-    const repeatCustomers = 65; // This would come from customer analysis
-    const coverageAreas = 24; // Number of cities/areas covered
+    const { customerSatisfaction, repeatCustomers, coverageAreas } = await performanceMetrics(startDate);
 
     res.json({
       totalOrders,

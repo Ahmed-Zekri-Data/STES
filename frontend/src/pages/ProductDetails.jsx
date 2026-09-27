@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
 import { ArrowLeft, Plus, Minus, ShoppingCart, Star } from 'lucide-react';
 import axios from 'axios';
 import { showPlaceholderOnError } from '../utils/images';
+import ProductReviews from '../components/product/ProductReviews';
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -16,6 +17,7 @@ const ProductDetails = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
+  const tabsRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -23,6 +25,7 @@ const ProductDetails = () => {
     const fetchProduct = async () => {
       setLoading(true);
       setQuantity(1);
+      setActiveTab('description');
       try {
         const response = await axios.get(`/api/products/${id}`);
         if (!cancelled) {
@@ -54,6 +57,11 @@ const ProductDetails = () => {
       addToCart(product, quantity);
       // You could add a toast notification here
     }
+  };
+
+  const showReviews = () => {
+    setActiveTab('reviews');
+    tabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const handleQuantityChange = (change) => {
@@ -137,8 +145,12 @@ const ProductDetails = () => {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 {product.name}
               </h1>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="flex items-center">
+              <button
+                type="button"
+                onClick={showReviews}
+                className="flex items-center space-x-2 mb-4 hover:underline"
+              >
+                <div className="flex items-center" aria-hidden="true">
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
@@ -147,9 +159,9 @@ const ProductDetails = () => {
                   ))}
                 </div>
                 <span className="text-gray-600">
-                  {totalReviews > 0 ? `${averageRating.toFixed(1)} (${totalReviews} avis)` : 'Aucun avis'}
+                  {totalReviews > 0 ? `${averageRating.toFixed(1)} sur 5 (${totalReviews} avis)` : 'Aucun avis : donnez le vôtre'}
                 </span>
-              </div>
+              </button>
               <p className="text-4xl font-bold text-primary-600 mb-4">
                 {product.price} {t('currency')}
               </p>
@@ -204,7 +216,7 @@ const ProductDetails = () => {
         </div>
 
         {/* Product Details Tabs */}
-        <div className="bg-white rounded-lg shadow-md">
+        <div ref={tabsRef} className="bg-white rounded-lg shadow-md scroll-mt-24">
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-6">
               <button
@@ -227,6 +239,16 @@ const ProductDetails = () => {
               >
                 {t('specifications')}
               </button>
+              <button
+                onClick={() => setActiveTab('reviews')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'reviews'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Avis ({totalReviews})
+              </button>
             </nav>
           </div>
 
@@ -248,6 +270,13 @@ const ProductDetails = () => {
                   </div>
                 ))}
               </div>
+            )}
+
+            {activeTab === 'reviews' && (
+              <ProductReviews
+                productId={product._id}
+                onStatsChange={(ratingStats) => setProduct(current => ({ ...current, ratingStats }))}
+              />
             )}
           </div>
         </div>

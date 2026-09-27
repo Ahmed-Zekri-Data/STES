@@ -17,6 +17,9 @@ import {
 import adminApi from '../../utils/adminApi';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
+// A share in percent, or "—" when there was nothing to measure
+const percent = (value) => (value == null ? '—' : `${value}%`);
+
 const TrackingDashboard = () => {
   const [stats, setStats] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
@@ -118,7 +121,7 @@ const TrackingDashboard = () => {
               <p className="text-sm font-medium text-gray-600">Total Commandes</p>
               <p className="text-2xl font-bold text-gray-900">{stats?.totalOrders || 0}</p>
               <p className="text-xs text-green-600 mt-1">
-                +{stats?.orderGrowth || 0}% vs période précédente
+                {stats?.orderGrowth > 0 ? '+' : ''}{stats?.orderGrowth || 0}% vs période précédente
               </p>
             </div>
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -179,7 +182,7 @@ const TrackingDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Délai Moyen</p>
-              <p className="text-2xl font-bold text-gray-900">{stats?.avgDeliveryTime || 0}j</p>
+              <p className="text-2xl font-bold text-gray-900">{stats?.avgDeliveryTime != null ? `${stats.avgDeliveryTime}j` : '—'}</p>
               <p className="text-xs text-blue-600 mt-1">
                 {stats?.onTimeDelivery || 0}% à temps
               </p>
@@ -290,16 +293,18 @@ const TrackingDashboard = () => {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <TrendingUp className="w-8 h-8 text-green-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900">{stats?.customerSatisfaction || 0}%</p>
+            <p className="text-2xl font-bold text-gray-900">{percent(stats?.customerSatisfaction)}</p>
             <p className="text-sm text-gray-600">Satisfaction Client</p>
+            <p className="text-xs text-gray-500">Avis de 4 ou 5 étoiles</p>
           </div>
           
           <div className="text-center">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <Users className="w-8 h-8 text-blue-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900">{stats?.repeatCustomers || 0}%</p>
+            <p className="text-2xl font-bold text-gray-900">{percent(stats?.repeatCustomers)}</p>
             <p className="text-sm text-gray-600">Clients Fidèles</p>
+            <p className="text-xs text-gray-500">Plus d'une commande</p>
           </div>
           
           <div className="text-center">
@@ -308,6 +313,7 @@ const TrackingDashboard = () => {
             </div>
             <p className="text-2xl font-bold text-gray-900">{stats?.coverageAreas || 0}</p>
             <p className="text-sm text-gray-600">Zones Couvertes</p>
+            <p className="text-xs text-gray-500">Gouvernorats livrés sur la période</p>
           </div>
         </div>
       </motion.div>

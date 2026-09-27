@@ -105,6 +105,7 @@ const createApp = () => {
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // Routes
+  app.use('/api/products/:id/reviews', require('./routes/productReviews'));
   app.use('/api/products', require('./routes/products'));
   app.use('/api/orders', require('./routes/orders'));
   app.use('/api/forms', require('./routes/forms'));
@@ -117,6 +118,7 @@ const createApp = () => {
   app.use('/api/admin/categories', require('./routes/adminCategories'));
   app.use('/api/admin/brands', require('./routes/adminBrands'));
   app.use('/api/admin/customers', require('./routes/adminCustomers'));
+  app.use('/api/admin/reviews', require('./routes/adminReviews'));
   app.use('/api/auth', require('./routes/auth')); // Admin auth
   app.use('/api/customers', require('./routes/customers')); // Customer auth and profile
   app.use('/api/addresses', require('./routes/addresses'));
