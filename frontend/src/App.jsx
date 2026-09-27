@@ -44,6 +44,7 @@ const Products = lazy(() => import('./pages/admin/Products'));
 const Categories = lazy(() => import('./pages/admin/Categories'));
 const Brands = lazy(() => import('./pages/admin/Brands'));
 const Reviews = lazy(() => import('./pages/admin/Reviews'));
+const Reports = lazy(() => import('./pages/admin/Reports'));
 const Orders = lazy(() => import('./pages/admin/Orders'));
 const Customers = lazy(() => import('./pages/admin/Customers'));
 const Forms = lazy(() => import('./pages/admin/Forms'));
@@ -129,6 +130,7 @@ function App() {
                       <Route path="reviews" element={<Reviews />} />
                       <Route path="orders" element={<Orders />} />
                       <Route path="tracking" element={<TrackingDashboard />} />
+                      <Route path="reports" element={<Reports />} />
                       <Route path="customers" element={<Customers />} />
                       <Route path="forms" element={<Forms />} />
                       <Route path="pages" element={<Pages />} />
