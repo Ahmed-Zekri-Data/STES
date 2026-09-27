@@ -14,7 +14,7 @@ const OrderSummary = () => {
 
   return (
     <motion.div
-      className="bg-white rounded-2xl shadow-lg p-6 sticky top-8"
+      className="bg-surface rounded-2xl shadow-lg p-6 sticky top-8"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
@@ -46,7 +46,7 @@ const OrderSummary = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
           >
-            <div className="w-12 h-12 bg-white rounded-lg overflow-hidden">
+            <div className="w-12 h-12 bg-surface rounded-lg overflow-hidden">
               <img
                 src={item.image || '/api/placeholder/48/48'}
                 alt={item.name}

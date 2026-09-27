@@ -126,7 +126,7 @@ const CustomerLogin = ({ onClose, onSwitchToRegister, onForgotPassword }) => {
         >
           <LogIn className="w-8 h-8 text-white" />
         </motion.div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h2 className="text-2xl font-bold text-gray-900">
           {text.title}
         </h2>
       </div>
@@ -147,7 +147,7 @@ const CustomerLogin = ({ onClose, onSwitchToRegister, onForgotPassword }) => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             {text.email}
           </label>
           <div className="relative">
@@ -169,7 +169,7 @@ const CustomerLogin = ({ onClose, onSwitchToRegister, onForgotPassword }) => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             {text.password}
           </label>
           <div className="relative">

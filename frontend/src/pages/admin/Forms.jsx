@@ -257,7 +257,7 @@ const Forms = () => {
         </div>
         <div className="space-y-4">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl p-6 shadow-lg animate-pulse">
+            <div key={i} className="bg-surface rounded-2xl p-6 shadow-lg animate-pulse">
               <div className="flex justify-between items-center">
                 <div className="space-y-2">
                   <div className="h-4 bg-gray-300 rounded w-32"></div>
@@ -308,7 +308,7 @@ const Forms = () => {
 
       {/* Filters */}
       <motion.div
-        className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+        className="bg-surface rounded-2xl p-6 shadow-lg border border-gray-100"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
@@ -366,7 +366,7 @@ const Forms = () => {
           {forms.map((form, index) => (
             <motion.div
               key={form._id}
-              className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden"
+              className="bg-surface rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -492,7 +492,7 @@ const Forms = () => {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+              className="bg-surface rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
               role="dialog"
               aria-label="Submission details"
               initial={{ opacity: 0, scale: 0.9, y: 20 }}

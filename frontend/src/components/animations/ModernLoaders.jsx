@@ -14,12 +14,12 @@ export const SpinLoader = ({ size = 'medium', color = 'primary', className = '' 
   };
 
   const colorClasses = {
-    primary: 'border-primary-600 dark:border-primary-400',
-    secondary: 'border-neutral-600 dark:border-neutral-400',
-    success: 'border-success-600 dark:border-success-400',
-    warning: 'border-warning-600 dark:border-warning-400',
-    error: 'border-error-600 dark:border-error-400',
-    pool: 'border-pool-600 dark:border-pool-400'
+    primary: 'border-primary-600 ',
+    secondary: 'border-neutral-600 ',
+    success: 'border-success-600 ',
+    warning: 'border-warning-600 ',
+    error: 'border-error-600 ',
+    pool: 'border-pool-600 '
   };
 
   return (
@@ -51,12 +51,12 @@ export const DotsLoader = ({ size = 'medium', color = 'primary', className = '' 
   };
 
   const colorClasses = {
-    primary: 'bg-primary-600 dark:bg-primary-400',
-    secondary: 'bg-neutral-600 dark:bg-neutral-400',
-    success: 'bg-success-600 dark:bg-success-400',
-    warning: 'bg-warning-600 dark:bg-warning-400',
-    error: 'bg-error-600 dark:bg-error-400',
-    pool: 'bg-pool-600 dark:bg-pool-400'
+    primary: 'bg-primary-600 ',
+    secondary: 'bg-neutral-600 ',
+    success: 'bg-success-600 ',
+    warning: 'bg-warning-600 ',
+    error: 'bg-error-600 ',
+    pool: 'bg-pool-600 '
   };
 
   return (
@@ -92,12 +92,12 @@ export const WaveLoader = ({ size = 'medium', color = 'primary', className = '' 
   };
 
   const colorClasses = {
-    primary: 'bg-primary-600 dark:bg-primary-400',
-    secondary: 'bg-neutral-600 dark:bg-neutral-400',
-    success: 'bg-success-600 dark:bg-success-400',
-    warning: 'bg-warning-600 dark:bg-warning-400',
-    error: 'bg-error-600 dark:bg-error-400',
-    pool: 'bg-pool-600 dark:bg-pool-400'
+    primary: 'bg-primary-600 ',
+    secondary: 'bg-neutral-600 ',
+    success: 'bg-success-600 ',
+    warning: 'bg-warning-600 ',
+    error: 'bg-error-600 ',
+    pool: 'bg-pool-600 '
   };
 
   return (
@@ -132,12 +132,12 @@ export const PulseLoader = ({ size = 'medium', color = 'primary', className = ''
   };
 
   const colorClasses = {
-    primary: 'bg-primary-600 dark:bg-primary-400',
-    secondary: 'bg-neutral-600 dark:bg-neutral-400',
-    success: 'bg-success-600 dark:bg-success-400',
-    warning: 'bg-warning-600 dark:bg-warning-400',
-    error: 'bg-error-600 dark:bg-error-400',
-    pool: 'bg-pool-600 dark:bg-pool-400'
+    primary: 'bg-primary-600 ',
+    secondary: 'bg-neutral-600 ',
+    success: 'bg-success-600 ',
+    warning: 'bg-warning-600 ',
+    error: 'bg-error-600 ',
+    pool: 'bg-pool-600 '
   };
 
   return (
@@ -167,7 +167,7 @@ export const SkeletonLoader = ({
 
   return (
     <div 
-      className={`bg-neutral-200 dark:bg-neutral-700 ${rounded} overflow-hidden relative ${className}`}
+      className={`bg-neutral-200  ${rounded} overflow-hidden relative ${className}`}
       style={{ width, height }}
     >
       {!prefersReducedMotion && (
@@ -195,17 +195,17 @@ export const ProgressLoader = ({
   showPercentage = false 
 }) => {
   const colorClasses = {
-    primary: 'bg-primary-600 dark:bg-primary-400',
-    secondary: 'bg-neutral-600 dark:bg-neutral-400',
-    success: 'bg-success-600 dark:bg-success-400',
-    warning: 'bg-warning-600 dark:bg-warning-400',
-    error: 'bg-error-600 dark:bg-error-400',
-    pool: 'bg-pool-600 dark:bg-pool-400'
+    primary: 'bg-primary-600 ',
+    secondary: 'bg-neutral-600 ',
+    success: 'bg-success-600 ',
+    warning: 'bg-warning-600 ',
+    error: 'bg-error-600 ',
+    pool: 'bg-pool-600 '
   };
 
   return (
     <div className={`w-full ${className}`}>
-      <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2 overflow-hidden">
+      <div className="w-full bg-neutral-200 rounded-full h-2 overflow-hidden">
         <motion.div
           className={`h-full ${colorClasses[color]} rounded-full`}
           initial={{ width: 0 }}
@@ -215,7 +215,7 @@ export const ProgressLoader = ({
       </div>
       {showPercentage && (
         <motion.p
-          className="text-sm text-neutral-600 dark:text-neutral-400 mt-1 text-center"
+          className="text-sm text-neutral-600 mt-1 text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
@@ -248,12 +248,12 @@ export const CircularProgress = ({
   };
 
   const colorClasses = {
-    primary: 'stroke-primary-600 dark:stroke-primary-400',
-    secondary: 'stroke-neutral-600 dark:stroke-neutral-400',
-    success: 'stroke-success-600 dark:stroke-success-400',
-    warning: 'stroke-warning-600 dark:stroke-warning-400',
-    error: 'stroke-error-600 dark:stroke-error-400',
-    pool: 'stroke-pool-600 dark:stroke-pool-400'
+    primary: 'stroke-primary-600 ',
+    secondary: 'stroke-neutral-600 ',
+    success: 'stroke-success-600 ',
+    warning: 'stroke-warning-600 ',
+    error: 'stroke-error-600 ',
+    pool: 'stroke-pool-600 '
   };
 
   const radius = 20;
@@ -272,7 +272,7 @@ export const CircularProgress = ({
           fill="none"
           stroke="currentColor"
           strokeWidth={strokeWidths[size]}
-          className="text-neutral-200 dark:text-neutral-700"
+          className="text-neutral-200"
         />
         {/* Progress circle */}
         <motion.circle
@@ -292,7 +292,7 @@ export const CircularProgress = ({
       {showPercentage && (
         <div className="absolute inset-0 flex items-center justify-center">
           <motion.span
-            className="text-xs font-medium text-neutral-600 dark:text-neutral-400"
+            className="text-xs font-medium text-neutral-600"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}

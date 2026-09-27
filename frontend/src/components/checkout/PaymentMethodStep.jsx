@@ -141,7 +141,7 @@ const PaymentMethodStep = () => {
                 }`}>
                   {payment.method === method.id && (
                     <motion.div
-                      className="w-3 h-3 bg-white rounded-full"
+                      className="w-3 h-3 bg-surface rounded-full"
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ duration: 0.2 }}
@@ -256,7 +256,7 @@ const PaymentMethodStep = () => {
               </div>
             </div>
 
-            <div className="mt-4 p-3 bg-white rounded-lg border border-blue-200">
+            <div className="mt-4 p-3 bg-surface rounded-lg border border-blue-200">
               <div className="flex items-center text-sm text-blue-700">
                 <Shield className="w-4 h-4 mr-2" />
                 Vos informations de paiement sont sécurisées et cryptées
@@ -280,7 +280,7 @@ const PaymentMethodStep = () => {
             
             {/* The account set in Admin → Settings → Shop */}
             {bank && (
-              <div className="bg-white rounded-lg p-4 mb-4">
+              <div className="bg-surface rounded-lg p-4 mb-4">
                 <h4 className="font-medium text-gray-900 mb-2">Coordonnées bancaires :</h4>
                 <div className="space-y-1 text-sm text-gray-600">
                   <p><strong>Bénéficiaire :</strong> {bank.beneficiary}</p>
@@ -321,7 +321,7 @@ const PaymentMethodStep = () => {
             </h3>
 
             <div className="space-y-4">
-              <div className="bg-white rounded-lg p-4">
+              <div className="bg-surface rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-2">Comment ça marche:</h4>
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-start">
@@ -364,7 +364,7 @@ const PaymentMethodStep = () => {
             </h3>
 
             <div className="space-y-4">
-              <div className="bg-white rounded-lg p-4">
+              <div className="bg-surface rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-2">Processus de paiement:</h4>
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-start">

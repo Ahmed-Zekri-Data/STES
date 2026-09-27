@@ -73,7 +73,7 @@ const ShippingAddressStep = () => {
                   onClick={() => applySavedAddress(saved)}
                   aria-pressed={isShown(saved)}
                   className={`text-left p-3 rounded-lg border text-sm transition-colors ${
-                    isShown(saved) ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white hover:border-blue-300'
+                    isShown(saved) ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-surface hover:border-blue-300'
                   }`}
                 >
                   <span className="block font-medium text-gray-900">

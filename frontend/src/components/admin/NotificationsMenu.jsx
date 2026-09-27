@@ -81,7 +81,7 @@ const NotificationsMenu = () => {
       <AnimatePresence>
         {open && (
           <motion.div
-            className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50"
+            className="absolute right-0 top-full mt-2 w-80 bg-surface rounded-xl shadow-lg border border-gray-200 z-50"
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}

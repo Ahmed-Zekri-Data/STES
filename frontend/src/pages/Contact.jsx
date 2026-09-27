@@ -133,7 +133,7 @@ const Contact = () => {
 
       {/* Dynamic Content */}
       {pageData && (
-        <section className="py-16 bg-white">
+        <section className="py-16 bg-surface">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="prose prose-lg max-w-none">
               <div
@@ -152,7 +152,7 @@ const Contact = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
             {contactInfo.map((info, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-md p-6 text-center hover:shadow-lg transition-shadow">
+              <div key={index} className="bg-surface rounded-lg shadow-md p-6 text-center hover:shadow-lg transition-shadow">
                 <div className="flex items-center justify-center w-12 h-12 bg-primary-100 text-primary-600 rounded-full mx-auto mb-4">
                   {info.icon}
                 </div>
@@ -181,7 +181,7 @@ const Contact = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Contact Form */}
-            <div className="bg-white rounded-lg shadow-md p-8">
+            <div className="bg-surface rounded-lg shadow-md p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
                 Envoyez-nous un message
               </h2>
@@ -296,7 +296,7 @@ const Contact = () => {
             {/* Map and Additional Info */}
             <div className="space-y-8">
               {/* Map Placeholder */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="bg-surface rounded-lg shadow-md overflow-hidden">
                 <div className="h-64 bg-gray-200 flex items-center justify-center">
                   <div className="text-center text-gray-500">
                     <MapPin className="w-12 h-12 mx-auto mb-2" />
@@ -329,7 +329,7 @@ const Contact = () => {
               </div>}
 
               {/* FAQ Quick Links */}
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="bg-surface rounded-lg shadow-md p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Questions Fréquentes
                 </h3>

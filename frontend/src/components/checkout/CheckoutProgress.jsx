@@ -51,7 +51,7 @@ const CheckoutProgress = () => {
                       ? 'bg-green-500 border-green-500 text-white'
                       : isActive
                       ? 'bg-blue-600 border-blue-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-400'
+                      : 'bg-surface border-gray-300 text-gray-400'
                   }`}
                   initial={{ scale: 0.8 }}
                   animate={{ 
@@ -90,7 +90,7 @@ const CheckoutProgress = () => {
                     isCompleted || isActive ? 'text-gray-900' : 'text-gray-500'
                   }`}
                   animate={{ 
-                    color: isActive ? '#1f2937' : isCompleted ? '#059669' : '#6b7280'
+                    color: isActive ? 'rgb(var(--ink-t800))' : isCompleted ? 'rgb(var(--success-t600))' : 'rgb(var(--ink-t500))'
                   }}
                 >
                   {step.name}

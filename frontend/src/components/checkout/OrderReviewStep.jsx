@@ -167,7 +167,7 @@ const OrderReviewStep = () => {
           {cartItems.map((item, index) => (
             <motion.div
               key={item._id}
-              className="flex items-center space-x-4 bg-white rounded-lg p-4"
+              className="flex items-center space-x-4 bg-surface rounded-lg p-4"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}

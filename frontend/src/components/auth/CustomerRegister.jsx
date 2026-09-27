@@ -173,7 +173,7 @@ const CustomerRegister = ({ onClose, onSwitchToLogin }) => {
         >
           <UserPlus className="w-8 h-8 text-white" />
         </motion.div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h2 className="text-2xl font-bold text-gray-900">
           {text.title}
         </h2>
       </div>
@@ -195,7 +195,7 @@ const CustomerRegister = ({ onClose, onSwitchToLogin }) => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               {text.firstName}
             </label>
             <div className="relative">
@@ -221,7 +221,7 @@ const CustomerRegister = ({ onClose, onSwitchToLogin }) => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               {text.lastName}
             </label>
             <div className="relative">
@@ -248,7 +248,7 @@ const CustomerRegister = ({ onClose, onSwitchToLogin }) => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             {text.email}
           </label>
           <div className="relative">
@@ -274,7 +274,7 @@ const CustomerRegister = ({ onClose, onSwitchToLogin }) => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             {text.phone} (Optional)
           </label>
           <div className="relative">
@@ -296,7 +296,7 @@ const CustomerRegister = ({ onClose, onSwitchToLogin }) => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               {text.password}
             </label>
             <div className="relative">
@@ -329,7 +329,7 @@ const CustomerRegister = ({ onClose, onSwitchToLogin }) => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               {text.confirmPassword}
             </label>
             <div className="relative">
@@ -372,7 +372,7 @@ const CustomerRegister = ({ onClose, onSwitchToLogin }) => {
             className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
             required
           />
-          <label className="text-sm text-gray-700 dark:text-gray-300">
+          <label className="text-sm text-gray-700">
             {text.acceptTerms}
           </label>
         </motion.div>

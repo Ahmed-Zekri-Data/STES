@@ -127,7 +127,7 @@ const PaymentResult = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-lg overflow-hidden"
+          className="bg-surface rounded-2xl shadow-lg overflow-hidden"
         >
           {/* Header */}
           <div className={`px-8 py-12 text-center bg-gradient-to-r ${
@@ -142,7 +142,7 @@ const PaymentResult = () => {
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
               className="flex justify-center mb-6"
             >
-              <div className="bg-white rounded-full p-4">
+              <div className="bg-surface rounded-full p-4">
                 {getStatusIcon()}
               </div>
             </motion.div>
@@ -317,7 +317,7 @@ const PaymentResult = () => {
                   </Link>
                 )}
                 <Link to="/" className="flex-1">
-                  <AnimatedButton className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-all duration-200 flex items-center justify-center">
+                  <AnimatedButton className="w-full bg-surface border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-all duration-200 flex items-center justify-center">
                     <Home className="w-5 h-5 mr-2" />
                     Retour à l'accueil
                   </AnimatedButton>
@@ -334,7 +334,7 @@ const PaymentResult = () => {
                   Actualiser le statut
                 </AnimatedButton>
                 <Link to="/" className="flex-1">
-                  <AnimatedButton className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-all duration-200">
+                  <AnimatedButton className="w-full bg-surface border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-all duration-200">
                     Retour à l'accueil
                   </AnimatedButton>
                 </Link>
@@ -350,7 +350,7 @@ const PaymentResult = () => {
                   Réessayer le paiement
                 </AnimatedButton>
                 <Link to="/contact" className="flex-1">
-                  <AnimatedButton className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-all duration-200">
+                  <AnimatedButton className="w-full bg-surface border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-all duration-200">
                     Contacter le support
                   </AnimatedButton>
                 </Link>

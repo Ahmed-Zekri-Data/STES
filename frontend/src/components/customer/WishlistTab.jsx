@@ -33,7 +33,7 @@ const WishlistTab = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-surface rounded-xl p-6 shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Ma liste de souhaits</h3>
           <p className="text-sm text-gray-600">
@@ -50,7 +50,7 @@ const WishlistTab = () => {
       {notice && <p role="status" className="text-sm text-blue-700">{notice}</p>}
 
       {!items.length && (
-        <div className="bg-white rounded-xl p-8 shadow-lg text-center">
+        <div className="bg-surface rounded-xl p-8 shadow-lg text-center">
           <Heart className="w-10 h-10 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-600">Votre liste de souhaits est vide.</p>
         </div>
@@ -60,7 +60,7 @@ const WishlistTab = () => {
         {items.map(({ product, addedAt }) => {
           const available = product.inStock !== false && (product.stockQuantity ?? 1) > 0;
           return (
-            <div key={product._id} className="bg-white rounded-xl p-4 shadow-lg flex flex-col sm:flex-row sm:items-center gap-4">
+            <div key={product._id} className="bg-surface rounded-xl p-4 shadow-lg flex flex-col sm:flex-row sm:items-center gap-4">
               <Link to={`/product/${product._id}`} className="flex items-center gap-4 flex-1 min-w-0">
                 <img src={product.image || '/api/placeholder/80/80'} alt="" className="w-16 h-16 rounded-lg object-cover bg-gray-100 shrink-0" />
                 <div className="min-w-0">

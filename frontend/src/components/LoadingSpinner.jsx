@@ -128,7 +128,7 @@ export const LoadingOverlay = ({ text = 'Chargement...' }) => {
       transition={{ duration: 0.3 }}
     >
       <motion.div
-        className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm mx-4"
+        className="bg-surface rounded-2xl shadow-2xl p-8 max-w-sm mx-4"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.8, opacity: 0 }}
@@ -143,7 +143,7 @@ export const LoadingOverlay = ({ text = 'Chargement...' }) => {
 // Skeleton loader for cards
 export const SkeletonCard = () => {
   return (
-    <div className="bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse">
+    <div className="bg-surface rounded-2xl shadow-lg overflow-hidden animate-pulse">
       <div className="h-64 bg-gray-200"></div>
       <div className="p-6 space-y-4">
         <div className="h-4 bg-gray-200 rounded w-3/4"></div>

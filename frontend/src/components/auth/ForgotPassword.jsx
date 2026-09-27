@@ -90,9 +90,9 @@ const ForgotPassword = ({ initialEmail = '', onBack, showHeader = true }) => {
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <CheckCircle className="w-8 h-8 text-green-600" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">{text.sentTitle}</h2>
-        <p className="text-gray-700 dark:text-gray-300 mb-2">{text.sent(sentTo)}</p>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">{text.spam}</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-3">{text.sentTitle}</h2>
+        <p className="text-gray-700 mb-2">{text.sent(sentTo)}</p>
+        <p className="text-gray-500 text-sm mb-6">{text.spam}</p>
         {backButton}
       </motion.div>
     );
@@ -104,8 +104,8 @@ const ForgotPassword = ({ initialEmail = '', onBack, showHeader = true }) => {
         <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
           <KeyRound className="w-8 h-8 text-white" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{text.title}</h2>
-        <p className="text-gray-600 dark:text-gray-400 text-sm">{text.intro}</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">{text.title}</h2>
+        <p className="text-gray-600 text-sm">{text.intro}</p>
       </div>}
 
       {error && (
@@ -116,7 +116,7 @@ const ForgotPassword = ({ initialEmail = '', onBack, showHeader = true }) => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="forgot-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label htmlFor="forgot-email" className="block text-sm font-medium text-gray-700 mb-2">
             {text.email}
           </label>
           <div className="relative">

@@ -37,7 +37,7 @@ const Change = ({ current, previous }) => {
 };
 
 const Card = ({ icon: Icon, label, value, children }) => (
-  <div className="bg-white rounded-xl shadow-sm p-5">
+  <div className="bg-surface rounded-xl shadow-sm p-5">
     <div className="flex items-center gap-2 text-sm text-gray-600">
       <Icon className="w-4 h-4" aria-hidden="true" /> {label}
     </div>
@@ -73,7 +73,7 @@ const RevenueChart = ({ series, group }) => {
 };
 
 const Table = ({ title, columns, rows, empty = 'No sales in this period.' }) => (
-  <div className="bg-white rounded-xl shadow-sm p-5 overflow-x-auto">
+  <div className="bg-surface rounded-xl shadow-sm p-5 overflow-x-auto">
     <h3 className="font-semibold text-gray-900 mb-3">{title}</h3>
     {rows.length === 0 ? <p className="text-sm text-gray-500">{empty}</p> : (
       <table className="w-full text-sm">
@@ -175,7 +175,7 @@ const Reports = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm p-4 flex flex-col lg:flex-row lg:items-end gap-3">
+      <div className="bg-surface rounded-xl shadow-sm p-4 flex flex-col lg:flex-row lg:items-end gap-3">
         <div className="flex flex-col text-sm text-gray-600 gap-1">
           <label htmlFor="report-period">Period</label>
           <select id="report-period" value={preset} onChange={(e) => choosePreset(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-gray-900">
@@ -242,7 +242,7 @@ const Reports = () => {
             </Card>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-5">
+          <div className="bg-surface rounded-xl shadow-sm p-5">
             <h3 className="font-semibold text-gray-900 mb-4">Revenue by {report.period.group}</h3>
             <RevenueChart series={report.series} group={report.period.group} />
           </div>

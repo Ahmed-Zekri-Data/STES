@@ -104,7 +104,7 @@ const AccountSettings = () => {
 
   return (
     <div className="space-y-6">
-      <section className="bg-white rounded-xl p-6 shadow-lg">
+      <section className="bg-surface rounded-xl p-6 shadow-lg">
         <h3 className="text-lg font-semibold text-gray-900">Informations personnelles</h3>
         <p className="text-sm text-gray-600 mt-1 mb-5">Utilisées pour vos commandes et la livraison.</p>
         <form onSubmit={saveProfile} className="space-y-4">
@@ -126,7 +126,7 @@ const AccountSettings = () => {
         </form>
       </section>
 
-      <section className="bg-white rounded-xl p-6 shadow-lg">
+      <section className="bg-surface rounded-xl p-6 shadow-lg">
         <h3 className="text-lg font-semibold text-gray-900">Mot de passe</h3>
         <p className="text-sm text-gray-600 mt-1 mb-5">Le changer déconnecte vos autres appareils.</p>
         <form onSubmit={savePassword} className="space-y-4 max-w-md">

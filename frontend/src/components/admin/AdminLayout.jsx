@@ -124,7 +124,7 @@ const AdminLayout = () => {
           The position is set by the animation (an inline style), which a
           Tailwind class like lg:translate-x-0 cannot override. */}
       <motion.div
-        className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl"
+        className="fixed inset-y-0 left-0 z-50 w-64 bg-surface shadow-xl"
         variants={sidebarVariants}
         initial={false}
         animate={isDesktop || sidebarOpen ? "open" : "closed"}
@@ -231,7 +231,7 @@ const AdminLayout = () => {
       <div className="lg:pl-64">
         {/* Top bar */}
         <motion.header
-          className="bg-white shadow-sm border-b border-gray-200"
+          className="bg-surface shadow-sm border-b border-gray-200"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -293,7 +293,7 @@ const AdminLayout = () => {
             <ErrorBoundary homePath="/admin/dashboard" homeLabel="Retour au tableau de bord">
               <Suspense fallback={<PageLoader />}>
                 {allowed ? <Outlet /> : (
-                  <div role="alert" className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-700">
+                  <div role="alert" className="bg-surface rounded-xl shadow-sm p-8 text-center text-gray-700">
                     <p className="font-semibold text-gray-900 mb-1">You don't have access to this page.</p>
                     <p>A super admin can give you the permission in Admin Users.</p>
                   </div>

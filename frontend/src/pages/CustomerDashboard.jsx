@@ -115,7 +115,7 @@ const CustomerDashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="bg-white rounded-xl p-6 shadow-lg border border-gray-100"
+            className="bg-surface rounded-xl p-6 shadow-lg border border-gray-100"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -131,7 +131,7 @@ const CustomerDashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+      <div className="bg-surface rounded-xl p-6 shadow-lg border border-gray-100">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Actions rapides
         </h3>
@@ -161,7 +161,7 @@ const CustomerDashboard = () => {
       </div>
 
       {/* Account Status */}
-      <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+      <div className="bg-surface rounded-xl p-6 shadow-lg border border-gray-100">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Statut du compte
         </h3>
@@ -221,7 +221,7 @@ const CustomerDashboard = () => {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
           <div className="lg:w-64 flex-shrink-0">
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+            <div className="bg-surface rounded-xl shadow-lg border border-gray-100 p-6">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
                   <User className="w-6 h-6 text-white" />

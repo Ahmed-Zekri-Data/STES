@@ -111,7 +111,7 @@ const TrackingDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Total Orders */}
         <motion.div
-          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+          className="bg-surface rounded-xl shadow-sm border border-gray-200 p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
@@ -132,7 +132,7 @@ const TrackingDashboard = () => {
 
         {/* In Transit */}
         <motion.div
-          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+          className="bg-surface rounded-xl shadow-sm border border-gray-200 p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
@@ -153,7 +153,7 @@ const TrackingDashboard = () => {
 
         {/* Delivered */}
         <motion.div
-          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+          className="bg-surface rounded-xl shadow-sm border border-gray-200 p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
@@ -174,7 +174,7 @@ const TrackingDashboard = () => {
 
         {/* Average Delivery Time */}
         <motion.div
-          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+          className="bg-surface rounded-xl shadow-sm border border-gray-200 p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.3 }}
@@ -198,7 +198,7 @@ const TrackingDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Status Distribution */}
         <motion.div
-          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+          className="bg-surface rounded-xl shadow-sm border border-gray-200 p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.4 }}
@@ -236,7 +236,7 @@ const TrackingDashboard = () => {
 
         {/* Recent Orders */}
         <motion.div
-          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+          className="bg-surface rounded-xl shadow-sm border border-gray-200 p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.5 }}
@@ -278,7 +278,7 @@ const TrackingDashboard = () => {
 
       {/* Performance Metrics */}
       <motion.div
-        className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+        className="bg-surface rounded-xl shadow-sm border border-gray-200 p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.6 }}

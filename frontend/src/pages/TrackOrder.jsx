@@ -152,7 +152,7 @@ const TrackOrder = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl shadow-lg p-8 mb-8"
+          className="bg-surface rounded-xl shadow-lg p-8 mb-8"
         >
           {/* Method Selector */}
           <div className="flex justify-center mb-6">
@@ -161,7 +161,7 @@ const TrackOrder = () => {
                 onClick={() => setSearchMethod('code')}
                 className={`px-4 py-2 rounded-md transition-colors ${
                   searchMethod === 'code'
-                    ? 'bg-white text-blue-600 shadow-sm'
+                    ? 'bg-surface text-blue-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -171,7 +171,7 @@ const TrackOrder = () => {
                 onClick={() => setSearchMethod('email')}
                 className={`px-4 py-2 rounded-md transition-colors ${
                   searchMethod === 'email'
-                    ? 'bg-white text-blue-600 shadow-sm'
+                    ? 'bg-surface text-blue-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -307,7 +307,7 @@ const TrackOrder = () => {
               className="space-y-6"
             >
               {/* Order Header */}
-              <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="bg-surface rounded-xl shadow-lg p-6">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -345,7 +345,7 @@ const TrackOrder = () => {
               {/* Order Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Customer Info */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="bg-surface rounded-xl shadow-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <User className="w-5 h-5 mr-2" />
                     Informations de livraison
@@ -371,7 +371,7 @@ const TrackOrder = () => {
                 </div>
 
                 {/* Delivery Info */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="bg-surface rounded-xl shadow-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <Calendar className="w-5 h-5 mr-2" />
                     Informations de livraison
@@ -404,7 +404,7 @@ const TrackOrder = () => {
 
               {/* Timeline */}
               {orderData.timeline && (
-                <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="bg-surface rounded-xl shadow-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-6">
                     Suivi détaillé
                   </h3>
@@ -453,7 +453,7 @@ const TrackOrder = () => {
 
               {/* Order Items */}
               {orderData.order.items && orderData.order.items.length > 0 && (
-                <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="bg-surface rounded-xl shadow-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-6">
                     Articles commandés
                   </h3>

@@ -308,7 +308,7 @@ const ProductFilters = ({
       <div className="lg:hidden flex items-center justify-between mb-4">
         <button
           onClick={() => setShowMobileFilters(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          className="flex items-center space-x-2 px-4 py-2 bg-surface border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
         >
           <SlidersHorizontal className="w-4 h-4" />
           <span>Filtres</span>
@@ -342,7 +342,7 @@ const ProductFilters = ({
 
       {/* Desktop Filters */}
       <div className="hidden lg:block">
-        <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="bg-surface rounded-lg shadow-sm border p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
               <Filter className="w-5 h-5 mr-2" />
@@ -380,7 +380,7 @@ const ProductFilters = ({
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="bg-white h-full w-80 max-w-[90vw] overflow-y-auto"
+              className="bg-surface h-full w-80 max-w-[90vw] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6">

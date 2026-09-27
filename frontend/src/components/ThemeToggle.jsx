@@ -1,184 +1,69 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Moon, Monitor } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 
-const ThemeToggle = ({ variant = 'button', className = '' }) => {
-  const { isDark, toggleTheme, isTransitioning } = useTheme();
+const STARS = [[9, 7, 1], [15, 13, 0.7], [7, 18, 0.8], [20, 6, 0.6]];
 
-  if (variant === 'dropdown') {
-    return (
-      <ThemeDropdown className={className} />
-    );
-  }
+// Day over the lagoon or night over the abyss. Switching spreads the new
+// theme from this button as a ripple (see ThemeContext).
+const ThemeToggle = ({ className = '' }) => {
+  const { isDark, toggleTheme } = useTheme();
+  const label = isDark ? 'Passer au thème clair' : 'Passer au thème sombre';
 
   return (
-    <motion.button
+    <button
+      type="button"
       onClick={toggleTheme}
-      disabled={isTransitioning}
-      className={`
-        relative inline-flex items-center justify-center
-        w-12 h-12 rounded-xl
-        bg-white dark:bg-neutral-800
-        border border-neutral-200 dark:border-neutral-700
-        shadow-soft dark:shadow-none
-        hover:shadow-medium dark:hover:shadow-glow
-        transition-all duration-300
-        group overflow-hidden
-        ${isTransitioning ? 'pointer-events-none' : ''}
-        ${className}
-      `}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      initial={false}
+      aria-label={label}
+      title={label}
+      aria-pressed={isDark}
+      className={`group relative inline-flex h-9 w-[3.75rem] shrink-0 items-center rounded-full p-1 transition-shadow duration-300 hover:shadow-glow ${className}`}
+      style={{
+        background: isDark
+          ? 'linear-gradient(135deg, rgb(8 16 30), rgb(40 22 80))'
+          : 'linear-gradient(135deg, rgb(125 211 252), rgb(56 189 248) 55%, rgb(20 184 166))'
+      }}
     >
-      {/* Background gradient */}
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-br from-primary-500 to-secondary-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300"
-        layoutId="theme-bg"
-      />
-      
-      {/* Icon container */}
-      <div className="relative w-6 h-6">
-        <AnimatePresence mode="wait">
-          {isDark ? (
-            <motion.div
-              key="moon"
-              initial={{ rotate: -90, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              exit={{ rotate: 90, opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="absolute inset-0 flex items-center justify-center"
-            >
-              <Moon className="w-5 h-5 text-neutral-600 dark:text-neutral-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300" />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="sun"
-              initial={{ rotate: 90, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              exit={{ rotate: -90, opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="absolute inset-0 flex items-center justify-center"
-            >
-              <Sun className="w-5 h-5 text-neutral-600 dark:text-neutral-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Loading indicator */}
-      {isTransitioning && (
-        <motion.div
-          className="absolute inset-0 flex items-center justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-        </motion.div>
-      )}
-    </motion.button>
-  );
-};
-
-const ThemeDropdown = ({ className = '' }) => {
-  const { theme, preference, setLightTheme, setDarkTheme, setSystemTheme, isTransitioning } = useTheme();
-  const [isOpen, setIsOpen] = React.useState(false);
-
-  const themes = [
-    { id: 'light', label: 'Light', icon: Sun },
-    { id: 'dark', label: 'Dark', icon: Moon },
-    { id: 'system', label: 'System', icon: Monitor },
-  ];
-
-  const handleThemeSelect = (themeId) => {
-    if (themeId === 'light') setLightTheme();
-    if (themeId === 'dark') setDarkTheme();
-    // Follows the device's setting, also when it changes later
-    if (themeId === 'system') setSystemTheme();
-    setIsOpen(false);
-  };
-
-  return (
-    <div className={`relative ${className}`}>
-      <motion.button
-        onClick={() => setIsOpen(!isOpen)}
-        disabled={isTransitioning}
-        className="
-          inline-flex items-center gap-2 px-3 py-2 rounded-lg
-          bg-white dark:bg-neutral-800
-          border border-neutral-200 dark:border-neutral-700
-          text-sm font-medium text-neutral-700 dark:text-neutral-300
-          hover:bg-neutral-50 dark:hover:bg-neutral-700
-          transition-all duration-200
-        "
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-      >
-        {preference === 'system' ? <Monitor className="w-4 h-4" /> : theme === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-        <span className="capitalize">{preference}</span>
-      </motion.button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="
-              absolute top-full mt-2 right-0 z-50
-              w-40 py-2 rounded-xl
-              bg-white dark:bg-neutral-800
-              border border-neutral-200 dark:border-neutral-700
-              shadow-large dark:shadow-glow
-              backdrop-blur-sm
-            "
-          >
-            {themes.map((themeOption) => {
-              const Icon = themeOption.icon;
-              const isActive = preference === themeOption.id;
-              
-              return (
-                <motion.button
-                  key={themeOption.id}
-                  onClick={() => handleThemeSelect(themeOption.id)}
-                  className={`
-                    w-full flex items-center gap-3 px-4 py-2
-                    text-sm font-medium text-left
-                    transition-colors duration-200
-                    ${isActive 
-                      ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20' 
-                      : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700'
-                    }
-                  `}
-                  whileHover={{ x: 4 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Icon className="w-4 h-4" />
-                  {themeOption.label}
-                  {isActive && (
-                    <motion.div
-                      className="ml-auto w-2 h-2 rounded-full bg-primary-500"
-                      layoutId="active-theme"
-                    />
-                  )}
-                </motion.button>
-              );
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Backdrop */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setIsOpen(false)}
+      {/* Sky: stars at night, a waterline by day */}
+      <svg viewBox="0 0 60 36" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
+        {STARS.map(([x, y, r], i) => (
+          <circle
+            key={i}
+            cx={x + 26}
+            cy={y + 4}
+            r={r}
+            fill="white"
+            className="transition-opacity duration-500"
+            style={{ opacity: isDark ? 0.9 : 0, transitionDelay: `${i * 60}ms` }}
+          />
+        ))}
+        <path
+          d="M0 27c5 0 5-3 10-3s5 3 10 3 5-3 10-3 5 3 10 3 5-3 10-3 5 3 10 3v9H0z"
+          fill="white"
+          className="transition-opacity duration-500"
+          style={{ opacity: isDark ? 0 : 0.35 }}
         />
-      )}
-    </div>
+      </svg>
+
+      <motion.span
+        className="relative z-10 grid h-7 w-7 place-items-center rounded-full"
+        animate={{ x: isDark ? 24 : 0, rotate: isDark ? -30 : 0 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+        style={{
+          background: isDark ? 'rgb(226 232 240)' : 'rgb(253 224 71)',
+          boxShadow: isDark
+            ? 'inset -4px -3px 0 rgb(148 163 184), 0 0 14px rgb(167 139 250 / 0.7)'
+            : '0 0 0 3px rgb(254 240 138 / 0.5), 0 0 18px rgb(250 204 21 / 0.9)'
+        }}
+      >
+        {isDark && (
+          <>
+            <span className="absolute left-2 top-1.5 h-1.5 w-1.5 rounded-full bg-slate-400/60" />
+            <span className="absolute bottom-2 left-3.5 h-1 w-1 rounded-full bg-slate-400/60" />
+          </>
+        )}
+      </motion.span>
+    </button>
   );
 };
 

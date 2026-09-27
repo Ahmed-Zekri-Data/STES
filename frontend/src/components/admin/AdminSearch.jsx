@@ -138,7 +138,7 @@ const AdminSearch = () => {
         <div
           id="admin-search-results"
           role="listbox"
-          className="absolute left-0 top-full mt-2 w-96 max-h-[28rem] overflow-y-auto bg-white rounded-xl shadow-lg border border-gray-200 z-50 p-2"
+          className="absolute left-0 top-full mt-2 w-96 max-h-[28rem] overflow-y-auto bg-surface rounded-xl shadow-lg border border-gray-200 z-50 p-2"
         >
           {loading && !results && <p className="p-2 text-sm text-gray-500">Searching…</p>}
           {failed && !loading && <p className="p-2 text-sm text-red-600">Search failed. Please try again.</p>}

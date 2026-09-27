@@ -193,7 +193,7 @@ const ProductSearch = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 max-h-96 overflow-y-auto"
+            className="absolute top-full left-0 right-0 mt-2 bg-surface border border-gray-200 rounded-2xl shadow-xl z-50 max-h-96 overflow-y-auto"
           >
             {/* Recent Searches */}
             {!searchQuery && recentSearches.length > 0 && (

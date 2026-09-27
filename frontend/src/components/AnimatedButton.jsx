@@ -20,48 +20,48 @@ const AnimatedButton = ({
     primary: `
       bg-gradient-to-r from-primary-600 to-secondary-600
       hover:from-primary-700 hover:to-secondary-700
-      text-white focus:ring-primary-300 dark:focus:ring-primary-500
-      shadow-soft hover:shadow-medium dark:shadow-glow dark:hover:shadow-glow-lg
+      text-white focus:ring-primary-300 
+      shadow-soft hover:shadow-medium  
     `,
     secondary: `
-      bg-white dark:bg-neutral-800
-      text-neutral-700 dark:text-neutral-300
-      border border-neutral-200 dark:border-neutral-700
-      hover:bg-neutral-50 dark:hover:bg-neutral-700
-      focus:ring-neutral-300 dark:focus:ring-neutral-600
+      bg-surface 
+      text-neutral-700 
+      border border-neutral-200 
+      hover:bg-neutral-50 
+      focus:ring-neutral-300 
       shadow-soft hover:shadow-medium
     `,
     outline: `
-      border-2 border-primary-600 dark:border-primary-500
-      text-primary-600 dark:text-primary-400
-      hover:bg-primary-600 dark:hover:bg-primary-500
-      hover:text-white dark:hover:text-white
-      focus:ring-primary-300 dark:focus:ring-primary-500
+      border-2 border-primary-600 
+      text-primary-600 
+      hover:bg-primary-600 
+      hover:text-white 
+      focus:ring-primary-300 
       bg-transparent
     `,
     ghost: `
-      text-primary-600 dark:text-primary-400
-      hover:bg-primary-50 dark:hover:bg-primary-900/20
-      focus:ring-primary-300 dark:focus:ring-primary-500
+      text-primary-600 
+      hover:bg-primary-50 
+      focus:ring-primary-300 
       bg-transparent
     `,
     danger: `
       bg-gradient-to-r from-error-500 to-error-600
       hover:from-error-600 hover:to-error-700
-      text-white focus:ring-error-300 dark:focus:ring-error-500
+      text-white focus:ring-error-300 
       shadow-soft hover:shadow-medium
     `,
     success: `
       bg-gradient-to-r from-success-500 to-success-600
       hover:from-success-600 hover:to-success-700
-      text-white focus:ring-success-300 dark:focus:ring-success-500
+      text-white focus:ring-success-300 
       shadow-soft hover:shadow-medium
     `,
     pool: `
       bg-gradient-to-r from-pool-500 to-pool-600
       hover:from-pool-600 hover:to-pool-700
-      text-white focus:ring-pool-300 dark:focus:ring-pool-500
-      shadow-soft hover:shadow-medium dark:shadow-glow dark:hover:shadow-glow-lg
+      text-white focus:ring-pool-300 
+      shadow-soft hover:shadow-medium  
     `
   };
 

@@ -21,7 +21,7 @@ const Field = ({ label, id, hint, suffix, ...props }) => (
 );
 
 const Section = ({ title, description, children }) => (
-  <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+  <section className="bg-surface rounded-xl shadow-sm border border-gray-200 p-6">
     <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
     {description && <p className="text-sm text-gray-600 mt-1">{description}</p>}
     <div className="mt-5">{children}</div>
@@ -244,7 +244,7 @@ const AdminSettings = () => {
               role="tab"
               aria-selected={tab === id}
               onClick={() => setSearchParams(id === 'account' ? {} : { tab: id }, { replace: true })}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium ${tab === id ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium ${tab === id ? 'bg-surface shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
             >
               <Icon className="w-4 h-4" /> {label}
             </button>

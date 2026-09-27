@@ -184,7 +184,7 @@ const Categories = () => {
 
       {/* Filters */}
       <motion.div
-        className="bg-white rounded-lg shadow p-6"
+        className="bg-surface rounded-lg shadow p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
@@ -220,7 +220,7 @@ const Categories = () => {
 
       {/* Categories Table */}
       <motion.div
-        className="bg-white rounded-lg shadow overflow-hidden"
+        className="bg-surface rounded-lg shadow overflow-hidden"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
@@ -249,7 +249,7 @@ const Categories = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-surface divide-y divide-gray-200">
               {filteredCategories.map((category, index) => (
                 <motion.tr
                   key={category._id}
@@ -332,7 +332,7 @@ const Categories = () => {
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <motion.div
-            className="bg-white rounded-lg p-6 w-full max-w-md mx-4"
+            className="bg-surface rounded-lg p-6 w-full max-w-md mx-4"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}

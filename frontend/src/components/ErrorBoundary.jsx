@@ -4,7 +4,7 @@ import { AlertTriangle, Home, RotateCcw } from 'lucide-react';
 
 const Fallback = ({ homePath, homeLabel }) => (
   <div className="min-h-[60vh] flex items-center justify-center px-4 py-16">
-    <div className="max-w-md w-full text-center bg-white rounded-2xl shadow-lg p-8">
+    <div className="max-w-md w-full text-center bg-surface rounded-2xl shadow-lg p-8">
       <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-50 flex items-center justify-center">
         <AlertTriangle className="w-7 h-7 text-red-500" />
       </div>

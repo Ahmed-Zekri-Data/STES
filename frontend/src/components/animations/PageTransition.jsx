@@ -179,7 +179,7 @@ export const LoadingTransition = ({ isLoading, children }) => {
     <AnimatePresence>
       {isLoading && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-white dark:bg-neutral-900"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-surface"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -205,7 +205,7 @@ export const LoadingTransition = ({ isLoading, children }) => {
               }}
             />
             <motion.p
-              className="text-lg font-medium text-neutral-600 dark:text-neutral-400"
+              className="text-lg font-medium text-neutral-600"
               animate={{ 
                 opacity: prefersReducedMotion ? 1 : [0.5, 1, 0.5] 
               }}

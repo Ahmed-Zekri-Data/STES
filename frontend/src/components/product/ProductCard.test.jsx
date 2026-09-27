@@ -2,11 +2,11 @@ import React from 'react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { LanguageProvider } from '../context/LanguageContext';
-import { CustomerProvider } from '../context/CustomerContext';
-import { WishlistProvider } from '../context/WishlistContext';
-import { CartProvider } from '../context/CartContext';
-import AnimatedProductCard from './AnimatedProductCard';
+import { LanguageProvider } from '../../context/LanguageContext';
+import { CustomerProvider } from '../../context/CustomerContext';
+import { WishlistProvider } from '../../context/WishlistContext';
+import { CartProvider } from '../../context/CartContext';
+import ProductCard from './ProductCard';
 
 const product = { _id: '6ab7b144f9e210e44d7235b0', name: 'Filtre à Sable Premium', price: 450, image: '/img/filtre.jpg', category: 'filters', categoryName: 'Filtration' };
 
@@ -15,14 +15,14 @@ const renderCard = (overrides = {}) => render(
     <CustomerProvider>
       <WishlistProvider>
         <CartProvider>
-          <MemoryRouter><AnimatedProductCard product={{ ...product, ...overrides }} /></MemoryRouter>
+          <MemoryRouter><ProductCard product={{ ...product, ...overrides }} /></MemoryRouter>
         </CartProvider>
       </WishlistProvider>
     </CustomerProvider>
   </LanguageProvider>
 );
 
-describe('home product card', () => {
+describe('product card', () => {
   beforeEach(() => localStorage.clear());
 
   it('links to the real product and shows its category name', () => {

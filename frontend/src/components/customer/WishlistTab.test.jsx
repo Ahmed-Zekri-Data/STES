@@ -37,14 +37,14 @@ describe('account wishlist tab', () => {
   it('lists the saved products and adds one to the cart', async () => {
     renderTab([{ product: pump, addedAt: '2026-09-20T10:00:00Z' }, { product: heater }]);
 
-    const row = (await screen.findByText('Pompe 1.5HP')).closest('div.bg-white');
+    const row = (await screen.findByText('Pompe 1.5HP')).closest('div.bg-surface');
     expect(screen.getByText(/2 produits gardés/)).toBeTruthy();
     fireEvent.click(within(row).getByRole('button', { name: /Ajouter au panier/ }));
     expect(await screen.findByText(/a été ajouté au panier/)).toBeTruthy();
     expect(JSON.parse(localStorage.getItem('cart'))).toEqual([expect.objectContaining({ _id: 'p1', quantity: 1 })]);
 
     // Out of stock: can't be added
-    const heaterRow = screen.getByText('Pompe à chaleur').closest('div.bg-white');
+    const heaterRow = screen.getByText('Pompe à chaleur').closest('div.bg-surface');
     expect(within(heaterRow).getByRole('button', { name: /Ajouter au panier/ }).disabled).toBe(true);
     expect(within(heaterRow).getByText(/Rupture de stock/)).toBeTruthy();
   });

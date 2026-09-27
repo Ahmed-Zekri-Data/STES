@@ -138,7 +138,7 @@ const ProductDetails = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           {/* Product Image */}
           <div className="space-y-4">
-            <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-md">
+            <div className="aspect-square bg-surface rounded-lg overflow-hidden shadow-md">
               <img
                 src={product.image}
                 onError={showPlaceholderOnError}
@@ -225,7 +225,7 @@ const ProductDetails = () => {
         </div>
 
         {/* Product Details Tabs */}
-        <div ref={tabsRef} className="bg-white rounded-lg shadow-md scroll-mt-24">
+        <div ref={tabsRef} className="bg-surface rounded-lg shadow-md scroll-mt-24">
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-6">
               <button

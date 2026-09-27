@@ -21,7 +21,7 @@ import { useCart } from '../context/CartContext';
 import AnimatedButton from '../components/AnimatedButton';
 import LoadingSpinner from '../components/LoadingSpinner';
 import WishlistButton from '../components/WishlistButton';
-import EnhancedProductCard from '../components/shop/EnhancedProductCard';
+import ProductCard from '../components/product/ProductCard';
 
 const Wishlist = () => {
   const { isAuthenticated } = useCustomer();
@@ -123,7 +123,7 @@ const Wishlist = () => {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-surface rounded-2xl shadow-lg p-8 mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <motion.div
@@ -259,7 +259,7 @@ const Wishlist = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl shadow-lg p-12 text-center"
+            className="bg-surface rounded-2xl shadow-lg p-12 text-center"
           >
             <Heart className="w-24 h-24 text-gray-300 mx-auto mb-6" />
             <h3 className="text-xl font-semibold text-gray-900 mb-4">
@@ -285,7 +285,7 @@ const Wishlist = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+                  className="bg-surface rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
                 >
                   <div className="relative">
                     <img

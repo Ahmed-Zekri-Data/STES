@@ -34,7 +34,7 @@ const CartSuggestions = ({ cartItems, onAdd, currency }) => {
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {products.map(product => (
-          <div key={product._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+          <div key={product._id} className="bg-surface rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
             <Link to={`/product/${product._id}`}>
               <img
                 src={product.image}
@@ -124,7 +124,7 @@ const Cart = () => {
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
             {cartItems.map((item) => (
-              <div key={item._id} className="bg-white rounded-lg shadow-md p-6">
+              <div key={item._id} className="bg-surface rounded-lg shadow-md p-6">
                 <div className="flex items-center space-x-4">
                   {/* Product Image */}
                   <div className="flex-shrink-0">
@@ -193,7 +193,7 @@ const Cart = () => {
 
           {/* Order Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-6 sticky top-8">
+            <div className="bg-surface rounded-lg shadow-md p-6 sticky top-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">
                 Résumé de la commande
               </h2>

@@ -47,7 +47,7 @@ const Modal = ({ title, onClose, children }) => (
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-xl"
+      className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-surface rounded-xl shadow-xl"
       onMouseDown={(e) => e.stopPropagation()}
     >
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -204,7 +204,7 @@ const AdminUsers = () => {
 
   if (!isSuperAdmin) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+      <div className="bg-surface rounded-xl shadow-sm border border-gray-200 p-8 text-center">
         <ShieldCheck className="w-10 h-10 mx-auto text-gray-400 mb-3" />
         <h2 className="text-lg font-semibold text-gray-900">Super admins only</h2>
         <p className="text-gray-600 mt-1">Ask a super admin to add or change admin accounts. Your own account is in Settings.</p>
@@ -247,7 +247,7 @@ const AdminUsers = () => {
         {admins.map(admin => {
           const self = admin.id === me?.id;
           return (
-            <div key={admin.id} className={`bg-white rounded-xl shadow-sm border border-gray-200 p-5 ${admin.isActive ? '' : 'opacity-70'}`}>
+            <div key={admin.id} className={`bg-surface rounded-xl shadow-sm border border-gray-200 p-5 ${admin.isActive ? '' : 'opacity-70'}`}>
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">

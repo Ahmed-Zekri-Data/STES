@@ -12,7 +12,7 @@ import {
   Sparkles,
   TrendingUp
 } from 'lucide-react';
-import EnhancedProductCard from '../components/shop/EnhancedProductCard';
+import ProductCard from '../components/product/ProductCard';
 import ProductFilters from '../components/shop/ProductFilters';
 import ProductSearch from '../components/shop/ProductSearch';
 import LoadingSpinner, { SkeletonCard } from '../components/LoadingSpinner';
@@ -156,7 +156,7 @@ const EnhancedShop = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-surface shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -224,7 +224,7 @@ const EnhancedShop = () => {
                       const [sortBy, sortOrder] = e.target.value.split('_');
                       handleFiltersChange({ sortBy, sortOrder });
                     }}
-                    className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="appearance-none bg-surface border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="createdAt_desc">Plus récents</option>
                     <option value="price_asc">Prix croissant</option>
@@ -243,7 +243,7 @@ const EnhancedShop = () => {
                     onClick={() => setViewMode('grid')}
                     className={`p-2 rounded transition-colors ${
                       viewMode === 'grid' 
-                        ? 'bg-white text-blue-600 shadow-sm' 
+                        ? 'bg-surface text-blue-600 shadow-sm' 
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
@@ -253,7 +253,7 @@ const EnhancedShop = () => {
                     onClick={() => setViewMode('list')}
                     className={`p-2 rounded transition-colors ${
                       viewMode === 'list' 
-                        ? 'bg-white text-blue-600 shadow-sm' 
+                        ? 'bg-surface text-blue-600 shadow-sm' 
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
@@ -292,7 +292,7 @@ const EnhancedShop = () => {
                   }
                 >
                   {products.map((product, index) => (
-                    <EnhancedProductCard
+                    <ProductCard
                       key={product._id}
                       product={product}
                       index={index}
