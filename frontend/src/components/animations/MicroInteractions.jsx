@@ -254,13 +254,13 @@ export const FloatingLabelInput = ({
         onChange={onChange}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
-        className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300"
+        className="w-full px-4 py-3 border border-neutral-300 rounded-xl bg-surface text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300"
         whileFocus={{ scale: prefersReducedMotion ? 1 : 1.02 }}
         {...props}
       />
       
       <motion.label
-        className="absolute left-4 text-neutral-500 dark:text-neutral-400 pointer-events-none"
+        className="absolute left-4 text-neutral-500 pointer-events-none"
         animate={{
           y: (isFocused || hasValue) ? -28 : 12,
           scale: (isFocused || hasValue) ? 0.85 : 1,

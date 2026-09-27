@@ -4,6 +4,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import adminApi from '../../utils/adminApi';
 import { AdminProvider } from '../../context/AdminContext';
+import { ThemeProvider } from '../../context/ThemeContext';
 import AdminLayout from './AdminLayout';
 
 const catalogueAdmin = {
@@ -12,6 +13,7 @@ const catalogueAdmin = {
 };
 
 const renderAt = (url) => render(
+  <ThemeProvider>
   <AdminProvider>
     <MemoryRouter initialEntries={[url]}>
       <Routes>
@@ -22,6 +24,7 @@ const renderAt = (url) => render(
       </Routes>
     </MemoryRouter>
   </AdminProvider>
+  </ThemeProvider>
 );
 
 describe('admin menu and permissions', () => {

@@ -300,7 +300,7 @@ const Products = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl p-6 shadow-lg animate-pulse">
+            <div key={i} className="bg-surface rounded-2xl p-6 shadow-lg animate-pulse">
               <div className="h-48 bg-gray-300 rounded-lg mb-4"></div>
               <div className="h-4 bg-gray-300 rounded mb-2"></div>
               <div className="h-4 bg-gray-300 rounded w-2/3 mb-4"></div>
@@ -341,7 +341,7 @@ const Products = () => {
 
       {/* Filters */}
       <motion.div
-        className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+        className="bg-surface rounded-2xl p-6 shadow-lg border border-gray-100"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
@@ -428,7 +428,7 @@ const Products = () => {
           {products.map((product, index) => (
             <motion.div
               key={product._id}
-              className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group"
+              className="bg-surface rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -555,7 +555,7 @@ const Products = () => {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+              className="bg-surface rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -708,7 +708,7 @@ const Products = () => {
                     <div className="flex-1 space-y-2">
                       <label
                         className={`inline-flex items-center px-4 py-2 rounded-xl border border-gray-300 text-sm font-medium ${
-                          uploadingImage ? 'bg-gray-100 text-gray-400 cursor-wait' : 'bg-white text-gray-700 hover:bg-gray-50 cursor-pointer'
+                          uploadingImage ? 'bg-gray-100 text-gray-400 cursor-wait' : 'bg-surface text-gray-700 hover:bg-gray-50 cursor-pointer'
                         }`}
                       >
                         <Upload className="w-4 h-4 mr-2" />

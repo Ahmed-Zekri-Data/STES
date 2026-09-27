@@ -141,7 +141,7 @@ const PaymentMethodStep = () => {
                 }`}>
                   {payment.method === method.id && (
                     <motion.div
-                      className="w-3 h-3 bg-white rounded-full"
+                      className="w-3 h-3 bg-surface rounded-full"
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ duration: 0.2 }}
@@ -180,7 +180,7 @@ const PaymentMethodStep = () => {
                   name="holderName"
                   value={payment.cardDetails.holderName}
                   onChange={handleCardDetailsChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                   placeholder="Nom tel qu'il apparaît sur la carte"
                 />
               </div>
@@ -194,7 +194,7 @@ const PaymentMethodStep = () => {
                   name="number"
                   value={payment.cardDetails.number}
                   onChange={handleCardDetailsChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                   placeholder="1234 5678 9012 3456"
                   maxLength="19"
                 />
@@ -209,7 +209,7 @@ const PaymentMethodStep = () => {
                     name="expiryMonth"
                     value={payment.cardDetails.expiryMonth}
                     onChange={handleCardDetailsChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                   >
                     <option value="">MM</option>
                     {Array.from({ length: 12 }, (_, i) => (
@@ -228,7 +228,7 @@ const PaymentMethodStep = () => {
                     name="expiryYear"
                     value={payment.cardDetails.expiryYear}
                     onChange={handleCardDetailsChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                   >
                     <option value="">AAAA</option>
                     {Array.from({ length: 10 }, (_, i) => (
@@ -248,7 +248,7 @@ const PaymentMethodStep = () => {
                     name="cvv"
                     value={payment.cardDetails.cvv}
                     onChange={handleCardDetailsChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                     placeholder="123"
                     maxLength="4"
                   />
@@ -256,7 +256,7 @@ const PaymentMethodStep = () => {
               </div>
             </div>
 
-            <div className="mt-4 p-3 bg-white rounded-lg border border-blue-200">
+            <div className="mt-4 p-3 bg-surface rounded-lg border border-blue-200">
               <div className="flex items-center text-sm text-blue-700">
                 <Shield className="w-4 h-4 mr-2" />
                 Vos informations de paiement sont sécurisées et cryptées
@@ -280,7 +280,7 @@ const PaymentMethodStep = () => {
             
             {/* The account set in Admin → Settings → Shop */}
             {bank && (
-              <div className="bg-white rounded-lg p-4 mb-4">
+              <div className="bg-surface rounded-lg p-4 mb-4">
                 <h4 className="font-medium text-gray-900 mb-2">Coordonnées bancaires :</h4>
                 <div className="space-y-1 text-sm text-gray-600">
                   <p><strong>Bénéficiaire :</strong> {bank.beneficiary}</p>
@@ -321,7 +321,7 @@ const PaymentMethodStep = () => {
             </h3>
 
             <div className="space-y-4">
-              <div className="bg-white rounded-lg p-4">
+              <div className="bg-surface rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-2">Comment ça marche:</h4>
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-start">
@@ -364,7 +364,7 @@ const PaymentMethodStep = () => {
             </h3>
 
             <div className="space-y-4">
-              <div className="bg-white rounded-lg p-4">
+              <div className="bg-surface rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-2">Processus de paiement:</h4>
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-start">

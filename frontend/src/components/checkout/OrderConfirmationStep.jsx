@@ -164,7 +164,7 @@ const OrderConfirmationStep = () => {
           transition={{ duration: 0.6, delay: 1.2 }}
         >
           {/* Order Summary */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-surface rounded-xl shadow-lg p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
               <ShoppingBag className="w-5 h-5 mr-2 text-blue-600" />
               Détails de la Commande
@@ -219,7 +219,7 @@ const OrderConfirmationStep = () => {
           </div>
 
           {/* Payment Information */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-surface rounded-xl shadow-lg p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Informations de Paiement</h2>
             <div className="space-y-3">
               <div>
@@ -267,7 +267,7 @@ const OrderConfirmationStep = () => {
           transition={{ duration: 0.6, delay: 1.4 }}
         >
           {/* Delivery Information */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-surface rounded-xl shadow-lg p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
               <Truck className="w-5 h-5 mr-2 text-green-600" />
               Informations de Livraison
@@ -307,7 +307,7 @@ const OrderConfirmationStep = () => {
           </div>
 
           {/* Contact Information */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-surface rounded-xl shadow-lg p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Besoin d'Aide ?</h2>
             
             <div className="space-y-4">

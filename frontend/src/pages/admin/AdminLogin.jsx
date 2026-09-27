@@ -1,180 +1,161 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAdmin } from '../../context/AdminContext';
-import { Lock, User, Eye, EyeOff, Waves, Shield } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import FloatingElements from '../../components/FloatingElements';
+import { Lock, User, Eye, EyeOff, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import { useAdmin } from '../../context/AdminContext';
+import { LogoMark } from '../../components/brand/Logo';
+import ThemeToggle from '../../components/ThemeToggle';
+import { EASE } from '../../utils/motion';
+
+// The deep-water side of the login: brand, glowing rings, a line of text
+const BrandPanel = () => (
+  <div className="dark relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12" style={{ backgroundColor: 'rgb(var(--deep))' }}>
+    <div className="pointer-events-none absolute inset-0 grid-lines opacity-40" aria-hidden="true" />
+    <div className="pointer-events-none absolute inset-0 [perspective:900px]" aria-hidden="true">
+      {[0, 1, 2, 3].map(i => (
+        <div
+          key={i}
+          className="absolute left-1/2 top-1/2 rounded-full border motion-safe:animate-[tilt-spin_var(--d)_linear_infinite]"
+          style={{
+            width: `${20 + i * 8}rem`,
+            height: `${20 + i * 8}rem`,
+            marginLeft: `-${10 + i * 4}rem`,
+            marginTop: `-${10 + i * 4}rem`,
+            borderColor: i % 2 ? 'rgb(167 139 250 / 0.35)' : 'rgb(45 212 238 / 0.4)',
+            boxShadow: `0 0 40px ${i % 2 ? 'rgb(167 139 250 / 0.12)' : 'rgb(45 212 238 / 0.14)'}`,
+            '--d': `${20 + i * 6}s`,
+            '--tilt': `${60 + i * 6}deg`
+          }}
+        />
+      ))}
+      <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 motion-safe:animate-float">
+        <LogoMark className="h-full w-full drop-shadow-[0_0_40px_rgb(45_212_238/0.6)]" animated />
+      </div>
+    </div>
+    <p className="relative font-display text-2xl font-bold text-white">STES<span className="text-cyan-300">.tn</span></p>
+    <div className="relative">
+      <p className="eyebrow">Console d&apos;administration</p>
+      <p className="mt-3 max-w-sm font-display text-4xl font-bold leading-tight text-white">
+        Commandes, catalogue et clients, au même endroit.
+      </p>
+    </div>
+  </div>
+);
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAdmin();
-  const [formData, setFormData] = useState({
-    username: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ username: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/admin/dashboard');
-    }
+    if (isAuthenticated) navigate('/admin/dashboard');
   }, [isAuthenticated, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    setError(''); // Clear error when user types
+    setFormData(prev => ({ ...prev, [name]: value }));
+    setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-
     try {
       await login(formData);
       navigate('/admin/dashboard');
-    } catch (error) {
-      console.error('Login error:', error);
-      setError(error.message || 'Nom d\'utilisateur ou mot de passe incorrect');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err.message || 'Nom d\'utilisateur ou mot de passe incorrect');
     } finally {
       setLoading(false);
     }
   };
 
+  const field = 'block w-full rounded-2xl border-gray-200 bg-surface py-3.5 ps-12 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      <FloatingElements variant="minimal" />
+    <div className="grid min-h-[100dvh] lg:grid-cols-[1.1fr_1fr]">
+      <BrandPanel />
 
-      <motion.div
-        className="max-w-md w-full space-y-8 relative z-10"
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
+      <div className="relative isolate flex flex-col px-6 py-8 sm:px-12">
+        <div className="ambient" aria-hidden="true" />
+        <div className="flex items-center justify-between">
+          <Link to="/" className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900">
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Retour au site
+          </Link>
+          <ThemeToggle />
+        </div>
+
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          transition={{ duration: 0.8, ease: EASE }}
+          className="m-auto w-full max-w-sm py-12"
         >
-          <motion.div
-            className="mx-auto h-16 w-16 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg"
-            whileHover={{
-              scale: 1.1,
-              rotate: 360,
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
-            }}
-            transition={{ duration: 0.6 }}
-          >
-            <Shield className="h-8 w-8 text-white" />
-          </motion.div>
-          <motion.h2
-            className="mt-6 text-center text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-          >
-            Administration
-          </motion.h2>
-          <motion.p
-            className="mt-2 text-center text-lg text-gray-600"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-          >
-            Connectez-vous à votre espace d'administration
-          </motion.p>
-        </motion.div>
+          <LogoMark className="h-12 w-12 lg:hidden" animated />
+          <p className="eyebrow mt-6 lg:mt-0">Espace sécurisé</p>
+          <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-gray-900">Administration</h1>
+          <p className="mt-2 text-gray-600">Connectez-vous à votre espace d&apos;administration</p>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-              {error}
-            </div>
-          )}
+          <form className="mt-10 space-y-5" onSubmit={handleSubmit}>
+            {error && (
+              <motion.p
+                role="alert"
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: [0, -6, 6, -3, 0] }}
+                transition={{ duration: 0.4 }}
+                className="flex items-start gap-2 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /> {error}
+              </motion.p>
+            )}
 
-          <div className="space-y-4">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                Nom d'utilisateur
-              </label>
+              <label htmlFor="username" className="mb-2 block text-sm font-medium text-gray-700">Nom d&apos;utilisateur</label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  required
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  className="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10"
-                  placeholder="Votre nom d'utilisateur"
-                />
+                <input id="username" name="username" type="text" required autoComplete="username" value={formData.username} onChange={handleInputChange} className={field} placeholder="Votre nom d'utilisateur" />
+                <User className="pointer-events-none absolute start-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" aria-hidden="true" />
               </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Mot de passe
-              </label>
+              <label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-700">Mot de passe</label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
                 <input
                   id="password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   required
+                  autoComplete="current-password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="appearance-none relative block w-full pl-10 pr-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10"
+                  className={`${field} pe-12`}
                   placeholder="Votre mot de passe"
                 />
+                <Lock className="pointer-events-none absolute start-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" aria-hidden="true" />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => setShowPassword(shown => !shown)}
+                  aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  aria-pressed={showPassword}
+                  className="absolute end-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400" />
-                  ) : (
-                    <Eye className="h-5 w-5 text-gray-400" />
-                  )}
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
             </div>
-          </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? 'Connexion...' : 'Se connecter'}
+            <button type="submit" disabled={loading} className="btn-brand w-full py-4 text-base">
+              {loading ? <><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> Connexion...</> : 'Se connecter'}
             </button>
-          </div>
-
-        </form>
-
-        <div className="text-center">
-          <button
-            onClick={() => navigate('/')}
-            className="text-primary-600 hover:text-primary-500 text-sm font-medium"
-          >
-            ← Retour au site
-          </button>
-        </div>
-      </motion.div>
+          </form>
+        </motion.div>
+      </div>
     </div>
   );
 };

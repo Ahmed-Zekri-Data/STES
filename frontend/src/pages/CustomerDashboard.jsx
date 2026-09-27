@@ -91,7 +91,7 @@ const CustomerDashboard = () => {
       className="space-y-6"
     >
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl p-8 text-white">
+      <div className="dark relative overflow-hidden rounded-[2rem] p-8 text-white" style={{ backgroundColor: 'rgb(var(--deep))', backgroundImage: 'radial-gradient(60% 120% at 0% 0%, rgb(45 212 238 / 0.25), transparent 60%), radial-gradient(50% 120% at 100% 100%, rgb(139 92 246 / 0.25), transparent 60%)' }}>
         <div className="flex items-center space-x-4">
           <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
             <User className="w-8 h-8" />
@@ -115,7 +115,7 @@ const CustomerDashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="bg-white rounded-xl p-6 shadow-lg border border-gray-100"
+            className="bg-surface rounded-xl p-6 shadow-lg border border-gray-100"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -131,7 +131,7 @@ const CustomerDashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+      <div className="bg-surface rounded-xl p-6 shadow-lg border border-gray-100">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Actions rapides
         </h3>
@@ -161,7 +161,7 @@ const CustomerDashboard = () => {
       </div>
 
       {/* Account Status */}
-      <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+      <div className="bg-surface rounded-xl p-6 shadow-lg border border-gray-100">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Statut du compte
         </h3>
@@ -216,35 +216,39 @@ const CustomerDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="pb-8 pt-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <p className="eyebrow">Espace client</p>
+        <h1 className="mt-2 mb-8 font-display text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">Mon compte</h1>
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
           <div className="lg:w-64 flex-shrink-0">
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-                  <User className="w-6 h-6 text-white" />
+            <div className="panel p-4 lg:sticky lg:top-28">
+              <div className="flex items-center gap-3 mb-4 p-2">
+                <div className="w-12 h-12 shrink-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center font-display font-bold text-white shadow-glow">
+                  {customer?.firstName?.[0]?.toUpperCase() || <User className="w-6 h-6" />}
                 </div>
-                <div>
-                  <h2 className="font-semibold text-gray-900">{customer?.fullName}</h2>
-                  <p className="text-sm text-gray-500">{customer?.email}</p>
+                <div className="min-w-0">
+                  <h2 className="truncate font-semibold text-gray-900">{customer?.fullName}</h2>
+                  <p className="truncate text-sm text-gray-500">{customer?.email}</p>
                 </div>
               </div>
               
-              <nav className="space-y-2">
+              <nav className="flex gap-1 overflow-x-auto lg:block lg:space-y-1" aria-label="Mon compte">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                      activeTab === tab.id
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    aria-current={activeTab === tab.id ? 'page' : undefined}
+                    className={`relative flex shrink-0 items-center gap-3 rounded-xl px-4 py-2.5 text-start text-sm transition-colors lg:w-full ${
+                      activeTab === tab.id ? 'text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     }`}
                   >
-                    <tab.icon className="w-5 h-5" />
-                    <span className="font-medium">{tab.name}</span>
+                    {activeTab === tab.id && (
+                      <motion.span layoutId="account-tab" className="absolute inset-0 rounded-xl bg-blue-50 ring-1 ring-inset ring-blue-200" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />
+                    )}
+                    <tab.icon className={`relative w-5 h-5 ${activeTab === tab.id ? 'text-blue-600' : ''}`} />
+                    <span className="relative whitespace-nowrap font-medium">{tab.name}</span>
                   </button>
                 ))}
               </nav>

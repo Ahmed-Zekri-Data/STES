@@ -56,14 +56,17 @@ const WishlistButton = ({
   return (
     <div className="relative">
       <motion.button
+        type="button"
         onClick={handleToggle}
         disabled={isToggling || loading}
+        aria-label={inWishlist ? 'Retirer de la liste de souhaits' : 'Ajouter à la liste de souhaits'}
+        aria-pressed={inWishlist}
         className={`
           relative flex items-center justify-center rounded-full transition-all duration-300
           ${sizeClasses[size]}
           ${inWishlist 
-            ? 'bg-red-100 text-red-600 hover:bg-red-200' 
-            : 'bg-white/80 text-gray-600 hover:bg-red-50 hover:text-red-600'
+            ? 'bg-rose-100 text-rose-600 hover:bg-rose-200' 
+            : 'bg-surface/80 text-gray-600 hover:bg-rose-50 hover:text-rose-600'
           }
           ${isToggling ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'}
           shadow-md hover:shadow-lg backdrop-blur-sm
@@ -109,7 +112,7 @@ const WishlistButton = ({
               animate={{ scale: 2, opacity: 0 }}
               exit={{ scale: 1, opacity: 0 }}
               transition={{ duration: 0.6 }}
-              className="absolute inset-0 rounded-full bg-red-400"
+              className="absolute inset-0 rounded-full bg-rose-400"
             />
           )}
         </AnimatePresence>

@@ -36,7 +36,7 @@ const formatDate = (date) => (date
 const Field = ({ label, id, hint, ...props }) => (
   <div>
     <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-    <input id={id} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" {...props} />
+    <input id={id} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15" {...props} />
     {hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
   </div>
 );
@@ -47,7 +47,7 @@ const Modal = ({ title, onClose, children }) => (
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-xl"
+      className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-surface rounded-xl shadow-xl"
       onMouseDown={(e) => e.stopPropagation()}
     >
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -204,7 +204,7 @@ const AdminUsers = () => {
 
   if (!isSuperAdmin) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+      <div className="bg-surface rounded-xl shadow-sm border border-gray-200 p-8 text-center">
         <ShieldCheck className="w-10 h-10 mx-auto text-gray-400 mb-3" />
         <h2 className="text-lg font-semibold text-gray-900">Super admins only</h2>
         <p className="text-gray-600 mt-1">Ask a super admin to add or change admin accounts. Your own account is in Settings.</p>
@@ -247,7 +247,7 @@ const AdminUsers = () => {
         {admins.map(admin => {
           const self = admin.id === me?.id;
           return (
-            <div key={admin.id} className={`bg-white rounded-xl shadow-sm border border-gray-200 p-5 ${admin.isActive ? '' : 'opacity-70'}`}>
+            <div key={admin.id} className={`bg-surface rounded-xl shadow-sm border border-gray-200 p-5 ${admin.isActive ? '' : 'opacity-70'}`}>
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">

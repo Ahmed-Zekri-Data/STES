@@ -122,7 +122,7 @@ const OrderHistory = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border p-4">
+      <div className="bg-surface rounded-lg shadow-sm border p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Search */}
           <div className="relative">
@@ -132,7 +132,7 @@ const OrderHistory = () => {
               placeholder="Rechercher par numéro ou produit..."
               value={filters.search}
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
             />
           </div>
 
@@ -142,7 +142,7 @@ const OrderHistory = () => {
             <select
               value={filters.status}
               onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 appearance-none"
             >
               <option value="all">Tous les statuts</option>
               <option value="pending">En attente</option>
@@ -160,7 +160,7 @@ const OrderHistory = () => {
             <select
               value={filters.dateRange}
               onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 appearance-none"
             >
               <option value="all">Toutes les dates</option>
               <option value="week">Cette semaine</option>
@@ -192,7 +192,7 @@ const OrderHistory = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow"
+              className="bg-surface rounded-lg shadow-sm border hover:shadow-md transition-shadow"
             >
               <div className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
@@ -225,7 +225,7 @@ const OrderHistory = () => {
                     <div className="flex space-x-2">
                       <button
                         onClick={() => setSelectedOrder(order)}
-                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-surface hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
                         <Eye className="w-4 h-4 mr-1" />
                         Détails
@@ -276,7 +276,7 @@ const OrderHistory = () => {
           <button
             onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
             disabled={pagination.currentPage === 1}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-surface hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Précédent
           </button>
@@ -288,7 +288,7 @@ const OrderHistory = () => {
           <button
             onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
             disabled={pagination.currentPage === pagination.totalPages}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-surface hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Suivant
           </button>
@@ -322,7 +322,7 @@ const OrderDetailsModal = ({ order, onClose }) => {
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-surface rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">

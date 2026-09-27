@@ -57,42 +57,42 @@ const ModernInput = forwardRef(({
   // Variant styles
   const variantClasses = {
     default: `
-      bg-white dark:bg-neutral-800
-      border border-neutral-300 dark:border-neutral-600
-      focus:border-primary-500 dark:focus:border-primary-400
-      focus:ring-2 focus:ring-primary-500/20 dark:focus:ring-primary-400/20
+      bg-surface 
+      border border-neutral-300 
+      focus:border-primary-500 
+      focus:ring-2 focus:ring-primary-500/20 
     `,
     filled: `
-      bg-neutral-100 dark:bg-neutral-800
+      bg-neutral-100 
       border border-transparent
-      focus:bg-white dark:focus:bg-neutral-700
-      focus:border-primary-500 dark:focus:border-primary-400
-      focus:ring-2 focus:ring-primary-500/20 dark:focus:ring-primary-400/20
+      focus:bg-surface 
+      focus:border-primary-500 
+      focus:ring-2 focus:ring-primary-500/20 
     `,
     outlined: `
       bg-transparent
-      border-2 border-neutral-300 dark:border-neutral-600
-      focus:border-primary-500 dark:focus:border-primary-400
+      border-2 border-neutral-300 
+      focus:border-primary-500 
     `,
     ghost: `
       bg-transparent
       border border-transparent
-      border-b-2 border-b-neutral-300 dark:border-b-neutral-600
-      focus:border-b-primary-500 dark:focus:border-b-primary-400
+      border-b-2 border-b-neutral-300 
+      focus:border-b-primary-500 
       rounded-none
     `,
   };
 
   const baseInputClasses = `
     w-full rounded-xl transition-all duration-300 ease-out
-    text-neutral-900 dark:text-neutral-100
-    placeholder-neutral-500 dark:placeholder-neutral-400
+    text-neutral-900 
+    placeholder-neutral-500 
     disabled:opacity-50 disabled:cursor-not-allowed
     focus:outline-none
     ${sizeClasses[size]}
     ${variantClasses[variant]}
-    ${error ? 'border-error-500 dark:border-error-400 focus:border-error-500 dark:focus:border-error-400 focus:ring-error-500/20 dark:focus:ring-error-400/20' : ''}
-    ${success ? 'border-success-500 dark:border-success-400 focus:border-success-500 dark:focus:border-success-400 focus:ring-success-500/20 dark:focus:ring-success-400/20' : ''}
+    ${error ? 'border-error-500  focus:border-error-500  focus:ring-error-500/20 ' : ''}
+    ${success ? 'border-success-500  focus:border-success-500  focus:ring-success-500/20 ' : ''}
     ${Icon && iconPosition === 'left' ? 'pl-12' : ''}
     ${Icon && iconPosition === 'right' ? 'pr-12' : ''}
     ${isPassword ? 'pr-12' : ''}
@@ -101,7 +101,7 @@ const ModernInput = forwardRef(({
 
   const labelClasses = `
     block text-sm font-medium mb-2 transition-colors duration-200
-    ${error ? 'text-error-600 dark:text-error-400' : success ? 'text-success-600 dark:text-success-400' : 'text-neutral-700 dark:text-neutral-300'}
+    ${error ? 'text-error-600 ' : success ? 'text-success-600 ' : 'text-neutral-700 '}
     ${labelClassName}
   `;
 
@@ -136,11 +136,11 @@ const ModernInput = forwardRef(({
             <Icon className={`w-5 h-5 transition-colors duration-200 ${
               isFocused 
                 ? error 
-                  ? 'text-error-500 dark:text-error-400' 
+                  ? 'text-error-500 ' 
                   : success 
-                    ? 'text-success-500 dark:text-success-400' 
-                    : 'text-primary-500 dark:text-primary-400'
-                : 'text-neutral-400 dark:text-neutral-500'
+                    ? 'text-success-500 ' 
+                    : 'text-primary-500 '
+                : 'text-neutral-400 '
             }`} />
           </div>
         )}
@@ -167,11 +167,11 @@ const ModernInput = forwardRef(({
             <Icon className={`w-5 h-5 transition-colors duration-200 ${
               isFocused 
                 ? error 
-                  ? 'text-error-500 dark:text-error-400' 
+                  ? 'text-error-500 ' 
                   : success 
-                    ? 'text-success-500 dark:text-success-400' 
-                    : 'text-primary-500 dark:text-primary-400'
-                : 'text-neutral-400 dark:text-neutral-500'
+                    ? 'text-success-500 ' 
+                    : 'text-primary-500 '
+                : 'text-neutral-400 '
             }`} />
           </div>
         )}
@@ -181,7 +181,7 @@ const ModernInput = forwardRef(({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors duration-200"
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 text-neutral-400 hover:text-neutral-600 transition-colors duration-200"
           >
             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
@@ -190,8 +190,8 @@ const ModernInput = forwardRef(({
         {/* Status Icons */}
         {(error || success) && !isPassword && (
           <div className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10">
-            {error && <AlertCircle className="w-5 h-5 text-error-500 dark:text-error-400" />}
-            {success && <CheckCircle className="w-5 h-5 text-success-500 dark:text-success-400" />}
+            {error && <AlertCircle className="w-5 h-5 text-error-500" />}
+            {success && <CheckCircle className="w-5 h-5 text-success-500" />}
           </div>
         )}
 
@@ -199,10 +199,10 @@ const ModernInput = forwardRef(({
         <motion.div
           className={`absolute inset-0 rounded-xl pointer-events-none ${
             error 
-              ? 'ring-2 ring-error-500/20 dark:ring-error-400/20' 
+              ? 'ring-2 ring-error-500/20 ' 
               : success 
-                ? 'ring-2 ring-success-500/20 dark:ring-success-400/20' 
-                : 'ring-2 ring-primary-500/20 dark:ring-primary-400/20'
+                ? 'ring-2 ring-success-500/20 ' 
+                : 'ring-2 ring-primary-500/20 '
           }`}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ 
@@ -223,8 +223,8 @@ const ModernInput = forwardRef(({
             transition={{ duration: 0.2 }}
             className={`mt-2 text-sm ${
               error 
-                ? 'text-error-600 dark:text-error-400' 
-                : 'text-neutral-500 dark:text-neutral-400'
+                ? 'text-error-600 ' 
+                : 'text-neutral-500 '
             }`}
           >
             {error || helperText}

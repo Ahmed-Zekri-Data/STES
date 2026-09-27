@@ -75,7 +75,7 @@ const translations = {
   }
 };
 
-const inputClass = 'w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200';
+const inputClass = 'w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-200';
 
 // Opened from the link in the password reset email
 const ResetPassword = () => {
@@ -148,7 +148,7 @@ const ResetPassword = () => {
 
   const passwordField = (id, label, value, onChange, autoFocus) => (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-2">
         {label}
       </label>
       <div className="relative">
@@ -180,10 +180,10 @@ const ResetPassword = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8"
+        className="w-full max-w-md bg-surface rounded-2xl shadow-xl p-8"
       >
         {status === 'checking' && (
-          <p className="text-center text-gray-600 dark:text-gray-400">{text.checking}</p>
+          <p className="text-center text-gray-600">{text.checking}</p>
         )}
 
         {status === 'error' && (
@@ -204,11 +204,11 @@ const ResetPassword = () => {
         {status === 'form' && (
           <>
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-glow flex items-center justify-center mx-auto mb-4">
                 <KeyRound className="w-8 h-8 text-white" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{text.title}</h1>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">{text.forAccount(accountEmail)}</p>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">{text.title}</h1>
+              <p className="text-gray-600 text-sm">{text.forAccount(accountEmail)}</p>
             </div>
 
             {error && (
@@ -225,7 +225,7 @@ const ResetPassword = () => {
                 type="submit"
                 loading={saving}
                 disabled={saving}
-                className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-lg font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200"
+                className="btn-brand w-full py-3.5"
               >
                 {text.save}
               </AnimatedButton>
@@ -238,13 +238,13 @@ const ResetPassword = () => {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">{text.doneTitle}</h1>
-            <p className="text-gray-700 dark:text-gray-300 mb-6">{text.done}</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-3">{text.doneTitle}</h1>
+            <p className="text-gray-700 mb-6">{text.done}</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link to="/account" className="px-5 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700">
                 {text.account}
               </Link>
-              <Link to="/shop" className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-50 dark:hover:bg-gray-700">
+              <Link to="/shop" className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50">
                 {text.shop}
               </Link>
             </div>
@@ -257,8 +257,8 @@ const ResetPassword = () => {
               <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle className="w-8 h-8 text-amber-600" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{text.invalidTitle}</h1>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">{text.invalid}</p>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">{text.invalidTitle}</h1>
+              <p className="text-gray-600 text-sm">{text.invalid}</p>
             </div>
             <ForgotPassword initialEmail={accountEmail} showHeader={false} />
           </>

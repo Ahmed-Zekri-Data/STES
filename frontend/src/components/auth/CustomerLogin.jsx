@@ -122,11 +122,11 @@ const CustomerLogin = ({ onClose, onSwitchToRegister, onForgotPassword }) => {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.2 }}
-          className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4"
+          className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-glow flex items-center justify-center mx-auto mb-4"
         >
           <LogIn className="w-8 h-8 text-white" />
         </motion.div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h2 className="text-2xl font-bold text-gray-900">
           {text.title}
         </h2>
       </div>
@@ -147,7 +147,7 @@ const CustomerLogin = ({ onClose, onSwitchToRegister, onForgotPassword }) => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             {text.email}
           </label>
           <div className="relative">
@@ -158,7 +158,7 @@ const CustomerLogin = ({ onClose, onSwitchToRegister, onForgotPassword }) => {
               value={formData.email}
               onChange={handleChange}
               placeholder={text.emailPlaceholder}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-200"
               required
             />
           </div>
@@ -169,7 +169,7 @@ const CustomerLogin = ({ onClose, onSwitchToRegister, onForgotPassword }) => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             {text.password}
           </label>
           <div className="relative">
@@ -180,7 +180,7 @@ const CustomerLogin = ({ onClose, onSwitchToRegister, onForgotPassword }) => {
               value={formData.password}
               onChange={handleChange}
               placeholder={text.passwordPlaceholder}
-              className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-200"
               required
             />
             <button
@@ -201,7 +201,7 @@ const CustomerLogin = ({ onClose, onSwitchToRegister, onForgotPassword }) => {
           <AnimatedButton
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-lg font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200"
+            className="btn-brand w-full py-3.5"
           >
             {loading ? <LoadingSpinner size="sm" /> : text.login}
           </AnimatedButton>

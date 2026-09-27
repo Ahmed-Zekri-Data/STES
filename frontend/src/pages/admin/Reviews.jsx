@@ -70,7 +70,7 @@ const Reviews = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm p-4 flex flex-col sm:flex-row gap-3">
+      <div className="bg-surface rounded-xl shadow-sm p-4 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
           <input
@@ -79,7 +79,7 @@ const Reviews = () => {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search a product, title or comment"
             aria-label="Search reviews"
-            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
           />
         </div>
         <select
@@ -102,7 +102,7 @@ const Reviews = () => {
       {!data && !error && <p className="text-gray-500">Loading…</p>}
 
       {data && data.reviews.length === 0 && (
-        <div className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-600">
+        <div className="bg-surface rounded-xl shadow-sm p-8 text-center text-gray-600">
           {query || rating ? 'No review matches these filters.' : 'No customer has reviewed a product yet.'}
         </div>
       )}
@@ -112,7 +112,7 @@ const Reviews = () => {
           <p className="text-sm text-gray-600">{pagination.totalReviews} review{pagination.totalReviews > 1 ? 's' : ''}</p>
           <ul className="space-y-4">
             {data.reviews.map(review => (
-              <li key={review._id} className="bg-white rounded-xl shadow-sm p-5">
+              <li key={review._id} className="bg-surface rounded-xl shadow-sm p-5">
                 <div className="flex flex-col sm:flex-row sm:items-start gap-3 justify-between">
                   <div className="min-w-0">
                     <Link to={`/product/${review.product._id}`} target="_blank" className="inline-flex items-center gap-1 font-medium text-blue-700 hover:underline">

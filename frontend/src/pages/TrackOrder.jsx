@@ -15,6 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import axios from 'axios';
+import PageHero from '../components/layout/PageHero';
 
 const TrackOrder = () => {
   const [searchParams] = useSearchParams();
@@ -132,36 +133,28 @@ const TrackOrder = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="pb-8">
+      <PageHero
+        eyebrow="Suivi · En temps réel"
+        title="Suivi de Commande"
+        subtitle="Suivez votre commande en temps réel avec votre code de suivi, ou votre email et votre numéro de commande"
+      />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Suivi de Commande
-          </h1>
-          <p className="text-lg text-gray-600">
-            Suivez votre commande en temps réel avec votre code de suivi, ou votre email et votre numéro de commande
-          </p>
-        </motion.div>
 
         {/* Search Methods */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl shadow-lg p-8 mb-8"
+          className="glass rounded-[2rem] p-6 sm:p-8 mb-8"
         >
           {/* Method Selector */}
           <div className="flex justify-center mb-6">
-            <div className="bg-gray-100 rounded-lg p-1 flex">
+            <div className="bg-gray-100 rounded-full p-1 flex">
               <button
                 onClick={() => setSearchMethod('code')}
-                className={`px-4 py-2 rounded-md transition-colors ${
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   searchMethod === 'code'
-                    ? 'bg-white text-blue-600 shadow-sm'
+                    ? 'bg-surface text-blue-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -169,9 +162,9 @@ const TrackOrder = () => {
               </button>
               <button
                 onClick={() => setSearchMethod('email')}
-                className={`px-4 py-2 rounded-md transition-colors ${
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   searchMethod === 'email'
-                    ? 'bg-white text-blue-600 shadow-sm'
+                    ? 'bg-surface text-blue-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -201,7 +194,7 @@ const TrackOrder = () => {
                       value={trackingCode}
                       onChange={(e) => setTrackingCode(e.target.value)}
                       placeholder="Ex: TRK-1748984093010-HPNRU8"
-                      className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                     />
                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   </div>
@@ -209,7 +202,7 @@ const TrackOrder = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  className="btn-brand w-full py-3.5"
                 >
                   {loading ? (
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -240,7 +233,7 @@ const TrackOrder = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="votre@email.com"
-                      className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                     />
                     <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   </div>
@@ -255,7 +248,7 @@ const TrackOrder = () => {
                       value={orderNumber}
                       onChange={(e) => setOrderNumber(e.target.value)}
                       placeholder="Ex: ORD-1748984093010-A1B2C3"
-                      className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                     />
                     <Package className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   </div>
@@ -266,7 +259,7 @@ const TrackOrder = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  className="btn-brand w-full py-3.5"
                 >
                   {loading ? (
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -307,10 +300,10 @@ const TrackOrder = () => {
               className="space-y-6"
             >
               {/* Order Header */}
-              <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="panel p-6">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    <h2 className="font-display text-2xl font-bold text-gray-900 mb-2">
                       Commande #{orderData.order.orderNumber}
                     </h2>
                     <p className="text-gray-600">
@@ -336,7 +329,8 @@ const TrackOrder = () => {
                       initial={{ width: 0 }}
                       animate={{ width: `${orderData.order.progressPercentage}%` }}
                       transition={{ duration: 1, ease: "easeOut" }}
-                      className="bg-blue-600 h-2 rounded-full"
+                      className="h-2 rounded-full"
+                      style={{ background: 'linear-gradient(90deg, rgb(var(--aqua-500)), rgb(var(--violet-500)))', boxShadow: '0 0 16px rgb(var(--aqua-500) / 0.6)' }}
                     />
                   </div>
                 </div>
@@ -345,7 +339,7 @@ const TrackOrder = () => {
               {/* Order Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Customer Info */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="panel p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <User className="w-5 h-5 mr-2" />
                     Informations de livraison
@@ -371,7 +365,7 @@ const TrackOrder = () => {
                 </div>
 
                 {/* Delivery Info */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="panel p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <Calendar className="w-5 h-5 mr-2" />
                     Informations de livraison
@@ -404,7 +398,7 @@ const TrackOrder = () => {
 
               {/* Timeline */}
               {orderData.timeline && (
-                <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="panel p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-6">
                     Suivi détaillé
                   </h3>
@@ -453,7 +447,7 @@ const TrackOrder = () => {
 
               {/* Order Items */}
               {orderData.order.items && orderData.order.items.length > 0 && (
-                <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="panel p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-6">
                     Articles commandés
                   </h3>

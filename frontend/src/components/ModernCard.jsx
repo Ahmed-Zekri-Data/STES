@@ -21,32 +21,32 @@ const ModernCard = ({
 
   const variantClasses = {
     default: `
-      bg-white dark:bg-neutral-900
-      border border-neutral-200 dark:border-neutral-800
-      shadow-soft dark:shadow-none
-      ${hover ? 'hover:shadow-medium dark:hover:shadow-glow' : ''}
+      bg-surface 
+      border border-neutral-200 
+      shadow-soft 
+      ${hover ? 'hover:shadow-medium ' : ''}
     `,
     elevated: `
-      bg-white dark:bg-neutral-900
-      shadow-medium dark:shadow-glow
-      border border-neutral-100 dark:border-neutral-800
-      ${hover ? 'hover:shadow-large dark:hover:shadow-glow-lg' : ''}
+      bg-surface 
+      shadow-medium 
+      border border-neutral-100 
+      ${hover ? 'hover:shadow-large ' : ''}
     `,
     outlined: `
       bg-transparent
-      border-2 border-neutral-200 dark:border-neutral-700
-      ${hover ? 'hover:border-primary-300 dark:hover:border-primary-600' : ''}
+      border-2 border-neutral-200 
+      ${hover ? 'hover:border-primary-300 ' : ''}
     `,
     ghost: `
       bg-transparent
-      ${hover ? 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50' : ''}
+      ${hover ? 'hover:bg-neutral-50 ' : ''}
     `,
   };
 
   const effectClasses = {
-    glow: glow ? 'shadow-glow dark:shadow-glow-lg' : '',
+    glow: glow ? 'shadow-glow ' : '',
     glass: glass ? 'glass backdrop-blur-xl' : '',
-    gradient: gradient ? 'bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-900 dark:to-neutral-800' : '',
+    gradient: gradient ? 'bg-gradient-to-br from-surface to-neutral-50  ' : '',
   };
 
   const combinedClasses = `
@@ -174,17 +174,17 @@ export const StatsCard = ({
   >
     <div className="flex items-center justify-between">
       <div className="flex-1">
-        <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-1">
+        <p className="text-sm font-medium text-neutral-600 mb-1">
           {title}
         </p>
-        <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+        <p className="text-2xl font-bold text-neutral-900">
           {value}
         </p>
         {change && (
           <p className={`text-sm font-medium mt-1 ${
             trend === 'up' 
-              ? 'text-success-600 dark:text-success-400' 
-              : 'text-error-600 dark:text-error-400'
+              ? 'text-success-600 ' 
+              : 'text-error-600 '
           }`}>
             {trend === 'up' ? '↗' : '↘'} {change}
           </p>
@@ -192,8 +192,8 @@ export const StatsCard = ({
       </div>
       {Icon && (
         <div className="flex-shrink-0 ml-4">
-          <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center">
-            <Icon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+          <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
+            <Icon className="w-6 h-6 text-primary-600" />
           </div>
         </div>
       )}

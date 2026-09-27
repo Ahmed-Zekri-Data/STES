@@ -10,7 +10,7 @@ const EMPTY = {
   city: '', state: '', postalCode: '', phone: ''
 };
 
-const inputClass = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent';
+const inputClass = 'w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15';
 
 const Field = ({ label, id, hint, ...props }) => (
   <div>
@@ -103,7 +103,7 @@ const AddressBook = () => {
   };
 
   const form_ = editing && (
-    <form onSubmit={save} className="bg-white rounded-xl p-6 shadow-lg space-y-4">
+    <form onSubmit={save} className="bg-surface rounded-xl p-6 shadow-lg space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900">{editing === 'new' ? 'Nouvelle adresse' : "Modifier l'adresse"}</h3>
         <button type="button" onClick={() => setEditing(null)} aria-label="Annuler" className="p-1 rounded hover:bg-gray-100"><X className="w-5 h-5" /></button>
@@ -154,7 +154,7 @@ const AddressBook = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 shadow-lg">
+      <div className="bg-surface rounded-xl p-6 shadow-lg">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Mes adresses</h3>
@@ -178,7 +178,7 @@ const AddressBook = () => {
       )}
       {!addresses && !loadError && <p className="text-gray-500">Chargement…</p>}
       {addresses?.length === 0 && !editing && (
-        <div className="bg-white rounded-xl p-8 shadow-lg text-center">
+        <div className="bg-surface rounded-xl p-8 shadow-lg text-center">
           <MapPin className="w-10 h-10 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-600">Aucune adresse enregistrée. Ajoutez-en une pour ne plus la retaper à chaque commande.</p>
         </div>
@@ -186,7 +186,7 @@ const AddressBook = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {addresses?.map(address => (
-          <div key={address._id} className={`bg-white rounded-xl p-5 shadow-lg border-2 ${address.isDefault ? 'border-blue-500' : 'border-transparent'}`}>
+          <div key={address._id} className={`bg-surface rounded-xl p-5 shadow-lg border-2 ${address.isDefault ? 'border-blue-500' : 'border-transparent'}`}>
             <div className="flex items-center gap-2 mb-2">
               <span className="font-semibold text-gray-900">{TYPE_LABELS[address.type] || 'Adresse'}</span>
               {address.isDefault && <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Par défaut</span>}

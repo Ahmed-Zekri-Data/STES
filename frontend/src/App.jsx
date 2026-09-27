@@ -17,6 +17,7 @@ import Footer from './components/Footer';
 import CartSidebar from './components/CartSidebar';
 import PageLoader from './components/PageLoader';
 import ProtectedRoute from './components/ProtectedRoute';
+import { Ambient, PageTransition, ScrollProgress } from './components/layout/PageFrame';
 
 // Browsing pages are in the main bundle, so the shop opens without waiting
 import Home from './pages/Home';
@@ -56,11 +57,18 @@ const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
 // Shop pages share the header and footer; they stay in place while a page
 // that is not loaded yet is being downloaded
 const ShopLayout = () => (
-  <div className="min-h-screen flex flex-col">
+  <div className="relative isolate flex min-h-screen flex-col">
+    <Ambient />
+    <ScrollProgress />
+    <a href="#contenu" className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[70] focus:rounded-full focus:bg-surface focus:px-4 focus:py-2 focus:shadow-large">
+      Aller au contenu
+    </a>
     <Navbar />
-    <main className="flex-grow">
+    <main id="contenu" className="flex-grow">
       <Suspense fallback={<PageLoader />}>
-        <Outlet />
+        <PageTransition>
+          <Outlet />
+        </PageTransition>
       </Suspense>
     </main>
     <Footer />

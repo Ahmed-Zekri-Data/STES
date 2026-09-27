@@ -58,7 +58,7 @@ describe('address book', () => {
 
   it('makes another address the default and deletes one', async () => {
     renderBook([home, work]);
-    const workCard = (await screen.findByText('Travail')).closest('div.bg-white');
+    const workCard = (await screen.findByText('Travail')).closest('div.bg-surface');
     vi.spyOn(axios, 'put').mockResolvedValue({ data: { addresses: [{ ...home, isDefault: false }, { ...work, isDefault: true }] } });
     fireEvent.click(within(workCard).getByRole('button', { name: /Par défaut/ }));
     expect(await screen.findByText(/Adresse par défaut changée/)).toBeTruthy();
@@ -66,7 +66,7 @@ describe('address book', () => {
 
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     const del = vi.spyOn(axios, 'delete').mockResolvedValue({ data: { addresses: [{ ...work, isDefault: true }] } });
-    const homeCard = screen.getByText('Domicile').closest('div.bg-white');
+    const homeCard = screen.getByText('Domicile').closest('div.bg-surface');
     fireEvent.click(within(homeCard).getByRole('button', { name: /Supprimer/ }));
     expect(await screen.findByText('Adresse supprimée.')).toBeTruthy();
     expect(del).toHaveBeenCalledWith('/api/addresses/a1');

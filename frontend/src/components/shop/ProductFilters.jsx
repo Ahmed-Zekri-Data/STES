@@ -1,424 +1,194 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Filter, 
-  X, 
-  ChevronDown, 
-  ChevronUp, 
-  Star, 
-  DollarSign,
-  Tag,
-  Grid,
-  List,
-  SlidersHorizontal
-} from 'lucide-react';
-import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Star, Search, LayoutGrid } from 'lucide-react';
+import { categoryLook } from '../../utils/categoryIcons';
 
-const ProductFilters = ({ 
-  filters, 
-  onFiltersChange, 
-  onClearFilters,
-  viewMode,
-  onViewModeChange
-}) => {
-  const [categories, setCategories] = useState({});
-  // Narrows the list of brands; choosing one filters the products
-  const [brandQuery, setBrandQuery] = useState('');
-  const [searchFilters, setSearchFilters] = useState({});
-  const [expandedSections, setExpandedSections] = useState({
-    categories: true,
-    price: true,
-    rating: true,
-    brand: false
-  });
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
+// The shop's filters. Sections are defined once, outside any render, so an
+// input keeps its focus while typing.
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+const Section = ({ title, children }) => (
+  <fieldset className="border-t border-gray-200 py-5 first:border-t-0 first:pt-0">
+    <legend className="float-left mb-3 w-full font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-gray-500">{title}</legend>
+    <div className="clear-left">{children}</div>
+  </fieldset>
+);
 
-  const fetchCategories = async () => {
-    try {
-      const response = await axios.get('/api/products/categories');
-      setCategories(response.data.categories);
-      setSearchFilters(response.data.filters);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      // Without the API, show no categories rather than made-up ones
-      setCategories({});
+const chipClass = (active) => `rounded-full border px-3 py-1.5 text-sm transition-colors duration-200 ${
+  active
+    ? 'border-transparent bg-gray-900 text-white'
+    : 'border-gray-200 text-gray-700 hover:border-gray-400'
+}`;
 
-    setSearchFilters({
-      priceRanges: [
-        { label: 'Moins de 50 TND', min: 0, max: 50 },
-        { label: '50 - 100 TND', min: 50, max: 100 },
-        { label: '100 - 500 TND', min: 100, max: 500 },
-        { label: '500 - 1000 TND', min: 500, max: 1000 },
-        { label: 'Plus de 1000 TND', min: 1000 }
-      ],
-      ratings: [
-        { label: '4 étoiles et plus', min: 4 },
-        { label: '3 étoiles et plus', min: 3 },
-        { label: '2 étoiles et plus', min: 2 },
-        { label: '1 étoile et plus', min: 1 }
-      ],
-      brands: []
-    });
-    }
-  };
+const same = (a, b) => String(a ?? '') === String(b ?? '');
 
-  const toggleSection = (section) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
-
-  const handleFilterChange = (key, value) => {
-    onFiltersChange({ ...filters, [key]: value });
-  };
-
-  const handlePriceRangeChange = (range) => {
-    onFiltersChange({
-      ...filters,
-      minPrice: range.min || '',
-      maxPrice: range.max || ''
-    });
-  };
-
-  const getActiveFiltersCount = () => {
-    let count = 0;
-    if (filters.category) count++;
-    if (filters.subcategory) count++;
-    if (filters.minPrice || filters.maxPrice) count++;
-    if (filters.minRating) count++;
-    if (filters.brand) count++;
-    if (filters.search) count++;
-    return count;
-  };
-
-  const FilterSection = ({ title, isExpanded, onToggle, children }) => (
-    <div className="border-b border-gray-200 pb-4 mb-4">
-      <button
-        onClick={onToggle}
-        className="flex items-center justify-between w-full text-left font-medium text-gray-900 hover:text-blue-600 transition-colors"
-      >
-        <span>{title}</span>
-        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-      </button>
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="mt-3 space-y-2"
-          >
-            {children}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-
-  const CategoryFilter = () => (
-    <FilterSection
-      title="Catégories"
-      isExpanded={expandedSections.categories}
-      onToggle={() => toggleSection('categories')}
-    >
-      <div className="space-y-2">
-        {Object.entries(categories).map(([key, category]) => (
-          <div key={key}>
-            <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors">
-              <input
-                type="radio"
-                name="category"
-                value={key}
-                checked={filters.category === key}
-                onChange={(e) => handleFilterChange('category', e.target.value)}
-                className="text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-2xl">{category.icon}</span>
-              <span className="text-sm text-gray-700">{category.name}</span>
-            </label>
-            
-            {/* Subcategories */}
-            {filters.category === key && category.subcategories && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="ml-6 mt-2 space-y-1"
-              >
-                {Object.entries(category.subcategories).map(([subKey, subName]) => (
-                  <label key={subKey} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors">
-                    <input
-                      type="radio"
-                      name="subcategory"
-                      value={subKey}
-                      checked={filters.subcategory === subKey}
-                      onChange={(e) => handleFilterChange('subcategory', e.target.value)}
-                      className="text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-xs text-gray-600">{subName}</span>
-                  </label>
-                ))}
-              </motion.div>
-            )}
-          </div>
-        ))}
-      </div>
-    </FilterSection>
-  );
-
-  const PriceFilter = () => (
-    <FilterSection
-      title="Prix"
-      isExpanded={expandedSections.price}
-      onToggle={() => toggleSection('price')}
-    >
-      <div className="space-y-3">
-        {/* Price Range Buttons */}
-        {searchFilters.priceRanges?.map((range, index) => (
+// Categories as a row of chips; the chosen one gets a sliding highlight
+export const CategoryRail = ({ categories, selected, onSelect, layoutId = 'category-rail' }) => {
+  const entries = [['', { name: 'Tout' }], ...Object.entries(categories)];
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="group" aria-label="Catégories">
+      {entries.map(([slug, category]) => {
+        const active = selected === slug;
+        const Icon = slug ? categoryLook(slug).icon : LayoutGrid;
+        return (
           <button
-            key={index}
-            onClick={() => handlePriceRangeChange(range)}
-            className={`w-full text-left p-2 rounded-lg text-sm transition-colors ${
-              (filters.minPrice == range.min && filters.maxPrice == range.max) ||
-              (filters.minPrice == range.min && !range.max && !filters.maxPrice)
-                ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                : 'hover:bg-gray-50 text-gray-700'
+            key={slug || 'all'}
+            type="button"
+            onClick={() => onSelect(slug)}
+            aria-pressed={active}
+            className={`relative inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+              active ? 'text-white' : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            {range.label}
+            {active && (
+              <motion.span
+                layoutId={layoutId}
+                className="absolute inset-0 rounded-full bg-gray-900 shadow-medium"
+                transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+              />
+            )}
+            <Icon className="relative h-4 w-4" aria-hidden="true" />
+            <span className="relative whitespace-nowrap">{category.name}</span>
           </button>
-        ))}
-        
-        {/* Custom Price Range */}
-        <div className="flex space-x-2">
-          <input
-            type="number"
-            placeholder="Min"
-            value={filters.minPrice}
-            onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <input
-            type="number"
-            placeholder="Max"
-            value={filters.maxPrice}
-            onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-      </div>
-    </FilterSection>
+        );
+      })}
+    </div>
   );
+};
 
-  const RatingFilter = () => (
-    <FilterSection
-      title="Note client"
-      isExpanded={expandedSections.rating}
-      onToggle={() => toggleSection('rating')}
-    >
-      <div className="space-y-2">
-        {searchFilters.ratings?.map((rating, index) => (
-          <label key={index} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors">
-            <input
-              type="radio"
-              name="rating"
-              value={rating.min}
-              checked={filters.minRating == rating.min}
-              onChange={(e) => handleFilterChange('minRating', e.target.value)}
-              className="text-blue-600 focus:ring-blue-500"
-            />
-            <div className="flex items-center space-x-1">
-              {[...Array(5)].map((_, i) => (
-                <Star
-                  key={i}
-                  className={`w-4 h-4 ${
-                    i < rating.min ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                  }`}
-                />
-              ))}
-              <span className="text-sm text-gray-600 ml-1">{rating.label}</span>
-            </div>
-          </label>
-        ))}
-      </div>
-    </FilterSection>
+// Min/max typed freely, applied on Enter, on leaving the field, or with OK
+const PriceInputs = ({ minPrice, maxPrice, onApply }) => {
+  const [min, setMin] = useState(minPrice || '');
+  const [max, setMax] = useState(maxPrice || '');
+  useEffect(() => { setMin(minPrice || ''); setMax(maxPrice || ''); }, [minPrice, maxPrice]);
+  const apply = () => {
+    if (!same(min, minPrice) || !same(max, maxPrice)) onApply({ minPrice: min, maxPrice: max });
+  };
+  const field = 'w-full rounded-xl border-gray-200 py-2 ps-3 pe-9 text-sm tabular [appearance:textfield] focus:border-blue-500 focus:ring-blue-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
+  return (
+    <form className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2" onSubmit={(event) => { event.preventDefault(); apply(); }}>
+      <label className="relative">
+        <span className="sr-only">Prix minimum</span>
+        <input type="number" min="0" inputMode="numeric" placeholder="Min" value={min} onChange={e => setMin(e.target.value)} onBlur={apply} className={field} />
+        <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 font-mono text-[10px] text-gray-400">TND</span>
+      </label>
+      <span className="text-gray-400" aria-hidden="true">–</span>
+      <label className="relative">
+        <span className="sr-only">Prix maximum</span>
+        <input type="number" min="0" inputMode="numeric" placeholder="Max" value={max} onChange={e => setMax(e.target.value)} onBlur={apply} className={field} />
+        <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 font-mono text-[10px] text-gray-400">TND</span>
+      </label>
+      <button type="submit" className="col-span-3 rounded-xl bg-gray-100 py-2 text-sm font-medium text-gray-800 hover:bg-gray-200">Appliquer le prix</button>
+    </form>
   );
+};
 
-  const BrandFilter = () => (
-    <FilterSection
-      title="Marque"
-      isExpanded={expandedSections.brand}
-      onToggle={() => toggleSection('brand')}
-    >
-      <div className="space-y-2">
-        {searchFilters.brands?.length > 6 && (
+const BrandList = ({ brands = [], selected, onSelect }) => {
+  const [query, setQuery] = useState('');
+  if (!brands.length) return <p className="text-sm text-gray-500">Aucune marque</p>;
+  const shown = brands.filter(brand => brand.toLowerCase().includes(query.trim().toLowerCase()));
+  return (
+    <div className="space-y-2">
+      {brands.length > 6 && (
+        <label className="relative block">
+          <span className="sr-only">Rechercher une marque</span>
+          <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
           <input
             type="text"
             placeholder="Rechercher une marque..."
-            value={brandQuery}
-            onChange={(e) => setBrandQuery(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full rounded-xl border-gray-200 py-2 ps-9 text-sm focus:border-blue-500 focus:ring-blue-500"
           />
-        )}
-        {!searchFilters.brands?.length && (
-          <p className="text-sm text-gray-500 p-2">Aucune marque</p>
-        )}
-        {searchFilters.brands?.length > 0 && (
-          <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors">
-            <input
-              type="radio"
-              name="brand"
-              value=""
-              checked={!filters.brand}
-              onChange={() => handleFilterChange('brand', '')}
-              className="text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-sm text-gray-700">Toutes les marques</span>
-          </label>
-        )}
-        <div className="max-h-64 overflow-y-auto space-y-2">
-          {searchFilters.brands
-            ?.filter(brand => brand.toLowerCase().includes(brandQuery.trim().toLowerCase()))
-            .map(brand => (
-              <label key={brand} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors">
-                <input
-                  type="radio"
-                  name="brand"
-                  value={brand}
-                  checked={filters.brand === brand}
-                  onChange={(e) => handleFilterChange('brand', e.target.value)}
-                  className="text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">{brand}</span>
-              </label>
-            ))}
-        </div>
+        </label>
+      )}
+      <div className="flex max-h-56 flex-wrap gap-2 overflow-y-auto">
+        <button type="button" onClick={() => onSelect('')} aria-pressed={!selected} className={chipClass(!selected)}>Toutes les marques</button>
+        {shown.map(brand => (
+          <button key={brand} type="button" onClick={() => onSelect(brand)} aria-pressed={selected === brand} className={chipClass(selected === brand)}>
+            {brand}
+          </button>
+        ))}
       </div>
-    </FilterSection>
+    </div>
   );
+};
+
+const ProductFilters = ({ filters, categories = {}, searchFilters = {}, onFiltersChange, onClearFilters, activeCount = 0 }) => {
+  const subcategories = categories[filters.category]?.subcategories;
+  const set = (changes) => onFiltersChange(changes);
 
   return (
-    <>
-      {/* Mobile Filter Toggle */}
-      <div className="lg:hidden flex items-center justify-between mb-4">
-        <button
-          onClick={() => setShowMobileFilters(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <SlidersHorizontal className="w-4 h-4" />
-          <span>Filtres</span>
-          {getActiveFiltersCount() > 0 && (
-            <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-              {getActiveFiltersCount()}
-            </span>
-          )}
-        </button>
-
-        {/* View Mode Toggle */}
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => onViewModeChange('grid')}
-            className={`p-2 rounded-lg transition-colors ${
-              viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <Grid className="w-4 h-4" />
+    <div>
+      <div className="mb-5 flex items-center justify-between">
+        <h2 className="font-display text-lg font-semibold text-gray-900">Filtres</h2>
+        {activeCount > 0 && (
+          <button type="button" onClick={onClearFilters} className="text-sm font-medium text-blue-600 hover:text-blue-700">
+            Effacer tout ({activeCount})
           </button>
-          <button
-            onClick={() => onViewModeChange('list')}
-            className={`p-2 rounded-lg transition-colors ${
-              viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <List className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Desktop Filters */}
-      <div className="hidden lg:block">
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <Filter className="w-5 h-5 mr-2" />
-              Filtres
-            </h3>
-            {getActiveFiltersCount() > 0 && (
-              <button
-                onClick={onClearFilters}
-                className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
-              >
-                Effacer tout ({getActiveFiltersCount()})
-              </button>
-            )}
-          </div>
-
-          <CategoryFilter />
-          <PriceFilter />
-          <RatingFilter />
-          <BrandFilter />
-        </div>
-      </div>
-
-      {/* Mobile Filters Modal */}
-      <AnimatePresence>
-        {showMobileFilters && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden"
-            onClick={() => setShowMobileFilters(false)}
-          >
-            <motion.div
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="bg-white h-full w-80 max-w-[90vw] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Filtres</h3>
-                  <button
-                    onClick={() => setShowMobileFilters(false)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <CategoryFilter />
-                <PriceFilter />
-                <RatingFilter />
-                <BrandFilter />
-
-                <div className="flex space-x-3 mt-6">
-                  <button
-                    onClick={onClearFilters}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Effacer
-                  </button>
-                  <button
-                    onClick={() => setShowMobileFilters(false)}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Appliquer
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
         )}
-      </AnimatePresence>
-    </>
+      </div>
+
+      {subcategories && Object.keys(subcategories).length > 0 && (
+        <Section title="Sous-catégorie">
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => set({ subcategory: '' })} aria-pressed={!filters.subcategory} className={chipClass(!filters.subcategory)}>Toutes</button>
+            {Object.entries(subcategories).map(([key, name]) => (
+              <button key={key} type="button" onClick={() => set({ subcategory: key })} aria-pressed={filters.subcategory === key} className={chipClass(filters.subcategory === key)}>
+                {name}
+              </button>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      <Section title="Prix">
+        <div className="flex flex-wrap gap-2">
+          {searchFilters.priceRanges?.map(range => {
+            const active = same(filters.minPrice, range.min || '') && same(filters.maxPrice, range.max || '');
+            return (
+              <button
+                key={range.label}
+                type="button"
+                aria-pressed={active}
+                onClick={() => set(active ? { minPrice: '', maxPrice: '' } : { minPrice: range.min || '', maxPrice: range.max || '' })}
+                className={chipClass(active)}
+              >
+                {range.label}
+              </button>
+            );
+          })}
+        </div>
+        <PriceInputs minPrice={filters.minPrice} maxPrice={filters.maxPrice} onApply={set} />
+      </Section>
+
+      <Section title="Note client">
+        <div className="space-y-1">
+          {searchFilters.ratings?.map(rating => {
+            const active = same(filters.minRating, rating.min);
+            return (
+              <button
+                key={rating.min}
+                type="button"
+                aria-pressed={active}
+                onClick={() => set({ minRating: active ? '' : String(rating.min) })}
+                className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition-colors ${active ? 'bg-amber-50 text-gray-900 ring-1 ring-amber-300' : 'text-gray-700 hover:bg-gray-100'}`}
+              >
+                <span className="flex" aria-hidden="true">
+                  {[0, 1, 2, 3, 4].map(i => (
+                    <Star key={i} className={`h-3.5 w-3.5 ${i < rating.min ? 'fill-current text-amber-400' : 'text-gray-300'}`} />
+                  ))}
+                </span>
+                {rating.label}
+              </button>
+            );
+          })}
+        </div>
+      </Section>
+
+      <Section title="Marque">
+        <BrandList brands={searchFilters.brands} selected={filters.brand} onSelect={(brand) => set({ brand })} />
+      </Section>
+    </div>
   );
 };
 

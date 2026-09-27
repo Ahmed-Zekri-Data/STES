@@ -74,7 +74,7 @@ const StatCard = ({ title, value, suffix, icon: Icon, color, change, detail, to,
   );
   return (
     <motion.div
-      className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100"
+      className="bg-surface rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.08 }}
@@ -125,7 +125,7 @@ const Dashboard = () => {
           id="dashboard-period"
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
-          className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm"
+          className="px-3 py-2 border border-gray-300 rounded-lg bg-surface text-sm"
         >
           {PERIODS.map(p => <option key={p.days} value={p.days}>{p.label}</option>)}
         </select>
@@ -153,7 +153,7 @@ const Dashboard = () => {
         {header}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl p-6 shadow-lg animate-pulse">
+            <div key={i} className="bg-surface rounded-2xl p-6 shadow-lg animate-pulse">
               <div className="h-4 bg-gray-300 rounded mb-4"></div>
               <div className="h-8 bg-gray-300 rounded mb-2"></div>
               <div className="h-3 bg-gray-300 rounded w-1/2"></div>
@@ -240,7 +240,7 @@ const Dashboard = () => {
       {sales && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Recent Orders */}
-          <section className="bg-white rounded-2xl shadow-lg border border-gray-100">
+          <section className="bg-surface rounded-2xl shadow-lg border border-gray-100">
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                 <ShoppingCart className="w-5 h-5 mr-2 text-blue-600" />
@@ -277,7 +277,7 @@ const Dashboard = () => {
           </section>
 
           {/* Top Products */}
-          <section className="bg-white rounded-2xl shadow-lg border border-gray-100">
+          <section className="bg-surface rounded-2xl shadow-lg border border-gray-100">
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                 <Package className="w-5 h-5 mr-2 text-green-600" />

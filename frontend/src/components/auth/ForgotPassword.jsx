@@ -90,9 +90,9 @@ const ForgotPassword = ({ initialEmail = '', onBack, showHeader = true }) => {
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <CheckCircle className="w-8 h-8 text-green-600" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">{text.sentTitle}</h2>
-        <p className="text-gray-700 dark:text-gray-300 mb-2">{text.sent(sentTo)}</p>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">{text.spam}</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-3">{text.sentTitle}</h2>
+        <p className="text-gray-700 mb-2">{text.sent(sentTo)}</p>
+        <p className="text-gray-500 text-sm mb-6">{text.spam}</p>
         {backButton}
       </motion.div>
     );
@@ -101,11 +101,11 @@ const ForgotPassword = ({ initialEmail = '', onBack, showHeader = true }) => {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md mx-auto">
       {showHeader && <div className="text-center mb-6">
-        <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-glow flex items-center justify-center mx-auto mb-4">
           <KeyRound className="w-8 h-8 text-white" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{text.title}</h2>
-        <p className="text-gray-600 dark:text-gray-400 text-sm">{text.intro}</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">{text.title}</h2>
+        <p className="text-gray-600 text-sm">{text.intro}</p>
       </div>}
 
       {error && (
@@ -116,7 +116,7 @@ const ForgotPassword = ({ initialEmail = '', onBack, showHeader = true }) => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="forgot-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label htmlFor="forgot-email" className="block text-sm font-medium text-gray-700 mb-2">
             {text.email}
           </label>
           <div className="relative">
@@ -128,7 +128,7 @@ const ForgotPassword = ({ initialEmail = '', onBack, showHeader = true }) => {
               onChange={(e) => { setEmail(e.target.value); setError(''); }}
               placeholder={text.emailPlaceholder}
               autoComplete="email"
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-200"
               required
             />
           </div>
@@ -138,7 +138,7 @@ const ForgotPassword = ({ initialEmail = '', onBack, showHeader = true }) => {
           type="submit"
           loading={loading}
           disabled={loading}
-          className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-lg font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200"
+          className="btn-brand w-full py-3.5"
         >
           {text.send}
         </AnimatedButton>

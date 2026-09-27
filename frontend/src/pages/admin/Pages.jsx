@@ -153,7 +153,7 @@ const Pages = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-surface rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -172,7 +172,7 @@ const Pages = () => {
         {pages.map((page) => (
           <motion.div
             key={page.slug}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+            className="bg-surface rounded-xl shadow-sm border border-gray-200 overflow-hidden"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
@@ -244,7 +244,7 @@ const Pages = () => {
       {editingPage && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <motion.div
-            className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+            className="bg-surface rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
@@ -309,7 +309,7 @@ const Pages = () => {
                       'titleAr',
                       e.target.value
                     )}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                     placeholder="Titre de la page"
                   />
                 </div>
@@ -332,7 +332,7 @@ const Pages = () => {
                       e.target.value
                     )}
                     rows={15}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 font-mono text-sm"
                     placeholder="Contenu HTML de la page"
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -359,7 +359,7 @@ const Pages = () => {
                     )}
                     rows={2}
                     maxLength={160}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                     placeholder="Description pour les moteurs de recherche (max 160 caractères)"
                   />
                 </div>

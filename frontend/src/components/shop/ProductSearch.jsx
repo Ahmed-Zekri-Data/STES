@@ -1,296 +1,207 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Clock, TrendingUp, Tag, Package } from 'lucide-react';
+import { Search, X, Clock, Package, Tag, ArrowRight, Loader2 } from 'lucide-react';
 import axios from 'axios';
+import { categoryLook } from '../../utils/categoryIcons';
 
-const ProductSearch = ({ 
-  searchQuery, 
-  onSearchChange, 
-  onSearchSubmit,
-  placeholder = "Rechercher des produits..." 
-}) => {
+const TYPE_LABELS = { product: 'Produit', category: 'Catégorie', brand: 'Marque' };
+
+const loadRecent = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem('recentSearches'));
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+};
+
+const suggestionIcon = (suggestion) => {
+  if (suggestion.type === 'category') return categoryLook(suggestion.value).icon;
+  if (suggestion.type === 'brand') return Tag;
+  return Package;
+};
+
+// The shop's search box. Typing shows suggestions from the catalog; the
+// products only change when a search is submitted (Enter, a suggestion, or
+// the button), not on every key. Picking a category or brand filters by it.
+const ProductSearch = ({ searchQuery = '', onSubmit, onPick, placeholder = 'Rechercher des produits...' }) => {
+  const [query, setQuery] = useState(searchQuery);
   const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [recentSearches, setRecentSearches] = useState([]);
-  const searchRef = useRef(null);
-  const suggestionsRef = useRef(null);
+  const [active, setActive] = useState(-1);
+  const [recent, setRecent] = useState(loadRecent);
+  const box = useRef(null);
+  const listId = useId();
 
+  useEffect(() => { setQuery(searchQuery); }, [searchQuery]);
+
+  // Suggestions, a moment after typing stops
   useEffect(() => {
-    // Load recent searches from localStorage
-    const saved = localStorage.getItem('recentSearches');
-    if (saved) {
-      setRecentSearches(JSON.parse(saved));
+    const text = query.trim();
+    if (text.length < 2) {
+      setSuggestions([]);
+      return undefined;
     }
-  }, []);
-
-  useEffect(() => {
-    const delayedSearch = setTimeout(() => {
-      if (searchQuery && searchQuery.length >= 2) {
-        fetchSuggestions(searchQuery);
-      } else {
-        setSuggestions([]);
-      }
-    }, 300);
-
-    return () => clearTimeout(delayedSearch);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        searchRef.current && 
-        !searchRef.current.contains(event.target) &&
-        suggestionsRef.current &&
-        !suggestionsRef.current.contains(event.target)
-      ) {
-        setShowSuggestions(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const fetchSuggestions = async (query) => {
-    try {
+    let cancelled = false;
+    const timer = setTimeout(async () => {
       setLoading(true);
-      const response = await axios.get('/api/products/search/suggestions', {
-        params: { q: query }
-      });
-      setSuggestions(response.data.suggestions);
-      setShowSuggestions(true);
-    } catch (error) {
-      console.error('Error fetching suggestions:', error);
-      // Fallback to static suggestions
-      const staticSuggestions = [
-        { label: 'Moteur de Piscine', value: 'moteur', type: 'product', icon: '⚙️' },
-        { label: 'Filtre à Sable', value: 'filtre', type: 'product', icon: '🔄' },
-        { label: 'Chlore', value: 'chlore', type: 'product', icon: '🧪' },
-        { label: 'Kit de Nettoyage', value: 'nettoyage', type: 'product', icon: '🧽' },
-        { label: 'Pompes et Moteurs', value: 'pumps-motors', type: 'category', icon: '⚙️' },
-        { label: 'Produits Chimiques', value: 'chemicals', type: 'category', icon: '🧪' },
-        { label: 'Filtration', value: 'filters', type: 'category', icon: '🔄' },
-        { label: 'Nettoyage', value: 'cleaning', type: 'category', icon: '🧽' },
-        { label: 'AquaPro', value: 'AquaPro', type: 'brand' },
-        { label: 'FilterMax', value: 'FilterMax', type: 'brand' },
-        { label: 'ChemPool', value: 'ChemPool', type: 'brand' },
-        { label: 'ProPool', value: 'ProPool', type: 'brand' }
-      ];
+      try {
+        const response = await axios.get('/api/products/search/suggestions', { params: { q: text } });
+        if (!cancelled) setSuggestions(response.data.suggestions || []);
+      } catch {
+        if (!cancelled) setSuggestions([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }, 250);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [query]);
 
-      const filteredSuggestions = staticSuggestions.filter(s =>
-        s.label.toLowerCase().includes(query.toLowerCase()) ||
-        s.value.toLowerCase().includes(query.toLowerCase())
-      );
+  useEffect(() => {
+    const close = (event) => { if (!box.current?.contains(event.target)) setOpen(false); };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, []);
 
-      setSuggestions(filteredSuggestions);
-      setShowSuggestions(true);
-    } finally {
-      setLoading(false);
+  const remember = (text) => {
+    const next = [text, ...recent.filter(s => s !== text)].slice(0, 5);
+    setRecent(next);
+    try { localStorage.setItem('recentSearches', JSON.stringify(next)); } catch { /* storage blocked */ }
+  };
+
+  const submit = (text = query) => {
+    const clean = text.trim();
+    if (clean) remember(clean);
+    setOpen(false);
+    setActive(-1);
+    onSubmit(clean);
+  };
+
+  const pick = (suggestion) => {
+    setOpen(false);
+    setActive(-1);
+    if (suggestion.type === 'category' || suggestion.type === 'brand') {
+      setQuery('');
+      onPick?.(suggestion);
+    } else {
+      setQuery(suggestion.value);
+      submit(suggestion.value);
     }
   };
 
-  const handleSearchSubmit = (query) => {
-    if (query.trim()) {
-      // Add to recent searches
-      const newRecentSearches = [
-        query,
-        ...recentSearches.filter(s => s !== query)
-      ].slice(0, 5);
-      
-      setRecentSearches(newRecentSearches);
-      localStorage.setItem('recentSearches', JSON.stringify(newRecentSearches));
-      
-      onSearchSubmit(query);
-      setShowSuggestions(false);
+  const clearRecent = () => {
+    setRecent([]);
+    try { localStorage.removeItem('recentSearches'); } catch { /* storage blocked */ }
+  };
+
+  const showingRecent = !query.trim() && recent.length > 0;
+  const options = showingRecent ? recent.map(value => ({ type: 'recent', value, label: value })) : suggestions;
+
+  const onKeyDown = (event) => {
+    if (event.key === 'ArrowDown' && options.length) {
+      event.preventDefault();
+      setOpen(true);
+      setActive(i => (i + 1) % options.length);
+    } else if (event.key === 'ArrowUp' && options.length) {
+      event.preventDefault();
+      setActive(i => (i <= 0 ? options.length - 1 : i - 1));
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      const chosen = options[active];
+      if (open && chosen) {
+        if (chosen.type === 'recent') { setQuery(chosen.value); submit(chosen.value); } else pick(chosen);
+      } else {
+        submit();
+      }
+    } else if (event.key === 'Escape') {
+      setOpen(false);
     }
   };
 
-  const handleSuggestionClick = (suggestion) => {
-    onSearchChange(suggestion.value);
-    handleSearchSubmit(suggestion.value);
-  };
-
-  const handleRecentSearchClick = (search) => {
-    onSearchChange(search);
-    handleSearchSubmit(search);
-  };
-
-  const clearRecentSearches = () => {
-    setRecentSearches([]);
-    localStorage.removeItem('recentSearches');
-  };
-
-  const getSuggestionIcon = (type) => {
-    switch (type) {
-      case 'product': return <Package className="w-4 h-4" />;
-      case 'category': return <Tag className="w-4 h-4" />;
-      case 'brand': return <TrendingUp className="w-4 h-4" />;
-      default: return <Search className="w-4 h-4" />;
-    }
-  };
-
-  const getSuggestionTypeLabel = (type) => {
-    switch (type) {
-      case 'product': return 'Produit';
-      case 'category': return 'Catégorie';
-      case 'brand': return 'Marque';
-      default: return '';
-    }
-  };
+  const expanded = open && (options.length > 0 || (query.trim().length >= 2 && !loading));
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto">
-      {/* Search Input */}
-      <div ref={searchRef} className="relative">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                handleSearchSubmit(searchQuery);
-              }
-            }}
-            onFocus={() => {
-              if (searchQuery.length >= 2 || recentSearches.length > 0) {
-                setShowSuggestions(true);
-              }
-            }}
-            placeholder={placeholder}
-            className="w-full pl-12 pr-12 py-4 text-lg border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => {
-                onSearchChange('');
-                setSuggestions([]);
-                setShowSuggestions(false);
-              }}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
-        </div>
-
-        {/* Loading indicator */}
-        {loading && (
-          <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-          </div>
+    <div ref={box} className="relative w-full">
+      <div className="glass group relative flex items-center rounded-full p-1.5 ps-5 transition-shadow duration-300 focus-within:shadow-glow">
+        <Search className="h-5 w-5 shrink-0 text-gray-400 transition-colors group-focus-within:text-blue-600" aria-hidden="true" />
+        <input
+          type="search"
+          role="combobox"
+          aria-label="Rechercher dans la boutique"
+          aria-expanded={expanded}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true); setActive(-1); }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={onKeyDown}
+          placeholder={placeholder}
+          className="min-w-0 flex-1 border-0 !bg-transparent px-3 py-2.5 text-base focus:ring-0 sm:text-lg [&::-webkit-search-cancel-button]:hidden"
+        />
+        {loading && <Loader2 className="me-2 h-4 w-4 animate-spin text-gray-400" aria-hidden="true" />}
+        {query && (
+          <button
+            type="button"
+            aria-label="Effacer la recherche"
+            onClick={() => { setQuery(''); setSuggestions([]); if (searchQuery) onSubmit(''); }}
+            className="me-1 grid h-9 w-9 place-items-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+          >
+            <X className="h-4 w-4" />
+          </button>
         )}
+        <button type="button" onClick={() => submit()} className="btn-brand !px-5 !py-2.5 text-sm">
+          <span className="hidden sm:inline">Rechercher</span>
+          <ArrowRight className="h-4 w-4 sm:hidden" aria-hidden="true" />
+          <span className="sr-only sm:hidden">Rechercher</span>
+        </button>
       </div>
 
-      {/* Suggestions Dropdown */}
       <AnimatePresence>
-        {showSuggestions && (
+        {expanded && (
           <motion.div
-            ref={suggestionsRef}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 max-h-96 overflow-y-auto"
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}
+            transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+            className="glass absolute inset-x-0 top-full z-40 mt-3 max-h-96 overflow-y-auto rounded-3xl p-2"
           >
-            {/* Recent Searches */}
-            {!searchQuery && recentSearches.length > 0 && (
-              <div className="p-4 border-b border-gray-100">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-medium text-gray-700 flex items-center">
-                    <Clock className="w-4 h-4 mr-2" />
-                    Recherches récentes
-                  </h4>
-                  <button
-                    onClick={clearRecentSearches}
-                    className="text-xs text-blue-600 hover:text-blue-800 transition-colors"
+            {showingRecent && (
+              <div className="flex items-center justify-between px-3 pb-1 pt-2">
+                <span className="eyebrow !text-gray-500">Recherches récentes</span>
+                <button type="button" onClick={clearRecent} className="text-xs font-medium text-blue-600">Effacer</button>
+              </div>
+            )}
+            <ul id={listId} role="listbox" aria-label="Suggestions">
+              {options.map((option, index) => {
+                const Icon = option.type === 'recent' ? Clock : suggestionIcon(option);
+                return (
+                  <li
+                    key={`${option.type}-${option.value}`}
+                    id={`${listId}-${index}`}
+                    role="option"
+                    aria-selected={index === active}
+                    onPointerDown={(e) => e.preventDefault()}
+                    onClick={() => (option.type === 'recent' ? (setQuery(option.value), submit(option.value)) : pick(option))}
+                    onPointerEnter={() => setActive(index)}
+                    className={`flex cursor-pointer items-center gap-3 rounded-2xl px-3 py-2.5 ${index === active ? 'bg-gray-100' : ''}`}
                   >
-                    Effacer
-                  </button>
-                </div>
-                <div className="space-y-1">
-                  {recentSearches.map((search, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleRecentSearchClick(search)}
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                    >
-                      {search}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Search Suggestions */}
-            {suggestions.length > 0 && (
-              <div className="p-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Suggestions</h4>
-                <div className="space-y-1">
-                  {suggestions.map((suggestion, index) => (
-                    <motion.button
-                      key={index}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      className="w-full flex items-center space-x-3 px-3 py-3 text-left hover:bg-gray-50 rounded-lg transition-colors group"
-                    >
-                      <div className="flex-shrink-0 text-gray-400 group-hover:text-blue-600 transition-colors">
-                        {suggestion.icon ? (
-                          <span className="text-lg">{suggestion.icon}</span>
-                        ) : (
-                          getSuggestionIcon(suggestion.type)
-                        )}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm font-medium text-gray-900 truncate">
-                            {suggestion.label}
-                          </span>
-                          {suggestion.type && (
-                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                              {getSuggestionTypeLabel(suggestion.type)}
-                            </span>
-                          )}
-                        </div>
-                        {suggestion.category && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            dans {suggestion.category}
-                          </div>
-                        )}
-                      </div>
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* No suggestions */}
-            {searchQuery && suggestions.length === 0 && !loading && (
-              <div className="p-4 text-center text-gray-500">
-                <Search className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                <p className="text-sm">Aucune suggestion trouvée</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Essayez des termes différents
-                </p>
-              </div>
-            )}
-
-            {/* Quick Actions */}
-            {searchQuery && (
-              <div className="border-t border-gray-100 p-3">
-                <button
-                  onClick={() => handleSearchSubmit(searchQuery)}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Search className="w-4 h-4" />
-                  <span>Rechercher "{searchQuery}"</span>
-                </button>
-              </div>
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
+                      <Icon className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">{option.label}</span>
+                    {TYPE_LABELS[option.type] && (
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-gray-500">
+                        {TYPE_LABELS[option.type]}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            {!showingRecent && options.length === 0 && (
+              <p className="px-3 py-6 text-center text-sm text-gray-500">Aucune suggestion trouvée : essayez des termes différents.</p>
             )}
           </motion.div>
         )}

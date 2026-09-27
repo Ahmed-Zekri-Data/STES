@@ -167,7 +167,7 @@ const OrderReviewStep = () => {
           {cartItems.map((item, index) => (
             <motion.div
               key={item._id}
-              className="flex items-center space-x-4 bg-white rounded-lg p-4"
+              className="flex items-center space-x-4 bg-surface rounded-lg p-4"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
@@ -233,7 +233,7 @@ const OrderReviewStep = () => {
         <textarea
           value={orderNotes}
           onChange={(e) => setOrderNotes(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 resize-none"
           rows="3"
           placeholder="Instructions spéciales pour la livraison, préférences d'horaire, etc."
         />

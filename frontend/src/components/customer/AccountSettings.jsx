@@ -4,7 +4,7 @@ import { useCustomer } from '../../context/CustomerContext';
 
 const MIN_PASSWORD_LENGTH = 6;
 
-const inputClass = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500';
+const inputClass = 'w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 disabled:bg-gray-100 disabled:text-gray-500';
 
 const Field = ({ label, id, hint, ...props }) => (
   <div>
@@ -104,7 +104,7 @@ const AccountSettings = () => {
 
   return (
     <div className="space-y-6">
-      <section className="bg-white rounded-xl p-6 shadow-lg">
+      <section className="bg-surface rounded-xl p-6 shadow-lg">
         <h3 className="text-lg font-semibold text-gray-900">Informations personnelles</h3>
         <p className="text-sm text-gray-600 mt-1 mb-5">Utilisées pour vos commandes et la livraison.</p>
         <form onSubmit={saveProfile} className="space-y-4">
@@ -126,7 +126,7 @@ const AccountSettings = () => {
         </form>
       </section>
 
-      <section className="bg-white rounded-xl p-6 shadow-lg">
+      <section className="bg-surface rounded-xl p-6 shadow-lg">
         <h3 className="text-lg font-semibold text-gray-900">Mot de passe</h3>
         <p className="text-sm text-gray-600 mt-1 mb-5">Le changer déconnecte vos autres appareils.</p>
         <form onSubmit={savePassword} className="space-y-4 max-w-md">

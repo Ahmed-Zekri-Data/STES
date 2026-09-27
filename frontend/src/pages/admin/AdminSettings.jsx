@@ -7,7 +7,7 @@ import { useAdmin } from '../../context/AdminContext';
 const MIN_PASSWORD_LENGTH = 8;
 const ROLE_LABELS = { super_admin: 'Super admin', admin: 'Admin' };
 
-const inputClass = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100';
+const inputClass = 'w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 disabled:bg-gray-100';
 
 const Field = ({ label, id, hint, suffix, ...props }) => (
   <div>
@@ -21,7 +21,7 @@ const Field = ({ label, id, hint, suffix, ...props }) => (
 );
 
 const Section = ({ title, description, children }) => (
-  <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+  <section className="bg-surface rounded-xl shadow-sm border border-gray-200 p-6">
     <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
     {description && <p className="text-sm text-gray-600 mt-1">{description}</p>}
     <div className="mt-5">{children}</div>
@@ -244,7 +244,7 @@ const AdminSettings = () => {
               role="tab"
               aria-selected={tab === id}
               onClick={() => setSearchParams(id === 'account' ? {} : { tab: id }, { replace: true })}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium ${tab === id ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium ${tab === id ? 'bg-surface shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
             >
               <Icon className="w-4 h-4" /> {label}
             </button>

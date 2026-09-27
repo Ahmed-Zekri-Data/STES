@@ -1,17 +1,57 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
 import { useCustomer } from '../context/CustomerContext';
-import { ShoppingCart, Menu, X, Globe, Waves, User, LogOut, Settings, Heart, Truck } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ShoppingBag, Menu, X, User, LogOut, Settings, Heart, Truck, Package, ArrowUpRight } from 'lucide-react';
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
 import AuthModal from './auth/AuthModal';
 import InAppNotifications from './notifications/InAppNotifications';
 import ThemeToggle from './ThemeToggle';
+import Logo from './brand/Logo';
 
-// Dropdowns open under their button from 640px. On phones the button can be
-// anywhere in the bar, so they span the screen under the bar instead.
-const DROPDOWN_POSITION = 'fixed inset-x-2 top-16 sm:absolute sm:inset-x-auto sm:top-auto sm:end-0 mt-2';
+const LANGUAGES = [
+  { code: 'fr', name: 'Français', short: 'FR' },
+  { code: 'ar', name: 'العربية', short: 'ع' },
+  { code: 'en', name: 'English', short: 'EN' }
+];
+
+const iconButton = 'relative grid h-10 w-10 place-items-center rounded-full text-gray-700 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900';
+
+// Menus that drop from the bar: a frosted card that grows from its button
+const Dropdown = ({ open, className = '', children }) => (
+  <AnimatePresence>
+    {open && (
+      <motion.div
+        initial={{ opacity: 0, y: -8, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -6, scale: 0.98, transition: { duration: 0.12 } }}
+        transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+        style={{ transformOrigin: 'top right' }}
+        className={`glass absolute end-0 top-full z-50 mt-3 overflow-hidden rounded-2xl ${className}`}
+      >
+        {children}
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
+// Closes a menu when clicking anywhere else or pressing Escape
+const useDismiss = (open, close) => {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    const onPointer = (event) => { if (!ref.current?.contains(event.target)) close(); };
+    const onKey = (event) => { if (event.key === 'Escape') close(); };
+    document.addEventListener('pointerdown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open, close]);
+  return ref;
+};
 
 const Navbar = () => {
   const { t, language, changeLanguage } = useLanguage();
@@ -24,17 +64,25 @@ const Navbar = () => {
   const [authModalMode, setAuthModalMode] = useState('login');
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const cartCount = getCartItemsCount();
 
-  // Handle scroll effect
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, 'change', (y) => setScrolled(y > 24));
+
+  const languageRef = useDismiss(isLanguageMenuOpen, () => setIsLanguageMenuOpen(false));
+  const userRef = useDismiss(isUserMenuOpen, () => setIsUserMenuOpen(false));
+
+  // Leaving a page closes its menus
   useEffect(() => {
-    const handleScroll = () => {
-      const isScrolled = window.scrollY > 10;
-      setScrolled(isScrolled);
-    };
+    setIsMobileMenuOpen(false);
+    setIsUserMenuOpen(false);
+  }, [location.pathname]);
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  // The full-screen menu on phones keeps the page from scrolling behind it
+  useEffect(() => {
+    document.body.style.overflow = isMobileMenuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobileMenuOpen]);
 
   const navigation = [
     { name: t('home'), href: '/' },
@@ -42,16 +90,10 @@ const Navbar = () => {
     { name: t('services'), href: '/services' },
     { name: 'Suivi', href: '/track-order' },
     { name: t('about'), href: '/about' },
-    { name: t('contact'), href: '/contact' },
+    { name: t('contact'), href: '/contact' }
   ];
 
-  const languages = [
-    { code: 'fr', name: 'Français', short: 'FR', flag: '🇫🇷' },
-    { code: 'ar', name: 'العربية', short: 'ع', flag: '🇹🇳' },
-    { code: 'en', name: 'English', short: 'EN', flag: '🇺🇸' },
-  ];
-
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => (path === '/' ? location.pathname === '/' : location.pathname.startsWith(path));
 
   const openAuthModal = (mode) => {
     setAuthModalMode(mode);
@@ -59,392 +101,276 @@ const Navbar = () => {
     setIsMobileMenuOpen(false);
   };
 
-  return (
-    <motion.nav
-      className={`sticky top-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? 'bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-lg border-b border-neutral-200 dark:border-neutral-800'
-          : 'bg-white dark:bg-neutral-900 shadow-soft dark:shadow-glow'
-      }`}
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-    >
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <motion.div
-            className="flex-shrink-0"
-            whileHover={{ scale: 1.05 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-          >
-            <Link to="/" className="flex items-center group" aria-label="STES.tn">
-              <motion.div
-                className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300"
-                whileHover={{ rotate: 360 }}
-                transition={{ duration: 0.6 }}
-              >
-                <Waves className="text-white w-6 h-6" />
-              </motion.div>
-              <span className="ms-2 sm:ms-3 text-lg sm:text-xl font-bold gradient-text">
-                STES.tn
-              </span>
-            </Link>
-          </motion.div>
+  const accountLinks = [
+    { to: '/account', icon: User, label: 'Mon compte' },
+    { to: '/account?tab=orders', icon: Package, label: 'Mes commandes' },
+    { to: '/track-order', icon: Truck, label: 'Suivi de commande' },
+    { to: '/wishlist', icon: Heart, label: 'Ma liste de souhaits' },
+    { to: '/account?tab=settings', icon: Settings, label: 'Paramètres' }
+  ];
 
-          {/* Desktop Navigation: from 1024px, where the links and the right side fit */}
-          <div className="hidden lg:block">
-            <div className="ml-10 flex items-baseline space-x-1">
-              {navigation.map((item, index) => (
-                <motion.div
-                  key={item.name}
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
+  return (
+    <>
+      <nav className="sticky top-0 z-50 px-3 pt-3 sm:px-5" aria-label="Navigation principale">
+        <motion.div
+          initial={{ y: -40, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+          className={`glass relative mx-auto flex max-w-7xl items-center justify-between rounded-full ps-4 pe-2 transition-[height,box-shadow] duration-500 ease-out ${
+            scrolled ? 'h-14 shadow-large' : 'h-16'
+          }`}
+        >
+          <Link to="/" aria-label="STES.tn" className="shrink-0 rounded-full">
+            <Logo />
+          </Link>
+
+          {/* Links, from 1024px */}
+          <div className="hidden lg:flex items-center gap-1 rounded-full p-1">
+            {navigation.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+                    active ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'
+                  }`}
                 >
-                  <Link
-                    to={item.href}
-                    className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 group ${
-                      isActive(item.href)
-                        ? 'text-primary-600 dark:text-primary-400'
-                        : 'text-neutral-700 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400'
-                    }`}
-                  >
-                    <span className="relative z-10">{item.name}</span>
-                    {isActive(item.href) && (
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-blue-100 to-cyan-100 rounded-xl"
-                        layoutId="activeTab"
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
+                  {active && (
+                    <motion.span
+                      layoutId="nav-liquid"
+                      className="absolute inset-0 rounded-full bg-gray-100 ring-1 ring-inset ring-blue-500/20"
+                      style={{ boxShadow: 'inset 0 -2px 0 rgb(var(--aqua-500) / 0.55)' }}
+                      transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                    />
+                  )}
+                  <span className="relative">{item.name}</span>
+                </Link>
+              );
+            })}
           </div>
 
-          {/* Right side items */}
-          <div className="flex items-center gap-1 sm:gap-3">
-            {/* Theme Toggle */}
-            <ThemeToggle className="hidden sm:flex" />
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            <ThemeToggle className="hidden sm:inline-flex me-1" />
 
-            {/* Language Selector (in the menu on phones) */}
-            <div className="hidden sm:block relative">
+            {/* Language, in the menu on phones */}
+            <div ref={languageRef} className="relative hidden sm:block">
               <button
-                onClick={() => setIsLanguageMenuOpen(!isLanguageMenuOpen)}
+                onClick={() => setIsLanguageMenuOpen(open => !open)}
                 aria-label="Langue"
                 aria-expanded={isLanguageMenuOpen}
-                className="flex items-center gap-1 p-2 text-gray-700 hover:text-primary-600 transition-colors"
+                className={`${iconButton} font-mono text-xs font-semibold`}
               >
-                <Globe className="w-5 h-5" />
-                <span className="text-sm font-medium">
-                  {languages.find(lang => lang.code === language)?.flag}
-                </span>
+                {LANGUAGES.find(lang => lang.code === language)?.short}
               </button>
-
-              {isLanguageMenuOpen && (
-                <div className="absolute end-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                  {languages.map((lang) => (
-                    <button
-                      key={lang.code}
-                      onClick={() => {
-                        changeLanguage(lang.code);
-                        setIsLanguageMenuOpen(false);
-                      }}
-                      className={`block w-full text-start px-4 py-2 text-sm hover:bg-gray-100 ${
-                        language === lang.code ? 'bg-primary-50 text-primary-700' : 'text-gray-700'
-                      }`}
-                    >
-                      <span className="me-2">{lang.flag}</span>
-                      {lang.name}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <Dropdown open={isLanguageMenuOpen} className="w-44 p-1.5">
+                {LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => { changeLanguage(lang.code); setIsLanguageMenuOpen(false); }}
+                    aria-pressed={language === lang.code}
+                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors ${
+                      language === lang.code ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {lang.name}
+                    <span className="font-mono text-xs text-gray-400">{lang.short}</span>
+                  </button>
+                ))}
+              </Dropdown>
             </div>
 
-            {/* Customer Authentication */}
             {isAuthenticated ? (
-              <div className="sm:relative">
-                <motion.button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              <div ref={userRef} className="sm:relative">
+                <button
+                  onClick={() => setIsUserMenuOpen(open => !open)}
                   aria-label="Mon compte"
                   aria-expanded={isUserMenuOpen}
-                  className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors p-1 sm:p-2 rounded-lg hover:bg-blue-50"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-2 rounded-full p-1 pe-1 sm:pe-3 text-gray-700 transition-colors hover:bg-gray-100"
                 >
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="hidden sm:block text-sm font-medium">
-                    {customer?.firstName}
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 font-display text-sm font-bold text-white">
+                    {customer?.firstName?.[0]?.toUpperCase() || <User className="h-4 w-4" />}
                   </span>
-                </motion.button>
-
-                <AnimatePresence>
-                  {isUserMenuOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className={`${DROPDOWN_POSITION} sm:w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50`}
+                  <span className="hidden text-sm font-medium sm:block">{customer?.firstName}</span>
+                </button>
+                <Dropdown open={isUserMenuOpen} className="w-[min(18rem,calc(100vw-1.5rem))]">
+                  <div className="border-b border-gray-200 px-4 py-4">
+                    <p className="font-display font-semibold text-gray-900">{customer?.fullName}</p>
+                    <p className="truncate text-sm text-gray-500">{customer?.email}</p>
+                    {customer?.loyaltyPoints > 0 && (
+                      <p className="mt-2 inline-flex rounded-full bg-blue-50 px-2.5 py-0.5 font-mono text-xs text-blue-700">
+                        {customer.loyaltyPoints} points de fidélité
+                      </p>
+                    )}
+                  </div>
+                  <div className="p-1.5">
+                    {accountLinks.map(({ to, icon: Icon, label }) => (
+                      <Link
+                        key={to}
+                        to={to}
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                      >
+                        <Icon className="h-4 w-4 text-gray-400 transition-colors group-hover:text-blue-600" aria-hidden="true" />
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                  <div className="border-t border-gray-200 p-1.5">
+                    <button
+                      onClick={() => { logout(); setIsUserMenuOpen(false); }}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-red-600 transition-colors hover:bg-red-50"
                     >
-                      <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900">
-                          {customer?.fullName}
-                        </p>
-                        <p className="text-sm text-gray-500">{customer?.email}</p>
-                        {customer?.loyaltyPoints > 0 && (
-                          <p className="text-xs text-blue-600 mt-1">
-                            {customer.loyaltyPoints} points de fidélité
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="py-1">
-                        <Link
-                          to="/account"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                        >
-                          <User className="w-4 h-4 me-3" />
-                          Mon compte
-                        </Link>
-                        <Link
-                          to="/account?tab=orders"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                        >
-                          <ShoppingCart className="w-4 h-4 me-3" />
-                          Mes commandes
-                        </Link>
-                        <Link
-                          to="/track-order"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                        >
-                          <Truck className="w-4 h-4 me-3" />
-                          Suivi de commande
-                        </Link>
-                        <Link
-                          to="/wishlist"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                        >
-                          <Heart className="w-4 h-4 me-3" />
-                          Ma liste de souhaits
-                        </Link>
-                        <Link
-                          to="/account?tab=settings"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                        >
-                          <Settings className="w-4 h-4 me-3" />
-                          Paramètres
-                        </Link>
-                      </div>
-
-                      <div className="border-t border-gray-100 py-1">
-                        <button
-                          onClick={() => {
-                            logout();
-                            setIsUserMenuOpen(false);
-                          }}
-                          className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                          <LogOut className="w-4 h-4 me-3" />
-                          Se déconnecter
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      <LogOut className="h-4 w-4" aria-hidden="true" />
+                      Se déconnecter
+                    </button>
+                  </div>
+                </Dropdown>
               </div>
             ) : (
               <>
-              {/* Phones: one icon; "S'inscrire" is in the menu */}
-              <button
-                onClick={() => openAuthModal('login')}
-                aria-label="Connexion"
-                className="sm:hidden p-2 text-gray-700 hover:text-blue-600 transition-colors"
-              >
-                <User className="w-6 h-6" />
-              </button>
-              <div className="hidden sm:flex items-center gap-2">
-                <motion.button
-                  onClick={() => openAuthModal('login')}
-                  className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-lg hover:bg-blue-50"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  Connexion
-                </motion.button>
-                <motion.button
-                  onClick={() => openAuthModal('register')}
-                  className="text-sm font-medium bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 shadow-md hover:shadow-lg"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  S'inscrire
-                </motion.button>
-              </div>
+                {/* Phones: one icon; "S'inscrire" is in the menu */}
+                <button onClick={() => openAuthModal('login')} aria-label="Connexion" className={`${iconButton} sm:hidden`}>
+                  <User className="h-5 w-5" />
+                </button>
+                <div className="hidden items-center gap-1 sm:flex">
+                  <button
+                    onClick={() => openAuthModal('login')}
+                    className="rounded-full px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    Connexion
+                  </button>
+                  <button onClick={() => openAuthModal('register')} className="btn-brand !px-4 !py-2 text-sm">
+                    S&apos;inscrire
+                  </button>
+                </div>
               </>
             )}
 
-            {/* Notifications (only for authenticated users) */}
             {isAuthenticated && <InAppNotifications />}
 
-            {/* Cart Button */}
-            <motion.button
-              onClick={toggleCart}
-              aria-label="Panier"
-              className="relative p-2 text-gray-700 hover:text-blue-600 transition-colors group"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            >
-              <motion.div
-                whileHover={{ rotate: [0, -10, 10, 0] }}
-                transition={{ duration: 0.5 }}
-              >
-                <ShoppingCart className="w-6 h-6 group-hover:text-blue-600 transition-colors duration-300" />
-              </motion.div>
+            <button onClick={toggleCart} aria-label="Panier" className={iconButton}>
+              <ShoppingBag className="h-5 w-5" />
               <AnimatePresence>
-                {getCartItemsCount() > 0 && (
+                {cartCount > 0 && (
                   <motion.span
-                    className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shadow-lg"
-                    initial={{ scale: 0, opacity: 0 }}
+                    key={cartCount}
+                    initial={{ scale: 0.4, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0, opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    transition={{ type: 'spring', stiffness: 600, damping: 18 }}
+                    className="absolute -end-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full px-1 font-mono text-[11px] font-semibold"
+                    style={{ background: 'rgb(var(--brand))', color: 'rgb(var(--on-brand))', boxShadow: 'var(--shadow-glow)' }}
                   >
-                    <motion.span
-                      key={getCartItemsCount()}
-                      initial={{ scale: 1.5 }}
-                      animate={{ scale: 1 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {getCartItemsCount()}
-                    </motion.span>
+                    {cartCount}
                   </motion.span>
                 )}
               </AnimatePresence>
-            </motion.button>
+            </button>
 
-            {/* Mobile menu button */}
-            <div className="lg:hidden">
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                aria-label="Menu"
-                aria-expanded={isMobileMenuOpen}
-                className="p-2 text-gray-700 hover:text-primary-600 transition-colors"
-              >
-                {isMobileMenuOpen ? (
-                  <X className="w-6 h-6" />
-                ) : (
-                  <Menu className="w-6 h-6" />
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Navigation */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.div
-              className="lg:hidden"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
+            <button
+              onClick={() => setIsMobileMenuOpen(open => !open)}
+              aria-label="Menu"
+              aria-expanded={isMobileMenuOpen}
+              className={`${iconButton} lg:hidden`}
             >
-              <motion.div
-                className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gradient-to-br from-blue-50 to-cyan-50 border-t border-blue-100"
-                initial={{ y: -20 }}
-                animate={{ y: 0 }}
-                exit={{ y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={isMobileMenuOpen ? 'close' : 'open'}
+                  initial={{ rotate: -90, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  exit={{ rotate: 90, opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                >
+                  {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </motion.span>
+              </AnimatePresence>
+            </button>
+          </div>
+        </motion.div>
+      </nav>
+
+      {/* Phones and tablets: a full-screen sheet under the bar */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            className="fixed inset-0 z-40 lg:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.2 } }}
+          >
+            <div className="absolute inset-0 bg-page/80 backdrop-blur-2xl" onClick={() => setIsMobileMenuOpen(false)} />
+            <motion.div
+              className="relative flex h-full flex-col px-6 pb-8 pt-28"
+              initial={{ y: -24 }}
+              animate={{ y: 0 }}
+              exit={{ y: -12 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            >
+              <ul className="space-y-1">
                 {navigation.map((item, index) => (
-                  <motion.div
-                    key={item.name}
-                    initial={{ opacity: 0, x: -20 }}
+                  <motion.li
+                    key={item.href}
+                    initial={{ opacity: 0, x: -24 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    transition={{ delay: 0.04 * index, type: 'spring', stiffness: 300, damping: 28 }}
                   >
                     <Link
                       to={item.href}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className={`block px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 ${
-                        isActive(item.href)
-                          ? 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 shadow-md'
-                          : 'text-gray-700 hover:bg-white hover:text-blue-600 hover:shadow-md'
+                      aria-current={isActive(item.href) ? 'page' : undefined}
+                      className={`group flex items-center justify-between border-b border-gray-200 py-4 font-display text-3xl font-semibold transition-colors ${
+                        isActive(item.href) ? 'text-gradient' : 'text-gray-900'
                       }`}
                     >
                       {item.name}
+                      <ArrowUpRight className="h-6 w-6 text-gray-400 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1" aria-hidden="true" />
                     </Link>
-                  </motion.div>
+                  </motion.li>
                 ))}
+              </ul>
 
-                {/* On phones these don't fit in the top bar */}
-                <div className="sm:hidden pt-3 mt-2 border-t border-blue-100 space-y-3">
-                  {!isAuthenticated && (
-                    <div className="grid grid-cols-2 gap-2 px-2">
-                      <button
-                        onClick={() => openAuthModal('login')}
-                        className="px-4 py-3 rounded-xl text-base font-medium text-gray-700 bg-white shadow-sm hover:text-blue-600"
-                      >
-                        Connexion
-                      </button>
-                      <button
-                        onClick={() => openAuthModal('register')}
-                        className="px-4 py-3 rounded-xl text-base font-medium text-white bg-gradient-to-r from-blue-500 to-cyan-500 shadow-sm"
-                      >
-                        S'inscrire
-                      </button>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between px-4">
-                    <span className="text-sm text-gray-600">Langue</span>
-                    <div className="flex gap-1">
-                      {languages.map((lang) => (
-                        <button
-                          key={lang.code}
-                          onClick={() => changeLanguage(lang.code)}
-                          aria-pressed={language === lang.code}
-                          className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
-                            language === lang.code ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 shadow-sm'
-                          }`}
-                        >
-                          {lang.short}
-                        </button>
-                      ))}
-                    </div>
+              <div className="mt-auto space-y-4 pt-8">
+                {!isAuthenticated && (
+                  <div className="grid grid-cols-2 gap-3 sm:hidden">
+                    <button onClick={() => openAuthModal('login')} className="btn-ghost">Connexion</button>
+                    <button onClick={() => openAuthModal('register')} className="btn-brand">S&apos;inscrire</button>
                   </div>
-                  <div className="flex items-center justify-between px-4">
-                    <span className="text-sm text-gray-600">Thème</span>
-                    <ThemeToggle />
+                )}
+                <div className="flex items-center justify-between sm:hidden">
+                  <span className="eyebrow">Langue</span>
+                  <div className="flex gap-1 rounded-full bg-gray-100 p-1">
+                    {LANGUAGES.map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => changeLanguage(lang.code)}
+                        aria-pressed={language === lang.code}
+                        className={`rounded-full px-3.5 py-1.5 font-mono text-sm font-medium transition-colors ${
+                          language === lang.code ? 'bg-surface text-gray-900 shadow-soft' : 'text-gray-500'
+                        }`}
+                      >
+                        {lang.short}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              </motion.div>
+                <div className="flex items-center justify-between sm:hidden">
+                  <span className="eyebrow">Thème</span>
+                  <ThemeToggle />
+                </div>
+              </div>
             </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Authentication Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         initialMode={authModalMode}
       />
-    </motion.nav>
+    </>
   );
 };
 
