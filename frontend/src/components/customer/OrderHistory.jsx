@@ -71,6 +71,8 @@ const OrderHistory = () => {
 
   useEffect(() => {
     fetchOrders();
+    // Reload when the status filter or page changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.status, pagination.currentPage]);
 
   const fetchOrders = async () => {

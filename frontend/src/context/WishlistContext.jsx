@@ -24,6 +24,8 @@ export const WishlistProvider = ({ children }) => {
     } else {
       setWishlist(null);
     }
+    // Reload when the customer logs in or out
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, customer]);
 
   const loadWishlist = async () => {

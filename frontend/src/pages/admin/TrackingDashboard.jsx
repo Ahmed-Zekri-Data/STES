@@ -25,6 +25,8 @@ const TrackingDashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    // Reload when the time range changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeRange]);
 
   const fetchDashboardData = async () => {

@@ -218,6 +218,15 @@ class NotificationService {
     }
   }
 
+  // Mark one notification, or all of them, as read on the server
+  async markAsRead(notificationId) {
+    await api.put(`/notifications/${notificationId}/read`);
+  }
+
+  async markAllAsRead() {
+    await api.put('/notifications/read-all');
+  }
+
   // Get notification history
   async getHistory(options = {}) {
     try {

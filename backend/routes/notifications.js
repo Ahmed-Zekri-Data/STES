@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { body, query, validationResult } = require('express-validator');
+const { body, param, query, validationResult } = require('express-validator');
 const { customerAuth } = require('../middleware/customerAuth');
 const { auth } = require('../middleware/auth');
 const notificationService = require('../services/notificationService');
@@ -166,6 +166,45 @@ router.get('/history', customerAuth, [
   } catch (error) {
     console.error('Error fetching notification history:', error);
     res.status(500).json({ message: 'Error fetching notification history' });
+  }
+});
+
+// PUT /api/notifications/read-all - Mark every notification of the customer as read
+router.put('/read-all', customerAuth, async (req, res) => {
+  try {
+    const result = await NotificationLog.updateMany(
+      { customer: req.customer.customerId, status: { $ne: 'read' } },
+      { $set: { status: 'read', readAt: new Date() } }
+    );
+    res.json({ message: 'Notifications marked as read', updated: result.modifiedCount });
+  } catch (error) {
+    console.error('Error marking notifications as read:', error);
+    res.status(500).json({ message: 'Error updating notifications' });
+  }
+});
+
+// PUT /api/notifications/:id/read - Mark one of the customer's notifications as read
+router.put('/:id/read', customerAuth, [
+  param('id').isMongoId().withMessage('Invalid notification')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: errors.array()[0].msg });
+    }
+    // Only the customer's own notifications: someone else's reads as not found
+    const notification = await NotificationLog.findOneAndUpdate(
+      { _id: req.params.id, customer: req.customer.customerId },
+      [{ $set: { status: 'read', readAt: { $ifNull: ['$readAt', '$$NOW'] } } }],
+      { new: true }
+    );
+    if (!notification) {
+      return res.status(404).json({ message: 'Notification not found' });
+    }
+    res.json({ message: 'Notification marked as read', notification: { id: notification._id, status: notification.status, readAt: notification.readAt } });
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+    res.status(500).json({ message: 'Error updating the notification' });
   }
 });
 

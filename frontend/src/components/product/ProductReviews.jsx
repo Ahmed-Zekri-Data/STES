@@ -40,6 +40,8 @@ const ProductReviews = ({ productId }) => {
 
   useEffect(() => {
     fetchReviews();
+    // Reload when the product, sort or page changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId, sortBy, sortOrder, pagination.currentPage]);
 
   const fetchReviews = async () => {
