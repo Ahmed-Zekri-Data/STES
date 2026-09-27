@@ -52,7 +52,7 @@ const AnimatedCounter = ({
       animate={isInView ? { opacity: 1, scale: 1 } : {}}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
-      {prefix}{count.toFixed(decimals)}{suffix}
+      {prefix}{count.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}{suffix}
     </motion.span>
   );
 };
