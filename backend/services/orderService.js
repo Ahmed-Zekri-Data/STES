@@ -2,14 +2,8 @@ const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const { DEFAULTS, getSettings } = require('./settingsService');
-
-// An error whose message is safe to show the client, with the HTTP status to use.
-class CheckoutError extends Error {
-  constructor(status, message) {
-    super(message);
-    this.status = status;
-  }
-}
+const { CheckoutError, roundMillimes } = require('../utils/checkout');
+const { findUsablePromo, discountFor } = require('./promoService');
 
 // Builds order lines from the catalog. Only product IDs and quantities are
 // taken from the request; names, images and prices come from the database.
@@ -76,8 +70,6 @@ const GOVERNORATE_RATES = {
 };
 const DEFAULT_RATE = 1.3;
 
-const roundMillimes = (amount) => Math.round(amount * 1000) / 1000;
-
 // Catalog prices include VAT (TTC). The VAT is the part of a price above its
 // price before VAT: shown to the customer, never added to the total.
 const includedTax = (amount) => roundMillimes(amount * TAX_RATE / (1 + TAX_RATE));
@@ -101,21 +93,44 @@ const deliveryCost = (subtotal, place, isUrgent = false, prices = DEFAULTS.deliv
 
 // Prices an order exactly as it will be charged. Used both to create orders
 // and to show the customer the total before they confirm.
-const quoteOrder = async ({ items, place, isUrgent = false, paymentMethod = 'cash_on_delivery' }) => {
+//
+// A promo code comes off the products; delivery (free above the threshold)
+// and VAT are worked out on what is left. When quoting, a code that cannot
+// be used only returns `promoError` (checkout shows it and prices without
+// it); with `strictPromo` (placing the order) it is refused.
+const quoteOrder = async ({ items, place, isUrgent = false, paymentMethod = 'cash_on_delivery', promoCode, strictPromo = false }) => {
   const [{ orderItems, subtotal }, { delivery }] = await Promise.all([priceOrderItems(items), getSettings()]);
-  const shippingCost = deliveryCost(subtotal, place, isUrgent, delivery);
+
+  let discount = 0;
+  let discountCode;
+  let promoError;
+  if (promoCode) {
+    try {
+      const promo = await findUsablePromo(promoCode, subtotal);
+      discount = discountFor(promo, subtotal);
+      discountCode = promo.code;
+    } catch (error) {
+      if (strictPromo || !(error instanceof CheckoutError)) throw error;
+      promoError = error.message;
+    }
+  }
+
+  const products = subtotal - discount;
+  const shippingCost = deliveryCost(products, place, isUrgent, delivery);
   const paymentFee = paymentMethod === 'cash_on_delivery' ? delivery.cashOnDeliveryFee : 0;
 
   return {
     orderItems,
+    promoError,
     pricing: {
       subtotal: roundMillimes(subtotal),
+      ...(discountCode && { discountAmount: discount, discountCode }),
       shippingCost,
-      taxAmount: includedTax(subtotal),
+      taxAmount: includedTax(products),
       taxRate: TAX_RATE,
       taxIncluded: true,
       paymentFee,
-      totalAmount: roundMillimes(subtotal + shippingCost + paymentFee)
+      totalAmount: roundMillimes(products + shippingCost + paymentFee)
     }
   };
 };

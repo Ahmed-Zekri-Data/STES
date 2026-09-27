@@ -197,6 +197,12 @@ const OrderConfirmationStep = () => {
                   <span className="text-gray-600">Sous-total:</span>
                   <span className="font-medium">{orderConfirmation.totals.subtotal} TND</span>
                 </div>
+                {orderConfirmation.totals.discountAmount && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Réduction ({orderConfirmation.totals.discountCode}):</span>
+                    <span className="font-medium text-green-700">−{orderConfirmation.totals.discountAmount} TND</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-gray-600">Livraison:</span>
                   <span className="font-medium">

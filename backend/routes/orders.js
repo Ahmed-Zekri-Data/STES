@@ -10,6 +10,7 @@ const { auth, checkPermission } = require('../middleware/auth');
 const ordersAdmin = [auth, checkPermission('orders')];
 const { optionalCustomerAuth } = require('../middleware/customerAuth');
 const { CheckoutError, priceOrderItems, quoteOrder, includedTax, TAX_RATE, reserveStock, releaseStock, reserveOrderStock, releaseOrderStock } = require('../services/orderService');
+const { claimPromoUse, unclaimPromoUse, releaseOrderPromo, reclaimOrderPromo } = require('../services/promoService');
 
 // Delivery is priced by governorate when the address has one, else by city
 const deliveryPlace = (address) => address?.governorate || address?.city || 'tunis';
@@ -39,7 +40,8 @@ router.post('/', optionalCustomerAuth, [
   body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
   body('paymentMethod').optional().isIn(['cash_on_delivery', 'bank_transfer', 'card', 'paymee', 'flouci', 'd17', 'konnect']),
   body('payment.method').optional().isIn(['cash_on_delivery', 'bank_transfer', 'card', 'paymee', 'flouci', 'd17', 'konnect']),
-  body('notes').optional().isLength({ max: 500 }).withMessage('Notes cannot exceed 500 characters')
+  body('notes').optional().isLength({ max: 500 }).withMessage('Notes cannot exceed 500 characters'),
+  body('promoCode').optional({ values: 'falsy' }).isString().trim().isLength({ max: 30 })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -47,7 +49,7 @@ router.post('/', optionalCustomerAuth, [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { customer, items, paymentMethod, payment, shipping, billing, notes, isUrgent } = req.body;
+    const { customer, items, paymentMethod, payment, shipping, billing, notes, isUrgent, promoCode } = req.body;
 
     // Support both old and new format
     const customerName = customer.name || `${customer.firstName} ${customer.lastName}`;
@@ -64,7 +66,9 @@ router.post('/', optionalCustomerAuth, [
       items,
       place: deliveryPlace(shippingAddress || customer.address),
       isUrgent,
-      paymentMethod: paymentMethodValue
+      paymentMethod: paymentMethodValue,
+      promoCode,
+      strictPromo: true
     });
 
     // Only a logged-in customer's order goes into their account. A guest
@@ -125,10 +129,20 @@ router.post('/', optionalCustomerAuth, [
 
     await reserveStock(orderItems);
     order.stockReserved = true;
+    if (pricing.discountCode) {
+      try {
+        await claimPromoUse(pricing.discountCode);
+      } catch (error) {
+        await releaseStock(orderItems);
+        throw error;
+      }
+      order.promoClaimed = true;
+    }
     try {
       await order.save();
     } catch (error) {
       await releaseStock(orderItems);
+      if (order.promoClaimed) await unclaimPromoUse(pricing.discountCode);
       throw error;
     }
 
@@ -167,7 +181,8 @@ router.post('/', optionalCustomerAuth, [
 router.post('/quote', [
   body('items').isArray({ min: 1 }).withMessage('At least one item is required'),
   body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
-  body('paymentMethod').optional().isIn(['cash_on_delivery', 'bank_transfer', 'card', 'paymee', 'flouci', 'd17', 'konnect'])
+  body('paymentMethod').optional().isIn(['cash_on_delivery', 'bank_transfer', 'card', 'paymee', 'flouci', 'd17', 'konnect']),
+  body('promoCode').optional({ values: 'falsy' }).isString().trim().isLength({ max: 30 })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -175,15 +190,16 @@ router.post('/quote', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { items, shipping, isUrgent, paymentMethod } = req.body;
-    const { orderItems, pricing } = await quoteOrder({
+    const { items, shipping, isUrgent, paymentMethod, promoCode } = req.body;
+    const { orderItems, pricing, promoError } = await quoteOrder({
       items,
       place: deliveryPlace(shipping),
       isUrgent: Boolean(isUrgent),
-      paymentMethod: paymentMethod || 'cash_on_delivery'
+      paymentMethod: paymentMethod || 'cash_on_delivery',
+      promoCode
     });
 
-    res.json({ items: orderItems, pricing });
+    res.json({ items: orderItems, pricing, ...(promoError && { promoError }) });
   } catch (error) {
     if (error instanceof CheckoutError) {
       return res.status(error.status).json({ message: error.message });
@@ -614,6 +630,7 @@ router.put('/:id/status', ordersAdmin, [
     // Reactivating a cancelled order needs its stock back first
     if (previousStatus === 'cancelled' && status !== 'cancelled') {
       await reserveOrderStock(order);
+      await reclaimOrderPromo(order);
     }
 
     // Saved (not updated in place) so the change is added to the order's
@@ -626,6 +643,7 @@ router.put('/:id/status', ordersAdmin, [
 
     if (status === 'cancelled' && previousStatus !== 'cancelled') {
       await releaseOrderStock(order);
+      await releaseOrderPromo(order);
     }
 
     // A note or place without a new status is its own tracking event
@@ -764,8 +782,9 @@ router.delete('/:id', ordersAdmin, async (req, res) => {
       });
     }
 
-    // Restore product stock if order is being deleted
+    // Restore product stock and the promo code's use if order is being deleted
     await releaseOrderStock(order);
+    await releaseOrderPromo(order);
 
     // Update customer stats if customer exists
     if (order.customerId) {

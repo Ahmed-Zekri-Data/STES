@@ -53,6 +53,7 @@ const Pages = lazy(() => import('./pages/admin/Pages'));
 const TrackingDashboard = lazy(() => import('./pages/admin/TrackingDashboard'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
+const PromoCodes = lazy(() => import('./pages/admin/PromoCodes'));
 
 // Shop pages share the header and footer; they stay in place while a page
 // that is not loaded yet is being downloaded
@@ -139,6 +140,7 @@ function App() {
                       <Route path="orders" element={<Orders />} />
                       <Route path="tracking" element={<TrackingDashboard />} />
                       <Route path="reports" element={<Reports />} />
+                      <Route path="promo-codes" element={<PromoCodes />} />
                       <Route path="customers" element={<Customers />} />
                       <Route path="forms" element={<Forms />} />
                       <Route path="pages" element={<Pages />} />

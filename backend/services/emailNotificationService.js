@@ -364,6 +364,8 @@ class EmailNotificationService {
     const tax = [`TVA (${Math.round((pricing.taxRate || 0) * 100)}%)`, formatTND(pricing.taxAmount)];
     const totals = [
       ['Sous-total', formatTND(pricing.subtotal)],
+      // Codes are letters, digits, - and _ only (see the PromoCode model), safe in HTML
+      ...(pricing.discountAmount ? [[`Réduction (${pricing.discountCode})`, `−${formatTND(pricing.discountAmount)}`]] : []),
       ['Livraison', delivery],
       ...(pricing.paymentFee ? [['Frais de paiement', formatTND(pricing.paymentFee)]] : []),
       ...(pricing.taxIncluded ? [] : [tax])

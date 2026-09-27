@@ -433,6 +433,12 @@ const OrderDetailsModal = ({ order, onClose, onEditStatus }) => {
                     <span className="ml-1">{getStatusLabel(order.status)}</span>
                   </span>
                 </div>
+                {order.pricing?.discountCode && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Code promo:</span>
+                    <span className="font-medium text-green-700">{order.pricing.discountCode} (−{order.pricing.discountAmount} TND)</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total:</span>
                   <span className="font-bold text-lg">{order.totalAmount} TND</span>

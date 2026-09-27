@@ -5,6 +5,7 @@ import { useCheckout } from '../../context/CheckoutContext';
 import { useShopSettings, phoneLink } from '../../context/shopSettings';
 import { ShoppingBag, Truck, CreditCard, Tag, Shield } from 'lucide-react';
 import ProductVisual from '../product/ProductVisual';
+import PromoCodeBox from './PromoCodeBox';
 
 const OrderSummary = () => {
   const { cartItems } = useCart();
@@ -67,28 +68,7 @@ const OrderSummary = () => {
         ))}
       </div>
 
-      {/* Promo Code Section */}
-      <motion.div
-        className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-      >
-        <div className="flex items-center mb-3">
-          <Tag className="w-4 h-4 text-blue-600 mr-2" />
-          <span className="text-sm font-medium text-blue-900">Code promo</span>
-        </div>
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            placeholder="Entrez votre code"
-            className="flex-1 px-3 py-2 text-sm border border-blue-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
-          />
-          <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-            Appliquer
-          </button>
-        </div>
-      </motion.div>
+      <PromoCodeBox />
 
       {/* Order Totals */}
       <motion.div
@@ -101,6 +81,16 @@ const OrderSummary = () => {
           <span className="text-gray-600">Sous-total:</span>
           <span className="font-medium text-gray-900">{totals.subtotal} TND</span>
         </div>
+
+        {totals.discountAmount && (
+          <div className="flex justify-between text-sm">
+            <div className="flex items-center">
+              <Tag className="w-4 h-4 text-green-600 mr-1" />
+              <span className="text-gray-600">Réduction ({totals.discountCode}):</span>
+            </div>
+            <span className="font-medium text-green-700">−{totals.discountAmount} TND</span>
+          </div>
+        )}
         
         <div className="flex justify-between text-sm">
           <div className="flex items-center">

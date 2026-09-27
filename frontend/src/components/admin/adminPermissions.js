@@ -8,6 +8,7 @@ export const PAGE_PERMISSIONS = {
   '/admin/orders': 'orders',
   '/admin/tracking': 'orders',
   '/admin/reports': 'orders',
+  '/admin/promo-codes': 'orders',
   '/admin/customers': 'users',
   '/admin/forms': 'forms',
   '/admin/pages': 'settings'
