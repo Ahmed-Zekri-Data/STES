@@ -191,6 +191,12 @@ const orderSchema = new mongoose.Schema({
       min: 0,
       max: 1
     },
+    // True when taxAmount is the VAT already inside the prices, as on every
+    // order since prices became VAT-included. Older orders added it on top.
+    taxIncluded: {
+      type: Boolean,
+      default: false
+    },
     discountAmount: {
       type: Number,
       default: 0,

@@ -210,14 +210,11 @@ const OrderReviewStep = () => {
                 <span className="font-medium">{totals.paymentFee} TND</span>
               </div>
             )}
-            <div className="flex justify-between">
-              <span className="text-gray-600">TVA (19%):</span>
-              <span className="font-medium">{totals.taxAmount} TND</span>
-            </div>
             <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-300">
-              <span>Total:</span>
+              <span>Total TTC:</span>
               <span className="text-blue-600">{totals.total} TND</span>
             </div>
+            <p className="text-right text-xs text-gray-500">dont TVA (19%) : {totals.taxAmount} TND</p>
           </div>
         </div>
       </motion.div>

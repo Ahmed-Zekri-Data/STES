@@ -359,12 +359,16 @@ class EmailNotificationService {
       : null;
     const delivery = Number(pricing.shippingCost) === 0 ? 'Gratuite' : formatTND(pricing.shippingCost);
 
+    // VAT is part of the prices (shown under the total), except on orders
+    // placed before that, where it was added on top.
+    const tax = [`TVA (${Math.round((pricing.taxRate || 0) * 100)}%)`, formatTND(pricing.taxAmount)];
     const totals = [
       ['Sous-total', formatTND(pricing.subtotal)],
       ['Livraison', delivery],
       ...(pricing.paymentFee ? [['Frais de paiement', formatTND(pricing.paymentFee)]] : []),
-      [`TVA (${Math.round((pricing.taxRate || 0) * 100)}%)`, formatTND(pricing.taxAmount)]
+      ...(pricing.taxIncluded ? [] : [tax])
     ];
+    const includedTax = pricing.taxIncluded ? `dont ${tax[0]} : ${tax[1]}` : '';
 
     const subject = `Confirmation de votre commande ${order.orderNumber}`;
 
@@ -395,6 +399,7 @@ class EmailNotificationService {
       <table style="width:100%;border-collapse:collapse">
         ${totals.map(([label, value]) => `<tr><td style="padding:2px 0">${label}</td><td style="padding:2px 0;text-align:right">${value}</td></tr>`).join('')}
         <tr style="font-weight:bold;border-top:1px solid #e5e7eb"><td style="padding:8px 0">Total</td><td style="padding:8px 0;text-align:right">${formatTND(pricing.totalAmount ?? order.totalAmount)}</td></tr>
+        ${includedTax ? `<tr><td colspan="2" style="padding:0;text-align:right;font-size:13px;color:#6b7280">${includedTax}</td></tr>` : ''}
       </table>
       <p><strong>Paiement :</strong> ${escapeHtml(paymentLabel)}</p>
       ${bank ? `<p style="background:#fefce8;padding:12px;border-radius:8px">
@@ -426,6 +431,7 @@ class EmailNotificationService {
       '',
       ...totals.map(([label, value]) => `${label} : ${value}`),
       `Total : ${formatTND(pricing.totalAmount ?? order.totalAmount)}`,
+      ...(includedTax ? [includedTax] : []),
       '',
       `Paiement : ${paymentLabel}`,
       ...(bank ? ['', 'Virement à effectuer :', ...bankLines(bank, order).map(([label, value]) => `${label} : ${value}`), 'Votre commande est préparée dès réception du virement.'] : []),

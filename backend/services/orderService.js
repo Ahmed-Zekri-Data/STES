@@ -78,6 +78,10 @@ const DEFAULT_RATE = 1.3;
 
 const roundMillimes = (amount) => Math.round(amount * 1000) / 1000;
 
+// Catalog prices include VAT (TTC). The VAT is the part of a price above its
+// price before VAT: shown to the customer, never added to the total.
+const includedTax = (amount) => roundMillimes(amount * TAX_RATE / (1 + TAX_RATE));
+
 const normalizePlace = (place) => String(place || '')
   .normalize('NFD')
   .replace(/[̀-ͯ]/g, '')
@@ -100,7 +104,6 @@ const deliveryCost = (subtotal, place, isUrgent = false, prices = DEFAULTS.deliv
 const quoteOrder = async ({ items, place, isUrgent = false, paymentMethod = 'cash_on_delivery' }) => {
   const [{ orderItems, subtotal }, { delivery }] = await Promise.all([priceOrderItems(items), getSettings()]);
   const shippingCost = deliveryCost(subtotal, place, isUrgent, delivery);
-  const taxAmount = roundMillimes(subtotal * TAX_RATE);
   const paymentFee = paymentMethod === 'cash_on_delivery' ? delivery.cashOnDeliveryFee : 0;
 
   return {
@@ -108,10 +111,11 @@ const quoteOrder = async ({ items, place, isUrgent = false, paymentMethod = 'cas
     pricing: {
       subtotal: roundMillimes(subtotal),
       shippingCost,
-      taxAmount,
+      taxAmount: includedTax(subtotal),
       taxRate: TAX_RATE,
+      taxIncluded: true,
       paymentFee,
-      totalAmount: roundMillimes(subtotal + shippingCost + taxAmount + paymentFee)
+      totalAmount: roundMillimes(subtotal + shippingCost + paymentFee)
     }
   };
 };
@@ -205,6 +209,8 @@ module.exports = {
   CheckoutError,
   priceOrderItems,
   deliveryCost,
+  includedTax,
+  TAX_RATE,
   quoteOrder,
   reserveStock,
   releaseStock,
