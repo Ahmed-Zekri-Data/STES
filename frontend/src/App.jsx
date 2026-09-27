@@ -35,6 +35,7 @@ const Wishlist = lazy(() => import('./pages/Wishlist'));
 const TrackOrder = lazy(() => import('./pages/TrackOrder'));
 const PaymentResult = lazy(() => import('./pages/PaymentResult'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
 const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
@@ -99,6 +100,7 @@ function App() {
                       <Route path="/wishlist" element={<Wishlist />} />
                       <Route path="/track-order" element={<TrackOrder />} />
                       <Route path="/reset-password" element={<ResetPassword />} />
+                      <Route path="/verify-email" element={<VerifyEmail />} />
                       <Route path="/payment/success" element={<PaymentResult />} />
                       <Route path="/payment/failed" element={<PaymentResult />} />
                       <Route path="/payment/cancel" element={<PaymentResult />} />

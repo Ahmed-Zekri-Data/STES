@@ -181,6 +181,67 @@ class EmailNotificationService {
     return { subject, html, text };
   }
 
+  // Welcome email with the link to confirm the address. Never throws:
+  // callers don't wait for it. The link is never logged.
+  async sendEmailVerification(customer, token) {
+    if (!this.isConfigured()) {
+      console.log(`Email not configured (EMAIL_USER / EMAIL_PASS): no confirmation email sent to ${customer.email}`);
+      return { success: false, reason: 'email_not_configured' };
+    }
+
+    try {
+      const content = this.generateEmailVerificationEmail(customer, token);
+      const result = await this.transporter.sendMail({
+        from: `"STES Piscines" <${process.env.EMAIL_USER}>`,
+        to: customer.email,
+        subject: content.subject,
+        html: content.html,
+        text: content.text
+      });
+
+      console.log(`Confirmation email sent to ${customer.email}`);
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error(`Error sending confirmation email to ${customer.email}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  generateEmailVerificationEmail(customer, token) {
+    const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?token=${encodeURIComponent(token)}`;
+    const subject = 'Bienvenue chez STES Piscines : confirmez votre adresse email';
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
+        <div style="background: #2563eb; color: #fff; padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 20px;">Bienvenue chez STES Piscines</h1>
+        </div>
+        <div style="border: 1px solid #e5e7eb; border-top: 0; padding: 20px; border-radius: 0 0 8px 8px;">
+          <p style="margin: 0 0 12px;">Bonjour ${escapeHtml(customer.firstName)},</p>
+          <p style="margin: 0 0 12px;">Merci d'avoir créé votre compte. Confirmez votre adresse email pour être sûr de recevoir nos confirmations de commande et le suivi de vos livraisons.</p>
+          <p style="margin: 20px 0;">
+            <a href="${escapeHtml(verifyUrl)}" style="background: #2563eb; color: #fff; padding: 10px 18px; border-radius: 6px; text-decoration: none; display: inline-block;">Confirmer mon adresse email</a>
+          </p>
+          <p style="margin: 0 0 12px;">Ce lien est valable 7 jours.</p>
+          <p style="color: #6b7280; font-size: 13px; margin: 12px 0 0;">Si vous n'avez pas créé de compte chez STES Piscines, ignorez cet email.</p>
+          <p style="color: #6b7280; font-size: 13px; margin: 12px 0 0; word-break: break-all;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>${escapeHtml(verifyUrl)}</p>
+        </div>
+      </div>`;
+
+    const text = [
+      `Bonjour ${customer.firstName},`,
+      '',
+      "Merci d'avoir créé votre compte STES Piscines.",
+      'Confirmez votre adresse email en ouvrant ce lien :',
+      verifyUrl,
+      '',
+      'Ce lien est valable 7 jours.',
+      "Si vous n'avez pas créé de compte chez STES Piscines, ignorez cet email."
+    ].join('\n');
+
+    return { subject, html, text };
+  }
+
   // Send the "choose a new password" link. Never throws: callers don't
   // wait for it. The link is never logged.
   async sendPasswordReset(customer, resetToken) {

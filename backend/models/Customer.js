@@ -107,8 +107,12 @@ const customerSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // SHA-256 hash of the code in the confirmation link, and when it expires
   emailVerificationToken: {
     type: String
+  },
+  emailVerificationExpires: {
+    type: Date
   },
   passwordResetToken: {
     type: String

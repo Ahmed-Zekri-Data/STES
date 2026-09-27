@@ -7,6 +7,7 @@ import AnimatedButton from '../components/AnimatedButton';
 import LoadingSpinner from '../components/LoadingSpinner';
 import OrderHistory from '../components/customer/OrderHistory';
 import NotificationPreferences from '../components/notifications/NotificationPreferences';
+import ResendVerification from '../components/auth/ResendVerification';
 
 const CustomerDashboard = () => {
   const { customer, isAuthenticated, loading } = useCustomer();
@@ -264,6 +265,16 @@ const CustomerDashboard = () => {
 
           {/* Main Content */}
           <div className="flex-1">
+            {/* Until the address is confirmed */}
+            {!customer?.isEmailVerified && (
+              <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-5">
+                <h3 className="font-semibold text-amber-900">Confirmez votre adresse email</h3>
+                <p className="text-sm text-amber-800 mt-1 mb-3">
+                  Nous avons envoyé un lien à {customer?.email} lors de votre inscription. Confirmez-la pour être sûr de recevoir vos confirmations de commande et le suivi de livraison.
+                </p>
+                <ResendVerification />
+              </div>
+            )}
             {renderContent()}
           </div>
         </div>

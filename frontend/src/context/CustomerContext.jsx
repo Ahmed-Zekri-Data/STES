@@ -161,16 +161,20 @@ export const CustomerProvider = ({ children }) => {
     }
   };
 
+  // Confirms the email address from the link in the welcome email. Works
+  // logged out too; when logged in, the account shows it right away.
   const verifyEmail = async (token) => {
-    try {
-      const response = await axios.post('/api/customers/verify-email', { token });
-      // Refresh customer data
-      await checkAuthStatus();
-      return { success: true, message: response.data.message };
-    } catch (error) {
-      console.error('Email verification error:', error);
-      throw error;
+    const response = await axios.post('/api/customers/verify-email', { token });
+    if (localStorage.getItem('customerToken')) {
+      setCustomer(current => (current ? { ...current, isEmailVerified: true } : current));
     }
+    return response.data;
+  };
+
+  // Emails a new confirmation link to the logged-in customer
+  const resendVerification = async () => {
+    const response = await axios.post('/api/customers/resend-verification');
+    return response.data.message;
   };
 
   // Address management
@@ -253,6 +257,7 @@ export const CustomerProvider = ({ children }) => {
     checkResetLink,
     resetPassword,
     verifyEmail,
+    resendVerification,
     checkAuthStatus,
     // Address management
     getAddresses,
