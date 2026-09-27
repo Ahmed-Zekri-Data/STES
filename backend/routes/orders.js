@@ -4,7 +4,10 @@ const { body, validationResult, query } = require('express-validator');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Customer = require('../models/Customer');
-const { auth } = require('../middleware/auth');
+const { auth, checkPermission } = require('../middleware/auth');
+
+// Order pages in the admin: admins allowed to manage orders
+const ordersAdmin = [auth, checkPermission('orders')];
 const { optionalCustomerAuth } = require('../middleware/customerAuth');
 const { CheckoutError, priceOrderItems, quoteOrder, reserveStock, releaseStock, reserveOrderStock, releaseOrderStock } = require('../services/orderService');
 
@@ -191,7 +194,7 @@ router.post('/quote', [
 });
 
 // GET /api/orders - Get all orders (Admin only)
-router.get('/', auth, [
+router.get('/', ordersAdmin, [
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 100 }),
   query('status').optional().isIn(['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled']),
@@ -313,7 +316,7 @@ const performanceMetrics = async (startDate) => {
 };
 
 // GET /api/orders/stats - Get order statistics for tracking dashboard
-router.get('/stats', auth, async (req, res) => {
+router.get('/stats', ordersAdmin, async (req, res) => {
   try {
     const { timeRange = '7d' } = req.query;
 
@@ -449,7 +452,7 @@ router.get('/stats', auth, async (req, res) => {
 });
 
 // GET /api/orders/:id - Get single order (Admin only)
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', ordersAdmin, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate('items.product');
     
@@ -468,7 +471,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // GET /api/orders/number/:orderNumber - Get order by order number (Admin only)
-router.get('/number/:orderNumber', auth, async (req, res) => {
+router.get('/number/:orderNumber', ordersAdmin, async (req, res) => {
   try {
     const order = await Order.findOne({ orderNumber: req.params.orderNumber })
       .populate('items.product');
@@ -485,7 +488,7 @@ router.get('/number/:orderNumber', auth, async (req, res) => {
 });
 
 // POST /api/orders/admin - Create order manually (Admin only)
-router.post('/admin', auth, [
+router.post('/admin', ordersAdmin, [
   body('customer.firstName').trim().isLength({ min: 1, max: 50 }).withMessage('Customer first name is required'),
   body('customer.lastName').trim().isLength({ min: 1, max: 50 }).withMessage('Customer last name is required'),
   body('customer.email').isEmail().withMessage('Valid customer email is required'),
@@ -584,7 +587,7 @@ router.post('/admin', auth, [
 });
 
 // PUT /api/orders/:id/status - Update order status (Admin only)
-router.put('/:id/status', auth, [
+router.put('/:id/status', ordersAdmin, [
   body('status').isIn(['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled']).withMessage('Invalid status'),
   body('trackingNumber').optional().trim().isLength({ max: 100 }),
   body('note').optional().trim().isLength({ max: 200 }).withMessage('Note cannot exceed 200 characters'),
@@ -658,7 +661,7 @@ router.put('/:id/status', auth, [
 });
 
 // POST /api/orders/:id/notes - Add internal note to order (Admin only)
-router.post('/:id/notes', auth, [
+router.post('/:id/notes', ordersAdmin, [
   body('note').trim().isLength({ min: 1, max: 500 }).withMessage('Note is required and cannot exceed 500 characters'),
   body('isPrivate').optional().isBoolean()
 ], async (req, res) => {
@@ -695,7 +698,7 @@ router.post('/:id/notes', auth, [
 });
 
 // GET /api/orders/:id/timeline - Get order timeline (Admin only)
-router.get('/:id/timeline', auth, async (req, res) => {
+router.get('/:id/timeline', ordersAdmin, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) {
@@ -716,7 +719,7 @@ router.get('/:id/timeline', auth, async (req, res) => {
 });
 
 // GET /api/orders/stats/summary - Get order statistics (Admin only)
-router.get('/stats/summary', auth, async (req, res) => {
+router.get('/stats/summary', ordersAdmin, async (req, res) => {
   try {
     const stats = await Order.aggregate([
       {
@@ -747,7 +750,7 @@ router.get('/stats/summary', auth, async (req, res) => {
 
 
 // DELETE /api/orders/:id - Delete order (Admin only)
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', ordersAdmin, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) {

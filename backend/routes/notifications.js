@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, param, query, validationResult } = require('express-validator');
 const { customerAuth } = require('../middleware/customerAuth');
-const { auth } = require('../middleware/auth');
+const { auth, checkPermission, requireSuperAdmin } = require('../middleware/auth');
 const notificationService = require('../services/notificationService');
 const pushNotificationService = require('../services/pushNotificationService');
 const smsService = require('../services/smsService');
@@ -241,7 +241,7 @@ router.post('/test', customerAuth, async (req, res) => {
 // Admin routes
 
 // POST /api/notifications/admin/send - Send notification to specific customer (Admin only)
-router.post('/admin/send', auth, [
+router.post('/admin/send', auth, checkPermission('users'), [
   body('customerId').isMongoId().withMessage('Valid customer ID is required'),
   body('notification').isObject().withMessage('Notification object is required'),
   body('notification.title').notEmpty().withMessage('Notification title is required'),
@@ -265,7 +265,7 @@ router.post('/admin/send', auth, [
 });
 
 // GET /api/notifications/admin/logs - Get all notification logs (Admin only)
-router.get('/admin/logs', auth, [
+router.get('/admin/logs', auth, checkPermission('users'), [
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 100 }),
   query('customerId').optional().isMongoId(),
@@ -316,7 +316,7 @@ router.get('/admin/logs', auth, [
 });
 
 // GET /api/notifications/admin/test-config - Test notification configuration (Admin only)
-router.get('/admin/test-config', auth, async (req, res) => {
+router.get('/admin/test-config', auth, requireSuperAdmin, async (req, res) => {
   try {
     const results = {
       push: await pushNotificationService.testConfiguration(),
