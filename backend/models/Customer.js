@@ -40,9 +40,9 @@ const addressSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  // Optional, as at checkout
   postalCode: {
     type: String,
-    required: true,
     trim: true
   },
   country: {
@@ -302,7 +302,7 @@ customerSchema.methods.removeAddress = function(addressId) {
   }
 
   const wasDefault = address.isDefault;
-  address.remove();
+  address.deleteOne();
 
   // If removed address was default, make first remaining address default
   if (wasDefault && this.addresses.length > 0) {

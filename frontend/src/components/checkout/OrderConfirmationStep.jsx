@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useCheckout } from '../../context/CheckoutContext';
+import { useShopSettings, phoneLink } from '../../context/shopSettings';
 import { 
   CheckCircle, 
   Download, 
@@ -16,6 +17,8 @@ import {
 } from 'lucide-react';
 
 const OrderConfirmationStep = () => {
+  // Contact details set in Admin → Settings → Shop
+  const { contact } = useShopSettings();
   const navigate = useNavigate();
   const { orderConfirmation, resetCheckout } = useCheckout();
 
@@ -308,7 +311,7 @@ const OrderConfirmationStep = () => {
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Service Client</p>
-                  <p className="text-blue-600">+216 71 123 456</p>
+                  <a href={phoneLink(contact.phone)} className="text-blue-600">{contact.phone}</a>
                   <p className="text-xs text-gray-500">Lun-Ven: 8h-18h, Sam: 8h-13h</p>
                 </div>
               </div>
@@ -319,7 +322,7 @@ const OrderConfirmationStep = () => {
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Email</p>
-                  <p className="text-green-600">support@stes.tn</p>
+                  <a href={`mailto:${contact.email}`} className="text-green-600">{contact.email}</a>
                   <p className="text-xs text-gray-500">Réponse sous 24h</p>
                 </div>
               </div>

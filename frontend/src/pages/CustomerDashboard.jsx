@@ -9,6 +9,7 @@ import OrderHistory from '../components/customer/OrderHistory';
 import NotificationPreferences from '../components/notifications/NotificationPreferences';
 import ResendVerification from '../components/auth/ResendVerification';
 import AccountSettings from '../components/customer/AccountSettings';
+import AddressBook from '../components/customer/AddressBook';
 
 const CustomerDashboard = () => {
   const { customer, isAuthenticated, loading } = useCustomer();
@@ -203,12 +204,7 @@ const CustomerDashboard = () => {
       case 'notifications':
         return <NotificationPreferences />;
       case 'addresses':
-        return (
-          <div className="bg-white rounded-xl p-6 shadow-lg">
-            <h3 className="text-lg font-semibold mb-4">Mes adresses</h3>
-            <p className="text-gray-600">Aucune adresse enregistrée.</p>
-          </div>
-        );
+        return <AddressBook />;
       case 'wishlist':
         return (
           <div className="bg-white rounded-xl p-6 shadow-lg">
