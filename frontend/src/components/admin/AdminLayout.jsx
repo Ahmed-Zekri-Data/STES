@@ -22,6 +22,7 @@ import {
   Menu,
   X,
   Inbox,
+  BadgePercent,
   Tag,
   Award,
   UserCog,
@@ -67,7 +68,8 @@ const AdminLayout = () => {
     ] },
     { label: 'Sales', items: [
       { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
-      { name: 'Customers', href: '/admin/customers', icon: Users }
+      { name: 'Customers', href: '/admin/customers', icon: Users },
+      { name: 'Promo codes', href: '/admin/promo-codes', icon: BadgePercent }
     ] },
     { label: 'Content', items: [
       { name: 'Forms', href: '/admin/forms', icon: Inbox },

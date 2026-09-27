@@ -127,6 +127,7 @@ const createApp = () => {
   app.use('/api/admin/customers', require('./routes/adminCustomers'));
   app.use('/api/admin/reviews', require('./routes/adminReviews'));
   app.use('/api/admin/reports', require('./routes/adminReports'));
+  app.use('/api/admin/promo-codes', require('./routes/adminPromoCodes'));
   app.use('/api/auth', require('./routes/auth')); // Admin auth
   app.use('/api/customers', require('./routes/customers')); // Customer auth and profile
   app.use('/api/addresses', require('./routes/addresses'));

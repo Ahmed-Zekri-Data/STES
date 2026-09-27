@@ -107,6 +107,12 @@ const orderSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // Whether the order holds one use of pricing.discountCode (given back when
+  // it is cancelled or deleted)
+  promoClaimed: {
+    type: Boolean,
+    default: false
+  },
   paymentDetails: {
     transactionId: {
       type: String,

@@ -17,6 +17,7 @@ const Breadcrumb = () => {
       'orders': 'Orders',
       'forms': 'Forms',
       'users': 'Admin Users',
+      'promo-codes': 'Promo codes',
       'settings': 'Settings'
     };
     return names[path] || path.charAt(0).toUpperCase() + path.slice(1);

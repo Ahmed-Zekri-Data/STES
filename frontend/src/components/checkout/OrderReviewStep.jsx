@@ -198,6 +198,12 @@ const OrderReviewStep = () => {
               <span className="text-gray-600">Sous-total:</span>
               <span className="font-medium">{totals.subtotal} TND</span>
             </div>
+            {totals.discountAmount && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Réduction ({totals.discountCode}):</span>
+                <span className="font-medium text-green-700">−{totals.discountAmount} TND</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-gray-600">Livraison:</span>
               <span className="font-medium">

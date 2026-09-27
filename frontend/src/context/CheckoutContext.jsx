@@ -103,6 +103,11 @@ export const CheckoutProvider = ({ children }) => {
   // The server's price for the current cart, delivery place and payment method
   const [quote, setQuote] = useState(null);
   const [quoteError, setQuoteError] = useState('');
+  // The promo code being tried or applied, and why it was refused. A code
+  // the server refuses is dropped, so the order is never placed with it.
+  const [promoCode, setPromoCode] = useState('');
+  const [promoError, setPromoError] = useState('');
+  const [promoChecking, setPromoChecking] = useState(false);
 
   // Tunisian Governorates for address selection
   const tunisianGovernorates = TUNISIAN_GOVERNORATES;
@@ -251,17 +256,24 @@ export const CheckoutProvider = ({ children }) => {
           items,
           shipping: { governorate, city },
           isUrgent: urgentDelivery,
-          paymentMethod: paymentMethod || 'cash_on_delivery'
+          paymentMethod: paymentMethod || 'cash_on_delivery',
+          promoCode: promoCode || undefined
         });
         if (!cancelled) {
           setQuote(response.data.pricing);
           setQuoteError('');
           syncWithServer(response.data.items);
+          if (promoCode) {
+            setPromoError(response.data.promoError || '');
+            if (response.data.promoError) setPromoCode('');
+          }
+          setPromoChecking(false);
         }
       } catch (error) {
         if (!cancelled) {
           setQuote(null);
           setQuoteError(apiErrorMessage(error, 'Impossible de calculer le total de la commande.'));
+          setPromoChecking(false);
         }
       }
     }, 250);
@@ -272,7 +284,20 @@ export const CheckoutProvider = ({ children }) => {
     };
     // syncWithServer only changes items when the server's prices differ
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cartKey, governorate, city, urgentDelivery, paymentMethod, orderConfirmation]);
+  }, [cartKey, governorate, city, urgentDelivery, paymentMethod, orderConfirmation, promoCode]);
+
+  const applyPromo = (code) => {
+    const clean = code.trim().toUpperCase();
+    setPromoError('');
+    if (!clean) return;
+    setPromoChecking(true);
+    setPromoCode(clean);
+  };
+
+  const removePromo = () => {
+    setPromoCode('');
+    setPromoError('');
+  };
 
   // Order totals for display, from the server's quote. Until the first quote
   // arrives, only the subtotal is known.
@@ -284,6 +309,8 @@ export const CheckoutProvider = ({ children }) => {
 
     return {
       subtotal: formatMoney(quote.subtotal),
+      discountAmount: quote.discountAmount ? formatMoney(quote.discountAmount) : null,
+      discountCode: quote.discountCode || null,
       deliveryFee: formatMoney(quote.shippingCost),
       paymentFee: formatMoney(quote.paymentFee),
       taxAmount: formatMoney(quote.taxAmount),
@@ -317,7 +344,8 @@ export const CheckoutProvider = ({ children }) => {
           billing: billing.sameAsShipping ? { ...shipping, sameAsShipping: true } : billing,
           payment: { method: payment.method },
           notes: notes ?? order.notes,
-          isUrgent: order.urgentDelivery
+          isUrgent: order.urgentDelivery,
+          promoCode: quote?.discountCode || undefined
         });
         createdOrder = orderResponse.data.order;
       } catch (error) {
@@ -372,6 +400,8 @@ export const CheckoutProvider = ({ children }) => {
         items: createdOrder.items,
         totals: {
           subtotal: formatMoney(pricing.subtotal),
+          discountAmount: pricing.discountAmount ? formatMoney(pricing.discountAmount) : null,
+          discountCode: pricing.discountCode || null,
           deliveryFee: formatMoney(pricing.shippingCost),
           paymentFee: formatMoney(pricing.paymentFee),
           taxAmount: formatMoney(pricing.taxAmount),
@@ -402,6 +432,7 @@ export const CheckoutProvider = ({ children }) => {
     setOrderConfirmation(null);
     setQuote(null);
     setQuoteError('');
+    removePromo();
   };
 
   const value = {
@@ -420,6 +451,10 @@ export const CheckoutProvider = ({ children }) => {
     applySavedAddress,
     quote,
     quoteError,
+    promoError,
+    promoChecking,
+    applyPromo,
+    removePromo,
     processPayment,
     resetCheckout
   };
