@@ -3,15 +3,35 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const Page = require('../models/Page');
 const { auth, checkPermission } = require('../middleware/auth');
+const { cleanPageHtml } = require('../utils/html');
 
 // Editing the About and Contact pages is part of the shop settings
 const pagesAdmin = [auth, checkPermission('settings')];
 
+const CONTENT_FIELDS = ['content', 'contentEn', 'contentAr'];
+const EDITABLE_FIELDS = [
+  'title', 'titleEn', 'titleAr', ...CONTENT_FIELDS,
+  'metaDescription', 'metaDescriptionEn', 'metaDescriptionAr', 'isActive'
+];
+
+// Pages as the shop shows them: the HTML cleaned again when read, which also
+// covers content saved before cleaning existed
+const publicPage = (page) => {
+  const plain = typeof page.toObject === 'function' ? page.toObject() : page;
+  const cleaned = { ...plain };
+  for (const field of CONTENT_FIELDS) {
+    if (typeof cleaned[field] === 'string') cleaned[field] = cleanPageHtml(cleaned[field]);
+  }
+  delete cleaned.lastModifiedBy;
+  delete cleaned.__v;
+  return cleaned;
+};
+
 // GET /api/pages - Get all pages (public)
 router.get('/', async (req, res) => {
   try {
-    const pages = await Page.find({ isActive: true }).select('-__v');
-    res.json(pages);
+    const pages = await Page.find({ isActive: true }).select('-__v').lean();
+    res.json(pages.map(publicPage));
   } catch (error) {
     console.error('Error fetching pages:', error);
     res.status(500).json({ message: 'Error fetching pages' });
@@ -27,7 +47,7 @@ router.get('/:slug', async (req, res) => {
       return res.status(404).json({ message: 'Page not found' });
     }
     
-    res.json(page);
+    res.json(publicPage(page));
   } catch (error) {
     console.error('Error fetching page:', error);
     res.status(500).json({ message: 'Error fetching page' });
@@ -68,10 +88,14 @@ router.put('/:slug', pagesAdmin, [
     }
 
     const { slug } = req.params;
-    const updateData = {
-      ...req.body,
-      lastModifiedBy: req.admin.adminId
-    };
+    // Only the page's text can change (not its address), and its HTML is
+    // cleaned before it is saved
+    const updateData = { lastModifiedBy: req.admin.adminId };
+    for (const field of EDITABLE_FIELDS) {
+      if (req.body[field] !== undefined) {
+        updateData[field] = CONTENT_FIELDS.includes(field) ? cleanPageHtml(req.body[field]) : req.body[field];
+      }
+    }
 
     const page = await Page.findOneAndUpdate(
       { slug },
