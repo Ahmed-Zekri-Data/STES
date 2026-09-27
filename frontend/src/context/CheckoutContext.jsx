@@ -1,6 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useCart } from './CartContext';
+import { useCustomer } from './CustomerContext';
+import { TUNISIAN_GOVERNORATES } from '../utils/governorates';
+
+// A saved address (Account → Adresses) as checkout's shipping fields
+export const toShipping = (address) => ({
+  address: [address.address1, address.address2].filter(Boolean).join(', '),
+  city: address.city || '',
+  governorate: address.state || '',
+  postalCode: address.postalCode || ''
+});
 
 const CheckoutContext = createContext();
 
@@ -28,6 +38,9 @@ const formatMoney = (amount) => Number(amount).toFixed(3);
 
 export const CheckoutProvider = ({ children }) => {
   const { cartItems, clearCart, syncWithServer } = useCart();
+  const { customer: account, isAuthenticated } = useCustomer();
+  // The logged-in customer's saved addresses (Account → Adresses)
+  const [savedAddresses, setSavedAddresses] = useState([]);
   const [checkoutData, setCheckoutData] = useState({
     // Customer Information
     customer: {
@@ -92,12 +105,7 @@ export const CheckoutProvider = ({ children }) => {
   const [quoteError, setQuoteError] = useState('');
 
   // Tunisian Governorates for address selection
-  const tunisianGovernorates = [
-    'Tunis', 'Ariana', 'Ben Arous', 'Manouba', 'Nabeul', 'Zaghouan',
-    'Bizerte', 'Béja', 'Jendouba', 'Kef', 'Siliana', 'Kairouan',
-    'Kasserine', 'Sidi Bouzid', 'Sousse', 'Monastir', 'Mahdia',
-    'Sfax', 'Gafsa', 'Tozeur', 'Kebili', 'Gabès', 'Medenine', 'Tataouine'
-  ];
+  const tunisianGovernorates = TUNISIAN_GOVERNORATES;
 
   // Payment methods state
   const [paymentMethods, setPaymentMethods] = useState([
@@ -140,6 +148,49 @@ export const CheckoutProvider = ({ children }) => {
   }, []);
 
   // Update checkout data
+  // For a logged-in customer, fill in what the account knows, without
+  // overwriting anything already typed: name, email and phone, and the
+  // default saved address
+  useEffect(() => {
+    if (!isAuthenticated || !account) return undefined;
+    let cancelled = false;
+    const fillEmpty = (current, values) => Object.fromEntries(
+      Object.entries(current).map(([key, value]) => [key, value || values[key] || value])
+    );
+
+    setCheckoutData(prev => ({
+      ...prev,
+      customer: fillEmpty(prev.customer, {
+        firstName: account.firstName, lastName: account.lastName, email: account.email, phone: account.phone
+      })
+    }));
+
+    axios.get('/api/addresses')
+      .then(response => {
+        if (cancelled) return;
+        const addresses = response.data.addresses || [];
+        setSavedAddresses(addresses);
+        const preferred = addresses.find(a => a.isDefault) || addresses[0];
+        if (!preferred) return;
+        setCheckoutData(prev => {
+          const typed = prev.shipping.address || prev.shipping.city || prev.shipping.governorate;
+          return {
+            ...prev,
+            customer: fillEmpty(prev.customer, { phone: preferred.phone }),
+            shipping: typed ? prev.shipping : { ...prev.shipping, ...toShipping(preferred) }
+          };
+        });
+      })
+      .catch(error => console.error('Error loading saved addresses:', error));
+    return () => { cancelled = true; };
+    // Once per logged-in customer
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, account?.id]);
+
+  const applySavedAddress = (address) => {
+    setCheckoutData(prev => ({ ...prev, shipping: { ...prev.shipping, ...toShipping(address) } }));
+  };
+
   const updateCheckoutData = (section, data) => {
     setCheckoutData(prev => ({
       ...prev,
@@ -373,6 +424,8 @@ export const CheckoutProvider = ({ children }) => {
     nextStep,
     prevStep,
     calculateTotals,
+    savedAddresses,
+    applySavedAddress,
     quote,
     quoteError,
     processPayment,

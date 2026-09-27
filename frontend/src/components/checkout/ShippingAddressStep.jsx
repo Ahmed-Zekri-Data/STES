@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useCheckout } from '../../context/CheckoutContext';
+import { useCheckout, toShipping } from '../../context/CheckoutContext';
 import { MapPin, ArrowRight, ArrowLeft, Home, Building2 } from 'lucide-react';
 
 const ShippingAddressStep = () => {
@@ -10,8 +10,16 @@ const ShippingAddressStep = () => {
     nextStep, 
     prevStep, 
     validateStep,
-    tunisianGovernorates 
+    tunisianGovernorates,
+    savedAddresses,
+    applySavedAddress
   } = useCheckout();
+
+  const TYPE_LABELS = { home: 'Domicile', work: 'Travail', other: 'Autre' };
+  const isShown = (saved) => {
+    const fields = toShipping(saved);
+    return fields.address === shipping.address && fields.city === shipping.city && fields.governorate === shipping.governorate;
+  };
   const { shipping, billing } = checkoutData;
 
   const handleInputChange = (e) => {
@@ -52,6 +60,32 @@ const ShippingAddressStep = () => {
           <Home className="w-5 h-5 mr-2" />
           Adresse de livraison
         </h3>
+
+        {/* The customer's saved addresses (Mon compte → Adresses) */}
+        {savedAddresses.length > 0 && (
+          <div className="mb-5">
+            <p className="text-sm font-medium text-gray-700 mb-2">Mes adresses</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {savedAddresses.map(saved => (
+                <button
+                  key={saved._id}
+                  type="button"
+                  onClick={() => applySavedAddress(saved)}
+                  aria-pressed={isShown(saved)}
+                  className={`text-left p-3 rounded-lg border text-sm transition-colors ${
+                    isShown(saved) ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white hover:border-blue-300'
+                  }`}
+                >
+                  <span className="block font-medium text-gray-900">
+                    {TYPE_LABELS[saved.type] || 'Adresse'}{saved.isDefault && <span className="ml-2 text-xs text-blue-600">Par défaut</span>}
+                  </span>
+                  <span className="block text-gray-600 truncate">{saved.address1}</span>
+                  <span className="block text-gray-600">{saved.city}, {saved.state}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-4">
           {/* Street Address */}

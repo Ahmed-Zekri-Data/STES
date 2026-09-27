@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useCart } from '../../context/CartContext';
 import { useCheckout } from '../../context/CheckoutContext';
-import { useShopSettings } from '../../context/shopSettings';
+import { useShopSettings, phoneLink } from '../../context/shopSettings';
 import { ShoppingBag, Truck, CreditCard, Tag, Shield } from 'lucide-react';
 
 const OrderSummary = () => {
@@ -10,7 +10,7 @@ const OrderSummary = () => {
   const { calculateTotals, checkoutData, quoteError } = useCheckout();
   
   const totals = calculateTotals(cartItems);
-  const { delivery } = useShopSettings();
+  const { delivery, contact } = useShopSettings();
 
   return (
     <motion.div
@@ -231,12 +231,12 @@ const OrderSummary = () => {
           Besoin d'aide ?
         </p>
         <div className="space-y-1">
-          <p className="text-xs text-blue-600 font-medium">
-            📞 +216 71 123 456
-          </p>
-          <p className="text-xs text-blue-600 font-medium">
-            📧 support@stes.tn
-          </p>
+          <a href={phoneLink(contact.phone)} className="block text-xs text-blue-600 font-medium">
+            📞 {contact.phone}
+          </a>
+          <a href={`mailto:${contact.email}`} className="block text-xs text-blue-600 font-medium">
+            📧 {contact.email}
+          </a>
         </div>
       </motion.div>
     </motion.div>
