@@ -25,8 +25,9 @@ describe('forgot password', () => {
     process.env.EMAIL_USER = 'shop@example.tn';
     process.env.EMAIL_PASS = 'smtp-password';
     emailService.transporter = {
+      // Only reset emails: signing up also sends a welcome email
       sendMail: async (message) => {
-        sent.push(message);
+        if (/mot de passe/.test(message.subject)) sent.push(message);
         return { messageId: `test-${sent.length}` };
       }
     };

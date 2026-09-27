@@ -7,6 +7,30 @@ const Customer = require('../models/Customer');
 const { customerAuth } = require('../middleware/customerAuth');
 const emailNotificationService = require('../services/emailNotificationService');
 
+// Links in emails carry a random code; the database keeps only its hash,
+// so a copy of the database can't be used to confirm or reset accounts.
+const hashToken = (token) => crypto.createHash('sha256').update(String(token)).digest('hex');
+
+// Email confirmation links are valid for a week. A new request within two
+// minutes doesn't send another email.
+const VERIFY_LINK_MS = 7 * 24 * 60 * 60 * 1000;
+const VERIFY_RESEND_MS = 2 * 60 * 1000;
+
+// Gives the customer a new confirmation link and emails it (in the
+// background). Returns false when one was sent moments ago.
+const sendVerificationLink = async (customer) => {
+  const sentRecently = customer.emailVerificationExpires
+    && customer.emailVerificationExpires.getTime() - VERIFY_LINK_MS + VERIFY_RESEND_MS > Date.now();
+  if (sentRecently) return false;
+
+  const token = crypto.randomBytes(32).toString('hex');
+  customer.emailVerificationToken = hashToken(token);
+  customer.emailVerificationExpires = new Date(Date.now() + VERIFY_LINK_MS);
+  await customer.save();
+  emailNotificationService.sendEmailVerification(customer, token);
+  return true;
+};
+
 // What the shop keeps about the logged-in customer
 const sessionCustomer = (customer) => ({
   id: customer._id,
@@ -44,9 +68,6 @@ router.post('/register', [
       return res.status(400).json({ message: 'Customer with this email already exists' });
     }
 
-    // Generate email verification token
-    const emailVerificationToken = crypto.randomBytes(32).toString('hex');
-
     // Create new customer
     const customer = new Customer({
       email,
@@ -55,8 +76,7 @@ router.post('/register', [
       lastName,
       phone,
       dateOfBirth,
-      gender,
-      emailVerificationToken
+      gender
     });
 
     await customer.save();
@@ -64,8 +84,8 @@ router.post('/register', [
     // Generate JWT token
     const token = signCustomerToken(customer);
 
-    // TODO: Send verification email
-    console.log(`Email verification token for ${email}: ${emailVerificationToken}`);
+    // Welcome email with the link to confirm the address
+    await sendVerificationLink(customer);
 
     res.status(201).json({
       message: 'Registration successful. Please check your email to verify your account.',
@@ -224,33 +244,49 @@ router.post('/verify-email', [
 
     const { token } = req.body;
 
-    const customer = await Customer.findOne({ emailVerificationToken: token });
+    const customer = await Customer.findOne({
+      emailVerificationToken: hashToken(token),
+      emailVerificationExpires: { $gt: Date.now() }
+    });
     if (!customer) {
       return res.status(400).json({ message: 'Invalid or expired verification token' });
     }
 
     customer.isEmailVerified = true;
     customer.emailVerificationToken = undefined;
+    customer.emailVerificationExpires = undefined;
     await customer.save();
 
-    res.json({ message: 'Email verified successfully' });
+    res.json({ message: 'Email verified successfully', email: customer.email });
   } catch (error) {
     console.error('Email verification error:', error);
     res.status(500).json({ message: 'Error verifying email' });
   }
 });
 
-// Password reset links are valid for an hour. The database keeps only a
-// hash of the code in the link, so a copy of the database can't be used
-// to reset passwords.
+// POST /api/customers/resend-verification - Email a new confirmation link
+router.post('/resend-verification', customerAuth, async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.customer.customerId);
+    if (customer.isEmailVerified) {
+      return res.status(400).json({ message: 'Email already verified' });
+    }
+    await sendVerificationLink(customer);
+    res.json({ message: `A confirmation link has been sent to ${customer.email}.` });
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({ message: 'Error sending the confirmation email' });
+  }
+});
+
+// Password reset links are valid for an hour.
 const RESET_LINK_MS = 60 * 60 * 1000;
 // A new request within this time doesn't send another email
 const RESET_RESEND_MS = 2 * 60 * 1000;
-const hashResetToken = (token) => crypto.createHash('sha256').update(String(token)).digest('hex');
 const RESET_REQUESTED_MESSAGE = 'If an account with that email exists, a password reset link has been sent.';
 
 const findByResetToken = (token) => Customer.findOne({
-  passwordResetToken: hashResetToken(token),
+  passwordResetToken: hashToken(token),
   passwordResetExpires: { $gt: Date.now() },
   isActive: true
 });
@@ -280,7 +316,7 @@ router.post('/forgot-password', [
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-    customer.passwordResetToken = hashResetToken(resetToken);
+    customer.passwordResetToken = hashToken(resetToken);
     customer.passwordResetExpires = Date.now() + RESET_LINK_MS;
     await customer.save();
 

@@ -66,11 +66,16 @@ const createApp = () => {
     app.post(path, credentialLimiter);
   }
 
-  // Every reset request can send an email, so all of them count
+  // Every reset or confirmation request can send an email, so all of them count
   app.post('/api/customers/forgot-password', rateLimit({
     windowMs: 60 * 60 * 1000,
     max: 5,
     message: limitMessage('Trop de demandes de réinitialisation. Veuillez réessayer plus tard.')
+  }));
+  app.post('/api/customers/resend-verification', rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 5,
+    message: limitMessage("Trop de demandes d'email de confirmation. Veuillez réessayer plus tard.")
   }));
 
   app.post('/api/customers/register', rateLimit({

@@ -4,18 +4,21 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { CustomerProvider } from '../context/CustomerContext';
+import { LanguageProvider } from '../context/LanguageContext';
 import CustomerDashboard from './CustomerDashboard';
 
 const ShowLocation = () => <p data-testid="location">{useLocation().search}</p>;
 
 const renderAt = (url) => render(
-  <CustomerProvider>
-    <MemoryRouter initialEntries={[url]}>
-      <Routes>
-        <Route path="/account" element={<><CustomerDashboard /><ShowLocation /></>} />
-      </Routes>
-    </MemoryRouter>
-  </CustomerProvider>
+  <LanguageProvider>
+    <CustomerProvider>
+      <MemoryRouter initialEntries={[url]}>
+        <Routes>
+          <Route path="/account" element={<><CustomerDashboard /><ShowLocation /></>} />
+        </Routes>
+      </MemoryRouter>
+    </CustomerProvider>
+  </LanguageProvider>
 );
 
 describe('customer account page', () => {
