@@ -1,9 +1,70 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useShopSettings } from '../context/shopSettings';
 import { Plus, Minus, X, ShoppingBag, ArrowRight } from 'lucide-react';
+import { pickProducts } from '../utils/productPicks';
+import { showPlaceholderOnError } from '../utils/images';
+
+// In-stock products from the same categories as the cart, not already in it
+const CartSuggestions = ({ cartItems, onAdd, currency }) => {
+  const [products, setProducts] = useState([]);
+  const cartKey = cartItems.map(item => item._id).sort().join(',');
+
+  useEffect(() => {
+    let cancelled = false;
+    pickProducts({
+      categories: cartItems.map(item => item.category),
+      exclude: cartItems.map(item => item._id),
+      limit: 4
+    })
+      .then(picked => { if (!cancelled) setProducts(picked); })
+      .catch(error => console.error('Error loading suggestions:', error));
+    return () => { cancelled = true; };
+    // Again when the products in the cart change, not their quantities
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartKey]);
+
+  if (!products.length) return null;
+  return (
+    <div className="mt-16">
+      <h2 className="text-2xl font-bold text-gray-900 mb-8">
+        Vous pourriez aussi aimer
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {products.map(product => (
+          <div key={product._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+            <Link to={`/product/${product._id}`}>
+              <img
+                src={product.image}
+                onError={showPlaceholderOnError}
+                alt={product.name}
+                className="w-full h-48 object-cover"
+              />
+            </Link>
+            <div className="p-4 flex flex-col flex-1">
+              <Link to={`/product/${product._id}`} className="font-semibold text-gray-900 mb-1 hover:text-primary-600">
+                {product.name}
+              </Link>
+              {product.categoryName && <p className="text-sm text-gray-500 mb-2">{product.categoryName}</p>}
+              <p className="text-primary-600 font-bold mb-3">
+                {Number(product.price).toLocaleString('fr-FR')} {currency}
+              </p>
+              <button
+                type="button"
+                onClick={() => onAdd(product)}
+                className="mt-auto inline-flex items-center justify-center gap-2 px-3 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+              >
+                <Plus className="w-4 h-4" /> Ajouter au panier
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const Cart = () => {
   const { delivery } = useShopSettings();
@@ -12,7 +73,8 @@ const Cart = () => {
     updateQuantity, 
     removeFromCart, 
     getCartTotal, 
-    clearCart 
+    clearCart,
+    addToCart
   } = useCart();
   const { t } = useLanguage();
 
@@ -198,31 +260,7 @@ const Cart = () => {
         </div>
 
         {/* Recommended Products */}
-        <div className="mt-16">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8">
-            Vous pourriez aussi aimer
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {/* Sample recommended products */}
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                <img
-                  src={`/api/placeholder/300/200`}
-                  alt="Produit recommandé"
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">
-                    Produit recommandé {i}
-                  </h3>
-                  <p className="text-primary-600 font-bold">
-                    {(Math.random() * 500 + 100).toFixed(0)} {t('currency')}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <CartSuggestions cartItems={cartItems} onAdd={addToCart} currency={t('currency')} />
       </div>
     </div>
   );

@@ -2,11 +2,16 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../context/LanguageContext';
-import { ShoppingCart, Eye, Heart, Star } from 'lucide-react';
+import { ShoppingCart, Eye, Star } from 'lucide-react';
 import { showPlaceholderOnError } from '../utils/images';
+import { useCart } from '../context/CartContext';
+import WishlistButton from './WishlistButton';
 
 const AnimatedProductCard = ({ product, index = 0 }) => {
   const { t } = useLanguage();
+  const { addToCart } = useCart();
+  const productUrl = `/product/${product._id}`;
+  const rating = product.ratingStats?.totalReviews > 0 ? product.ratingStats.averageRating : null;
 
   const cardVariants = {
     hidden: { 
@@ -71,13 +76,9 @@ const AnimatedProductCard = ({ product, index = 0 }) => {
       </div>
 
       {/* Wishlist Button */}
-      <motion.button
-        className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-600 hover:text-red-500 hover:bg-white transition-all duration-300 shadow-lg"
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-      >
-        <Heart className="w-5 h-5" />
-      </motion.button>
+      <div className="absolute top-4 right-4 z-10">
+        <WishlistButton productId={product._id} size="md" />
+      </div>
 
       {/* Product Image */}
       <div className="relative h-64 overflow-hidden bg-gradient-to-br from-blue-50 to-cyan-50">
@@ -102,15 +103,17 @@ const AnimatedProductCard = ({ product, index = 0 }) => {
             whileHover={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.1 }}
           >
-            <motion.button
+            <Link
+              to={productUrl}
+              aria-label={`Voir ${product.name}`}
               className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-gray-700 hover:text-blue-600 shadow-lg"
-              variants={buttonVariants}
-              whileHover="hover"
-              whileTap="tap"
             >
               <Eye className="w-5 h-5" />
-            </motion.button>
+            </Link>
             <motion.button
+              type="button"
+              onClick={() => addToCart(product)}
+              aria-label={`Ajouter ${product.name} au panier`}
               className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 shadow-lg"
               variants={buttonVariants}
               whileHover="hover"
@@ -124,20 +127,15 @@ const AnimatedProductCard = ({ product, index = 0 }) => {
 
       {/* Product Info */}
       <div className="p-6">
-        {/* Rating */}
-        <div className="flex items-center mb-2">
-          {[...Array(5)].map((_, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, scale: 0 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.5 + i * 0.1 }}
-            >
-              <Star className="w-4 h-4 text-yellow-400 fill-current" />
-            </motion.div>
-          ))}
-          <span className="text-sm text-gray-500 ml-2">(4.8)</span>
-        </div>
+        {/* Rating, when customers have reviewed the product */}
+        {rating !== null && (
+          <div className="flex items-center mb-2" aria-label={`Note ${rating.toFixed(1)} sur 5`}>
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} className={`w-4 h-4 ${i < Math.round(rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
+            ))}
+            <span className="text-sm text-gray-500 ml-2">({rating.toFixed(1)})</span>
+          </div>
+        )}
 
         {/* Product Name */}
         <motion.h3 
@@ -151,12 +149,12 @@ const AnimatedProductCard = ({ product, index = 0 }) => {
 
         {/* Category */}
         <motion.p 
-          className="text-sm text-gray-500 mb-3 capitalize"
+          className="text-sm text-gray-500 mb-3"
           initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          {product.category}
+          {product.categoryName || product.category}
         </motion.p>
 
         {/* Price */}
@@ -168,7 +166,7 @@ const AnimatedProductCard = ({ product, index = 0 }) => {
         >
           <div className="flex items-center space-x-2">
             <span className="text-2xl font-bold text-blue-600">
-              {product.price} {t('currency')}
+              {Number(product.price).toLocaleString('fr-FR')} {t('currency')}
             </span>
           </div>
         </motion.div>
@@ -181,7 +179,7 @@ const AnimatedProductCard = ({ product, index = 0 }) => {
           transition={{ delay: 0.7 }}
         >
           <Link
-            to={`/product/${product.id}`}
+            to={productUrl}
             className="w-full"
           >
             <motion.button
