@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
 import { ArrowLeft, Plus, Minus, ShoppingCart, Star } from 'lucide-react';
@@ -10,6 +10,7 @@ import ProductReviews from '../components/product/ProductReviews';
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { hash } = useLocation();
   const { t } = useLanguage();
   const { addToCart } = useCart();
   
@@ -58,6 +59,14 @@ const ProductDetails = () => {
       // You could add a toast notification here
     }
   };
+
+  // "Donner mon avis" links in the delivery email end with #avis
+  useEffect(() => {
+    if (product && hash === '#avis') {
+      setActiveTab('reviews');
+      tabsRef.current?.scrollIntoView({ block: 'start' });
+    }
+  }, [product, hash]);
 
   const showReviews = () => {
     setActiveTab('reviews');

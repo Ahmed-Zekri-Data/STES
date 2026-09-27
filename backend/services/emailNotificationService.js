@@ -21,6 +21,34 @@ const PAYMENT_METHOD_LABELS = {
   card: 'Carte bancaire'
 };
 
+// What each status email says. Statuses not listed here are not emailed.
+const STATUS_EMAILS = {
+  confirmed: {
+    subject: 'est confirmée',
+    title: 'Commande confirmée',
+    color: '#0284c7',
+    message: 'Bonne nouvelle : votre commande est confirmée. Nous la préparons et vous écrirons dès son expédition.'
+  },
+  shipped: {
+    subject: 'est en route',
+    title: 'Commande expédiée',
+    color: '#2563eb',
+    message: 'Votre commande a été expédiée et est en route vers vous.'
+  },
+  delivered: {
+    subject: 'a été livrée',
+    title: 'Commande livrée',
+    color: '#059669',
+    message: 'Votre commande a été livrée. Merci pour votre confiance ! Nous espérons que vos produits vous donnent entière satisfaction.'
+  },
+  cancelled: {
+    subject: 'a été annulée',
+    title: 'Commande annulée',
+    color: '#6b7280',
+    message: "Votre commande a été annulée. Si vous n'avez pas demandé cette annulation ou si vous avez une question, répondez simplement à cet email."
+  }
+};
+
 class EmailNotificationService {
   constructor() {
     this.transporter = this.createTransporter();
@@ -391,267 +419,115 @@ class EmailNotificationService {
     return { subject, html, text };
   }
 
-  // Send order status update email
-  async sendOrderStatusUpdate(order) {
-    if (!order.emailNotifications?.enabled || !order.emailNotifications?.statusUpdates) {
-      console.log(`Email notifications disabled for order ${order.orderNumber}`);
+  // Tell the customer their order changed status (see STATUS_EMAILS). The
+  // admin's note, when given, is included. Never throws: callers don't wait.
+  async sendOrderStatusUpdate(order, { note } = {}) {
+    const flags = order.emailNotifications || {};
+    const wanted = order.status === 'delivered' ? flags.deliveryUpdates : flags.statusUpdates;
+    if (flags.enabled === false || wanted === false) {
       return { success: false, reason: 'notifications_disabled' };
+    }
+    if (!STATUS_EMAILS[order.status]) {
+      return { success: false, reason: 'no_email_for_status' };
+    }
+    if (!this.isConfigured()) {
+      console.log(`Email not configured (EMAIL_USER / EMAIL_PASS): no status email sent for order ${order.orderNumber}`);
+      return { success: false, reason: 'email_not_configured' };
     }
 
     try {
-      const emailContent = this.generateStatusUpdateEmail(order);
-      
-      const mailOptions = {
+      const content = this.generateStatusUpdateEmail(order, { note });
+      const result = await this.transporter.sendMail({
         from: `"STES Piscines" <${process.env.EMAIL_USER}>`,
         to: order.customer.email,
-        subject: emailContent.subject,
-        html: emailContent.html,
-        text: emailContent.text
-      };
+        subject: content.subject,
+        html: content.html,
+        text: content.text
+      });
 
-      const result = await this.transporter.sendMail(mailOptions);
-      
-      // Update notification sent flag
-      const statusEntry = order.statusHistory[order.statusHistory.length - 1];
-      if (statusEntry) {
-        statusEntry.notificationSent = true;
-      }
-      order.emailNotifications.lastNotificationSent = new Date();
-      await order.save();
+      // Not order.save(): the admin may be changing the order at the same time
+      const Order = require('../models/Order');
+      await Order.updateOne({ _id: order._id }, { $set: { 'emailNotifications.lastNotificationSent': new Date() } });
 
-      console.log(`Status update email sent for order ${order.orderNumber} to ${order.customer.email}`);
+      console.log(`Status email (${order.status}) sent for order ${order.orderNumber} to ${order.customer.email}`);
       return { success: true, messageId: result.messageId };
     } catch (error) {
-      console.error('Error sending status update email:', error);
+      console.error(`Error sending status email for order ${order.orderNumber}:`, error.message);
       return { success: false, error: error.message };
     }
   }
 
-  // Send delivery notification email
-  async sendDeliveryNotification(order) {
-    if (!order.emailNotifications?.enabled || !order.emailNotifications?.deliveryUpdates) {
-      return { success: false, reason: 'notifications_disabled' };
-    }
+  generateStatusUpdateEmail(order, { note } = {}) {
+    const content = STATUS_EMAILS[order.status];
+    const siteUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const trackingUrl = `${siteUrl}/track-order?code=${encodeURIComponent(order.trackingCode)}`;
+    const delivered = order.status === 'delivered';
+    const productUrl = (item) => `${siteUrl}/product/${item.product?._id || item.product}#avis`;
+    const estimatedDelivery = ['confirmed', 'shipped'].includes(order.status) && order.estimatedDelivery
+      ? new Date(order.estimatedDelivery).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+      : null;
 
-    try {
-      const emailContent = this.generateDeliveryEmail(order);
-      
-      const mailOptions = {
-        from: `"STES Piscines" <${process.env.EMAIL_USER}>`,
-        to: order.customer.email,
-        subject: emailContent.subject,
-        html: emailContent.html,
-        text: emailContent.text
-      };
+    const details = [
+      ['Numéro de commande', order.orderNumber],
+      ['Code de suivi', order.trackingCode],
+      ...(order.status === 'shipped' && order.trackingNumber ? [['Numéro de suivi du transporteur', order.trackingNumber]] : []),
+      ...(estimatedDelivery ? [['Livraison estimée', estimatedDelivery]] : []),
+      ['Montant', formatTND(order.totalAmount)]
+    ];
 
-      const result = await this.transporter.sendMail(mailOptions);
-      
-      order.emailNotifications.lastNotificationSent = new Date();
-      await order.save();
+    const subject = `Votre commande ${order.orderNumber} ${content.subject}`;
 
-      console.log(`Delivery notification sent for order ${order.orderNumber}`);
-      return { success: true, messageId: result.messageId };
-    } catch (error) {
-      console.error('Error sending delivery notification:', error);
-      return { success: false, error: error.message };
-    }
-  }
+    const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#1f2937;line-height:1.5">
+  <div style="max-width:600px;margin:0 auto;padding:20px">
+    <div style="background:${content.color};color:#ffffff;padding:24px;border-radius:10px 10px 0 0;text-align:center">
+      <h1 style="margin:0;font-size:22px">STES Piscines</h1>
+      <p style="margin:4px 0 0">${content.title}</p>
+    </div>
+    <div style="background:#ffffff;padding:24px;border:1px solid #e5e7eb">
+      <p>Bonjour ${escapeHtml(order.customer.name)},</p>
+      <p>${content.message}</p>
+      ${note ? `<p style="background:#fefce8;padding:12px;border-radius:8px"><strong>Message de notre équipe :</strong><br>${escapeHtml(note)}</p>` : ''}
+      <p style="background:#f0f9ff;padding:12px;border-radius:8px">
+        ${details.map(([label, value]) => `${label} : <strong>${escapeHtml(value)}</strong>`).join('<br>')}
+      </p>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0">
+        ${order.items.map(item => `<tr style="border-bottom:1px solid #f3f4f6">
+          <td style="padding:6px 0">${escapeHtml(item.name)} × ${escapeHtml(item.quantity)}</td>
+          <td style="padding:6px 0;text-align:right">${delivered
+            ? `<a href="${escapeHtml(productUrl(item))}" style="color:#0284c7">Donner mon avis</a>`
+            : formatTND(item.price * item.quantity)}</td>
+        </tr>`).join('')}
+      </table>
+      ${delivered ? '<p>Votre avis aide les autres clients à bien choisir : il suffit de quelques mots.</p>' : ''}
+      ${order.status === 'cancelled' ? '' : `<p style="text-align:center;margin:24px 0">
+        <a href="${escapeHtml(trackingUrl)}" style="display:inline-block;padding:12px 24px;background:${content.color};color:#ffffff;text-decoration:none;border-radius:6px">Suivre ma commande</a>
+      </p>`}
+    </div>
+    <div style="background:#f9fafb;padding:16px;text-align:center;font-size:13px;color:#6b7280;border-radius:0 0 10px 10px">
+      Une question ? Répondez à cet email en indiquant votre numéro de commande.
+    </div>
+  </div>
+</body>
+</html>`;
 
-  // Generate status update email content
-  generateStatusUpdateEmail(order) {
-    const statusLabels = {
-      pending: 'En attente',
-      confirmed: 'Confirmée',
-      processing: 'En préparation',
-      shipped: 'Expédiée',
-      delivered: 'Livrée',
-      cancelled: 'Annulée'
-    };
-
-    const statusColors = {
-      pending: '#f59e0b',
-      confirmed: '#10b981',
-      processing: '#8b5cf6',
-      shipped: '#3b82f6',
-      delivered: '#059669',
-      cancelled: '#ef4444'
-    };
-
-    const currentStatusLabel = statusLabels[order.status];
-    const statusColor = statusColors[order.status];
-    const latestUpdate = order.statusHistory[order.statusHistory.length - 1];
-
-    const subject = `Mise à jour de votre commande ${order.orderNumber} - ${currentStatusLabel}`;
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-          .content { background: white; padding: 30px; border: 1px solid #e5e7eb; }
-          .status-badge { display: inline-block; padding: 8px 16px; border-radius: 20px; color: white; font-weight: bold; background-color: ${statusColor}; }
-          .order-details { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; }
-          .timeline-item { border-left: 3px solid ${statusColor}; padding-left: 15px; margin-bottom: 15px; }
-          .footer { background: #f3f4f6; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; }
-          .btn { display: inline-block; padding: 12px 24px; background: ${statusColor}; color: white; text-decoration: none; border-radius: 6px; margin: 10px 0; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>🏊‍♂️ STES Piscines</h1>
-            <p>Mise à jour de votre commande</p>
-          </div>
-          
-          <div class="content">
-            <h2>Bonjour ${order.customer.name},</h2>
-            
-            <p>Votre commande <strong>${order.orderNumber}</strong> a été mise à jour :</p>
-            
-            <div style="text-align: center; margin: 20px 0;">
-              <span class="status-badge">${currentStatusLabel}</span>
-            </div>
-            
-            <div class="order-details">
-              <h3>Détails de la commande</h3>
-              <p><strong>Numéro de commande :</strong> ${order.orderNumber}</p>
-              <p><strong>Code de suivi :</strong> ${order.trackingCode}</p>
-              <p><strong>Montant total :</strong> ${order.totalAmount} TND</p>
-              ${order.trackingNumber ? `<p><strong>Numéro de suivi :</strong> ${order.trackingNumber}</p>` : ''}
-              ${order.estimatedDelivery ? `<p><strong>Livraison estimée :</strong> ${new Date(order.estimatedDelivery).toLocaleDateString('fr-FR')}</p>` : ''}
-            </div>
-            
-            ${latestUpdate ? `
-            <div class="timeline-item">
-              <h4>Dernière mise à jour</h4>
-              <p><strong>${new Date(latestUpdate.timestamp).toLocaleDateString('fr-FR')} à ${new Date(latestUpdate.timestamp).toLocaleTimeString('fr-FR')}</strong></p>
-              <p>${latestUpdate.note}</p>
-              ${latestUpdate.location ? `<p>📍 ${latestUpdate.location}</p>` : ''}
-            </div>
-            ` : ''}
-            
-            <div style="text-align: center;">
-              <a href="${process.env.FRONTEND_URL}/track-order?order=${order.orderNumber}" class="btn">
-                Suivre ma commande
-              </a>
-            </div>
-          </div>
-          
-          <div class="footer">
-            <p>Merci de votre confiance !</p>
-            <p>L'équipe STES Piscines</p>
-            <p style="font-size: 12px; color: #6b7280;">
-              Si vous ne souhaitez plus recevoir ces notifications, 
-              <a href="${process.env.FRONTEND_URL}/account/notifications">cliquez ici</a>
-            </p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const text = `
-      STES Piscines - Mise à jour de commande
-      
-      Bonjour ${order.customer.name},
-      
-      Votre commande ${order.orderNumber} a été mise à jour : ${currentStatusLabel}
-      
-      Détails :
-      - Code de suivi : ${order.trackingCode}
-      - Montant : ${order.totalAmount} TND
-      ${order.estimatedDelivery ? `- Livraison estimée : ${new Date(order.estimatedDelivery).toLocaleDateString('fr-FR')}` : ''}
-      
-      ${latestUpdate ? `Dernière mise à jour : ${latestUpdate.note}` : ''}
-      
-      Suivez votre commande : ${process.env.FRONTEND_URL}/track-order?order=${order.orderNumber}
-      
-      Merci de votre confiance !
-      L'équipe STES Piscines
-    `;
-
-    return { subject, html, text };
-  }
-
-  // Generate delivery email content
-  generateDeliveryEmail(order) {
-    const subject = `🎉 Votre commande ${order.orderNumber} a été livrée !`;
-    
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-          .content { background: white; padding: 30px; border: 1px solid #e5e7eb; }
-          .celebration { text-align: center; font-size: 48px; margin: 20px 0; }
-          .order-summary { background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981; }
-          .footer { background: #f3f4f6; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; }
-          .btn { display: inline-block; padding: 12px 24px; background: #10b981; color: white; text-decoration: none; border-radius: 6px; margin: 10px 5px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>🏊‍♂️ STES Piscines</h1>
-            <p>Livraison confirmée !</p>
-          </div>
-          
-          <div class="content">
-            <div class="celebration">🎉📦✨</div>
-            
-            <h2>Félicitations ${order.customer.name} !</h2>
-            
-            <p>Votre commande <strong>${order.orderNumber}</strong> a été livrée avec succès !</p>
-            
-            <div class="order-summary">
-              <h3>Résumé de la livraison</h3>
-              <p><strong>Livré le :</strong> ${new Date(order.actualDelivery).toLocaleDateString('fr-FR')} à ${new Date(order.actualDelivery).toLocaleTimeString('fr-FR')}</p>
-              <p><strong>Adresse de livraison :</strong> ${order.customer.address.street}, ${order.customer.address.city}</p>
-              <p><strong>Montant total :</strong> ${order.totalAmount} TND</p>
-            </div>
-            
-            <p>Nous espérons que vous êtes satisfait(e) de votre achat. N'hésitez pas à nous faire part de vos commentaires !</p>
-            
-            <div style="text-align: center;">
-              <a href="${process.env.FRONTEND_URL}/account/orders" class="btn">Voir mes commandes</a>
-              <a href="${process.env.FRONTEND_URL}/shop" class="btn">Continuer mes achats</a>
-            </div>
-          </div>
-          
-          <div class="footer">
-            <p>Merci de votre confiance !</p>
-            <p>L'équipe STES Piscines</p>
-            <p style="font-size: 12px; color: #6b7280;">
-              Une question ? Contactez-nous à support@piscinefacile.tn
-            </p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const text = `
-      🎉 STES Piscines - Livraison confirmée !
-      
-      Félicitations ${order.customer.name} !
-      
-      Votre commande ${order.orderNumber} a été livrée avec succès !
-      
-      Livré le : ${new Date(order.actualDelivery).toLocaleDateString('fr-FR')}
-      Adresse : ${order.customer.address.street}, ${order.customer.address.city}
-      Montant : ${order.totalAmount} TND
-      
-      Merci de votre confiance !
-      L'équipe STES Piscines
-    `;
+    const text = [
+      `Bonjour ${order.customer.name},`,
+      '',
+      content.message,
+      ...(note ? ['', `Message de notre équipe : ${note}`] : []),
+      '',
+      ...details.map(([label, value]) => `${label} : ${value}`),
+      '',
+      ...order.items.map(item => (delivered
+        ? `- ${item.name} x${item.quantity} : donner mon avis ${productUrl(item)}`
+        : `- ${item.name} x${item.quantity} : ${formatTND(item.price * item.quantity)}`)),
+      ...(order.status === 'cancelled' ? [] : ['', `Suivre ma commande : ${trackingUrl}`]),
+      '',
+      'Une question ? Répondez à cet email en indiquant votre numéro de commande.'
+    ].join('\n');
 
     return { subject, html, text };
   }

@@ -3,6 +3,19 @@ const smsService = require('./smsService');
 const pushNotificationService = require('./pushNotificationService');
 const { NotificationPreferences, NotificationLog } = require('../models/Notification');
 
+// Order statuses the customer is emailed about. "En attente" and "En
+// préparation" follow closely on the order and its confirmation: no email.
+const EMAILED_STATUSES = ['confirmed', 'shipped', 'delivered', 'cancelled'];
+
+const STATUS_LABELS = {
+  pending: 'En attente',
+  confirmed: 'Confirmée',
+  processing: 'En préparation',
+  shipped: 'Expédiée',
+  delivered: 'Livrée',
+  cancelled: 'Annulée'
+};
+
 class NotificationService {
   constructor() {
     this.channels = {
@@ -18,21 +31,19 @@ class NotificationService {
       // Get customer preferences
       const preferences = await NotificationPreferences.getOrCreateForCustomer(customerId);
       
-      // Check if customer is in quiet hours for non-urgent notifications
-      if (notification.priority !== 'urgent' && preferences.isInQuietHours()) {
-        console.log(`Customer ${customerId} is in quiet hours, skipping non-urgent notification`);
-        return {
-          success: false,
-          reason: 'quiet_hours',
-          message: 'Customer is in quiet hours'
-        };
-      }
+      // Quiet hours hold back texts and push messages that aren't urgent; an
+      // email waits in the inbox, so it is still sent
+      const quiet = notification.priority !== 'urgent' && preferences.isInQuietHours();
 
       const results = {};
       const logs = [];
 
       // Send through each requested channel
       for (const channel of channels) {
+        if (quiet && channel !== 'email') {
+          results[channel] = { success: false, reason: 'quiet_hours' };
+          continue;
+        }
         if (!preferences.canReceiveNotification(channel, notification.category)) {
           results[channel] = {
             success: false,
@@ -136,12 +147,10 @@ class NotificationService {
     if (notification.orderId) {
       // For order-related notifications, use the existing email service
       const Order = require('../models/Order');
-      const order = await Order.findById(notification.orderId).populate('customerId');
-      
-      if (order && notification.category === 'order_update') {
-        return await emailNotificationService.sendOrderStatusUpdate(order, notification.previousStatus);
-      } else if (order && notification.category === 'delivery') {
-        return await emailNotificationService.sendDeliveryNotification(order);
+      const order = await Order.findById(notification.orderId);
+
+      if (order && ['order_update', 'delivery'].includes(notification.category)) {
+        return await emailNotificationService.sendOrderStatusUpdate(order, { note: notification.note });
       }
     }
 
@@ -214,41 +223,33 @@ class NotificationService {
     }
   }
 
-  // Send order status update notification
-  async sendOrderStatusUpdate(order, previousStatus, channels = ['email', 'push', 'sms']) {
+  // Tells the customer their order changed status: by email (for the
+  // statuses in EMAILED_STATUSES), push and SMS for account holders, as their
+  // notification settings allow; by email only for guest orders.
+  async notifyOrderStatusChange(order, previousStatus, { note } = {}) {
+    if (order.status === previousStatus) {
+      return { success: false, reason: 'status_unchanged' };
+    }
+    const emailed = EMAILED_STATUSES.includes(order.status);
+
     if (!order.customerId) {
-      console.log('No customer ID found for order, skipping notifications');
-      return { success: false, reason: 'no_customer' };
+      return emailed
+        ? emailNotificationService.sendOrderStatusUpdate(order, { note })
+        : { success: false, reason: 'not_emailed' };
     }
 
     const notification = {
       orderId: order._id,
-      category: 'order_update',
-      title: `Mise à jour commande ${order.orderNumber}`,
-      message: `Votre commande a été mise à jour: ${order.status}`,
+      category: order.status === 'delivered' ? 'delivery' : 'order_update',
+      title: `Commande ${order.orderNumber} : ${STATUS_LABELS[order.status] || order.status}`,
+      message: note || `Votre commande est maintenant : ${(STATUS_LABELS[order.status] || order.status).toLowerCase()}.`,
       status: order.status,
-      previousStatus: previousStatus,
+      previousStatus,
+      note,
       priority: order.status === 'delivered' ? 'high' : 'normal'
     };
-
-    return await this.sendNotification(order.customerId, notification, channels);
-  }
-
-  // Send delivery notification
-  async sendDeliveryNotification(order, channels = ['email', 'push', 'sms']) {
-    if (!order.customerId) {
-      return { success: false, reason: 'no_customer' };
-    }
-
-    const notification = {
-      orderId: order._id,
-      category: 'delivery',
-      title: `Commande ${order.orderNumber} livrée`,
-      message: 'Votre commande a été livrée avec succès!',
-      priority: 'high'
-    };
-
-    return await this.sendNotification(order.customerId, notification, channels);
+    const channels = emailed ? ['email', 'push', 'sms'] : ['push', 'sms'];
+    return this.sendNotification(order.customerId, notification, channels);
   }
 
   // Send promotional notification

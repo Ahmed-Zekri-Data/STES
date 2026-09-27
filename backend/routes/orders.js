@@ -583,7 +583,7 @@ router.put('/:id/status', auth, [
   body('trackingNumber').optional().trim().isLength({ max: 100 }),
   body('note').optional().trim().isLength({ max: 200 }).withMessage('Note cannot exceed 200 characters'),
   body('location').optional().trim().isLength({ max: 100 }).withMessage('Location cannot exceed 100 characters'),
-  body('sendNotification').optional().isBoolean()
+  body('sendNotification').optional().isBoolean().toBoolean()
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -593,63 +593,51 @@ router.put('/:id/status', auth, [
 
     const { status, trackingNumber, note, location, sendNotification = true } = req.body;
 
-    // Get the current order to track previous status
-    const currentOrder = await Order.findById(req.params.id);
-    if (!currentOrder) {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    const previousStatus = currentOrder.status;
+    const previousStatus = order.status;
+    const statusChanged = previousStatus !== status;
+    const updatedBy = req.admin?.username || 'admin';
 
     // Reactivating a cancelled order needs its stock back first
     if (previousStatus === 'cancelled' && status !== 'cancelled') {
-      await reserveOrderStock(currentOrder);
+      await reserveOrderStock(order);
     }
 
-    const updateData = { status };
-    if (trackingNumber) updateData.trackingNumber = trackingNumber;
-
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true, runValidators: true }
-    ).populate('items.product');
+    // Saved (not updated in place) so the change is added to the order's
+    // history, which the customer's tracking page shows, and the delivery
+    // date is set
+    order.status = status;
+    if (trackingNumber) order.trackingNumber = trackingNumber;
+    order.$locals.statusUpdate = { note, location, updatedBy };
+    await order.save();
 
     if (status === 'cancelled' && previousStatus !== 'cancelled') {
-      await releaseOrderStock(currentOrder);
+      await releaseOrderStock(order);
     }
 
-    // Add custom tracking event if note or location provided
-    if (note || location) {
-      await order.addTrackingEvent(status, note, location, req.admin?.username || 'admin');
+    // A note or place without a new status is its own tracking event
+    if (!statusChanged && (note || location)) {
+      await order.addTrackingEvent(status, note, location, updatedBy);
     }
 
-    // Send notifications if enabled and status changed
-    if (sendNotification && previousStatus !== status) {
-      try {
-        const notificationService = require('../services/notificationService');
-        const notificationResult = await notificationService.sendOrderStatusUpdate(order, previousStatus);
-        console.log(`Notification result for order ${order.orderNumber}:`, notificationResult);
-      } catch (notificationError) {
-        console.error('Notification failed:', notificationError);
-        // Don't fail the status update if notification fails
-      }
+    // In the background: slow email or SMS providers must not hold up the
+    // admin. Failures are logged by the services.
+    const notifyCustomer = sendNotification && statusChanged;
+    if (notifyCustomer) {
+      require('../services/notificationService')
+        .notifyOrderStatusChange(order, previousStatus, { note })
+        .catch(error => console.error(`Status notification failed for order ${order.orderNumber}:`, error));
     }
 
-    // Send delivery notification for delivered status
-    if (status === 'delivered' && previousStatus !== 'delivered') {
-      try {
-        // await emailNotificationService.sendDeliveryNotification(order);
-        console.log(`Delivery notification would be sent for order ${order.orderNumber} (temporarily disabled)`);
-      } catch (emailError) {
-        console.error('Delivery notification failed:', emailError);
-      }
-    }
-
+    await order.populate('items.product', '-reviews');
     res.json({
       order,
       message: 'Order status updated successfully',
-      emailSent: sendNotification && previousStatus !== status
+      customerNotified: notifyCustomer
     });
   } catch (error) {
     if (error instanceof CheckoutError) {
