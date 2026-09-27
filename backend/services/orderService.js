@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
+const { DEFAULTS, getSettings } = require('./settingsService');
 
 // An error whose message is safe to show the client, with the HTTP status to use.
 class CheckoutError extends Error {
@@ -61,9 +62,6 @@ const priceOrderItems = async (requestedItems) => {
 };
 
 const TAX_RATE = 0.19; // 19% VAT in Tunisia
-const CASH_ON_DELIVERY_FEE = 5;
-const FREE_DELIVERY_OVER = 200; // TND, advertised on the cart page
-const BASE_DELIVERY_COST = 7;
 
 // Delivery cost factor per governorate (keys without accents)
 const GOVERNORATE_RATES = {
@@ -86,23 +84,24 @@ const normalizePlace = (place) => String(place || '')
   .trim()
   .toLowerCase();
 
-// Free over FREE_DELIVERY_OVER; otherwise the base cost times the
-// governorate's factor, doubled for urgent delivery.
-const deliveryCost = (subtotal, place, isUrgent = false) => {
-  if (subtotal > FREE_DELIVERY_OVER) {
+// Free over the free-delivery amount; otherwise the base cost times the
+// governorate's factor, doubled for urgent delivery. The amounts are set
+// in Admin → Settings.
+const deliveryCost = (subtotal, place, isUrgent = false, prices = DEFAULTS.delivery) => {
+  if (subtotal > prices.freeDeliveryOver) {
     return 0;
   }
   const rate = GOVERNORATE_RATES[normalizePlace(place)] ?? DEFAULT_RATE;
-  return Math.round(BASE_DELIVERY_COST * rate * (isUrgent ? 2 : 1));
+  return Math.round(prices.baseCost * rate * (isUrgent ? 2 : 1));
 };
 
 // Prices an order exactly as it will be charged. Used both to create orders
 // and to show the customer the total before they confirm.
 const quoteOrder = async ({ items, place, isUrgent = false, paymentMethod = 'cash_on_delivery' }) => {
-  const { orderItems, subtotal } = await priceOrderItems(items);
-  const shippingCost = deliveryCost(subtotal, place, isUrgent);
+  const [{ orderItems, subtotal }, { delivery }] = await Promise.all([priceOrderItems(items), getSettings()]);
+  const shippingCost = deliveryCost(subtotal, place, isUrgent, delivery);
   const taxAmount = roundMillimes(subtotal * TAX_RATE);
-  const paymentFee = paymentMethod === 'cash_on_delivery' ? CASH_ON_DELIVERY_FEE : 0;
+  const paymentFee = paymentMethod === 'cash_on_delivery' ? delivery.cashOnDeliveryFee : 0;
 
   return {
     orderItems,

@@ -16,7 +16,7 @@ const customerSecret = () => requireSecret(
 );
 
 const signAdminToken = (admin) => jwt.sign(
-  { adminId: admin._id, username: admin.username, role: admin.role },
+  { adminId: admin._id, username: admin.username, role: admin.role, v: admin.sessionVersion || 0 },
   adminSecret(),
   { expiresIn: '24h' }
 );

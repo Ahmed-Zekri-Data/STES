@@ -3,8 +3,10 @@ import { useLanguage } from '../context/LanguageContext';
 import { Wrench, CheckCircle, Phone, Mail, MapPin, Clock } from 'lucide-react';
 import axios from 'axios';
 import { submitErrorMessage } from '../utils/forms';
+import { useShopSettings, phoneLink } from '../context/shopSettings';
 
 const Services = () => {
+  const { contact } = useShopSettings();
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: '',
@@ -273,7 +275,7 @@ const Services = () => {
                 <Phone className="w-8 h-8" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Téléphone</h3>
-              <p className="text-gray-600">+216 12 345 678</p>
+              <a href={phoneLink(contact.phone)} className="text-gray-600 hover:text-primary-600">{contact.phone}</a>
             </div>
 
             <div className="text-center">
@@ -281,7 +283,7 @@ const Services = () => {
                 <Mail className="w-8 h-8" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Email</h3>
-              <p className="text-gray-600">info@piscinefacile.tn</p>
+              <a href={`mailto:${contact.email}`} className="text-gray-600 hover:text-primary-600">{contact.email}</a>
             </div>
 
             <div className="text-center">

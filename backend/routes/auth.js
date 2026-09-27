@@ -5,6 +5,22 @@ const { body, validationResult } = require('express-validator');
 const Admin = require('../models/Admin');
 const { auth } = require('../middleware/auth');
 
+const MIN_PASSWORD_LENGTH = 8;
+
+// What the admin panel knows about the logged-in admin
+const accountView = (admin) => ({
+  id: admin._id,
+  username: admin.username,
+  email: admin.email,
+  firstName: admin.firstName,
+  lastName: admin.lastName,
+  fullName: admin.fullName,
+  role: admin.role,
+  permissions: admin.permissions,
+  lastLogin: admin.lastLogin,
+  isActive: admin.isActive
+});
+
 // POST /api/auth/login - Admin login
 router.post('/login', [
   body('username').trim().isLength({ min: 1 }).withMessage('Username is required'),
@@ -31,15 +47,7 @@ router.post('/login', [
     res.json({
       message: 'Login successful',
       token,
-      admin: {
-        id: admin._id,
-        username: admin.username,
-        email: admin.email,
-        fullName: admin.fullName,
-        role: admin.role,
-        permissions: admin.permissions,
-        lastLogin: admin.lastLogin
-      }
+      admin: accountView(admin)
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -124,18 +132,7 @@ router.get('/me', auth, async (req, res) => {
       return res.status(404).json({ message: 'Admin not found' });
     }
 
-    res.json({
-      admin: {
-        id: admin._id,
-        username: admin.username,
-        email: admin.email,
-        fullName: admin.fullName,
-        role: admin.role,
-        permissions: admin.permissions,
-        lastLogin: admin.lastLogin,
-        isActive: admin.isActive
-      }
-    });
+    res.json({ admin: accountView(admin) });
   } catch (error) {
     console.error('Error fetching admin info:', error);
     res.status(500).json({ message: 'Error fetching admin information' });
@@ -144,9 +141,9 @@ router.get('/me', auth, async (req, res) => {
 
 // PUT /api/auth/profile - Update admin profile
 router.put('/profile', auth, [
-  body('firstName').optional().trim().isLength({ min: 1, max: 50 }),
-  body('lastName').optional().trim().isLength({ min: 1, max: 50 }),
-  body('email').optional().isEmail().normalizeEmail()
+  body('firstName').optional().trim().isLength({ min: 1, max: 50 }).withMessage('First name must be 1-50 characters'),
+  body('lastName').optional().trim().isLength({ min: 1, max: 50 }).withMessage('Last name must be 1-50 characters'),
+  body('email').optional().trim().toLowerCase().isEmail().withMessage('Valid email is required')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -185,14 +182,7 @@ router.put('/profile', auth, [
 
     res.json({
       message: 'Profile updated successfully',
-      admin: {
-        id: admin._id,
-        username: admin.username,
-        email: admin.email,
-        fullName: admin.fullName,
-        role: admin.role,
-        permissions: admin.permissions
-      }
+      admin: accountView(admin)
     });
   } catch (error) {
     console.error('Error updating profile:', error);
@@ -203,7 +193,7 @@ router.put('/profile', auth, [
 // PUT /api/auth/password - Change password
 router.put('/password', auth, [
   body('currentPassword').isLength({ min: 1 }).withMessage('Current password is required'),
-  body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters')
+  body('newPassword').isLength({ min: MIN_PASSWORD_LENGTH }).withMessage(`New password must be at least ${MIN_PASSWORD_LENGTH} characters`)
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -224,11 +214,13 @@ router.put('/password', auth, [
       return res.status(400).json({ message: 'Current password is incorrect' });
     }
 
-    // Update password
+    // Update password and sign out every other session; this one gets a
+    // new token so the admin stays logged in here
     admin.password = newPassword;
+    admin.sessionVersion = (admin.sessionVersion || 0) + 1;
     await admin.save();
 
-    res.json({ message: 'Password updated successfully' });
+    res.json({ message: 'Password updated successfully', token: signAdminToken(admin) });
   } catch (error) {
     console.error('Error changing password:', error);
     res.status(500).json({ message: 'Error changing password' });

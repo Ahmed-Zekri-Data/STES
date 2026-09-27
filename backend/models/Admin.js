@@ -16,7 +16,8 @@ const adminSchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
     trim: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+    // Any domain ending (.tn, .com, .info, ...)
+    match: [/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/, 'Please enter a valid email']
   },
   password: {
     type: String,
@@ -53,6 +54,11 @@ const adminSchema = new mongoose.Schema({
   },
   lockUntil: {
     type: Date
+  },
+  // Written into each login token; raising it signs out every session
+  sessionVersion: {
+    type: Number,
+    default: 0
   },
   permissions: [{
     type: String,

@@ -2,9 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useShopSettings } from '../context/shopSettings';
 import { Plus, Minus, X, ShoppingBag, ArrowRight } from 'lucide-react';
 
 const Cart = () => {
+  const { delivery } = useShopSettings();
   const { 
     cartItems, 
     updateQuantity, 
@@ -188,7 +190,7 @@ const Cart = () => {
                   Livraison gratuite
                 </h3>
                 <p className="text-sm text-blue-700">
-                  Livraison gratuite pour les commandes supérieures à 200 TND.
+                  Livraison gratuite pour les commandes supérieures à {delivery.freeDeliveryOver} TND.
                 </p>
               </div>
             </div>

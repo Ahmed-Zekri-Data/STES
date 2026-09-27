@@ -20,6 +20,11 @@ const auth = async (req, res, next) => {
       return res.status(401).json({ message: 'Token is not valid. Admin not found.' });
     }
 
+    // Sessions started before a password change or deactivation
+    if ((decoded.v || 0) !== (admin.sessionVersion || 0)) {
+      return res.status(401).json({ message: 'Session ended. Please log in again.' });
+    }
+
     if (!admin.isActive) {
       return res.status(401).json({ message: 'Account is deactivated.' });
     }

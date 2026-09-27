@@ -1,15 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const { query, validationResult } = require('express-validator');
-const { auth, checkPermission, requireSuperAdmin } = require('../middleware/auth');
+const { auth, checkPermission } = require('../middleware/auth');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const FormSubmission = require('../models/FormSubmission');
-const Admin = require('../models/Admin');
 const Customer = require('../models/Customer');
 const { containing } = require('../utils/text');
 
-const { LOW_STOCK_THRESHOLD } = require('../config/inventory');
+const { getSettings } = require('../services/settingsService');
 
 const can = (admin, permission) =>
   admin.role === 'super_admin' || admin.permissions.includes(permission);
@@ -137,7 +136,8 @@ router.get('/notifications', auth, async (req, res) => {
     }
 
     if (can(req.admin, 'products')) {
-      const filter = { stockQuantity: { $lte: LOW_STOCK_THRESHOLD } };
+      const { lowStockThreshold } = await getSettings();
+      const filter = { stockQuantity: { $lte: lowStockThreshold } };
       const [count, items] = await Promise.all([
         Product.countDocuments(filter),
         Product.find(filter)
@@ -148,7 +148,7 @@ router.get('/notifications', auth, async (req, res) => {
       ]);
       result.lowStock = {
         count,
-        threshold: LOW_STOCK_THRESHOLD,
+        threshold: lowStockThreshold,
         items: items.map(product => ({
           id: product._id,
           name: product.name,
@@ -351,75 +351,6 @@ router.get('/analytics', auth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching analytics:', error);
     res.status(500).json({ message: 'Error fetching analytics data' });
-  }
-});
-
-// GET /api/admin/users - Get all admin users (Super Admin only)
-router.get('/users', auth, requireSuperAdmin, async (req, res) => {
-  try {
-    const admins = await Admin.find()
-      .select('-password')
-      .sort({ createdAt: -1 });
-
-    res.json(admins);
-  } catch (error) {
-    console.error('Error fetching admin users:', error);
-    res.status(500).json({ message: 'Error fetching admin users' });
-  }
-});
-
-// PUT /api/admin/users/:id/status - Update admin user status (Super Admin only)
-router.put('/users/:id/status', auth, requireSuperAdmin, async (req, res) => {
-  try {
-    const { isActive } = req.body;
-    
-    if (typeof isActive !== 'boolean') {
-      return res.status(400).json({ message: 'isActive must be a boolean' });
-    }
-
-    // Prevent deactivating self
-    if (req.params.id === req.admin.adminId.toString()) {
-      return res.status(400).json({ message: 'Cannot deactivate your own account' });
-    }
-
-    const admin = await Admin.findByIdAndUpdate(
-      req.params.id,
-      { isActive },
-      { new: true, runValidators: true }
-    ).select('-password');
-
-    if (!admin) {
-      return res.status(404).json({ message: 'Admin user not found' });
-    }
-
-    res.json({
-      message: `Admin account ${isActive ? 'activated' : 'deactivated'} successfully`,
-      admin
-    });
-  } catch (error) {
-    console.error('Error updating admin status:', error);
-    res.status(500).json({ message: 'Error updating admin status' });
-  }
-});
-
-// DELETE /api/admin/users/:id - Delete admin user (Super Admin only)
-router.delete('/users/:id', auth, requireSuperAdmin, async (req, res) => {
-  try {
-    // Prevent deleting self
-    if (req.params.id === req.admin.adminId.toString()) {
-      return res.status(400).json({ message: 'Cannot delete your own account' });
-    }
-
-    const admin = await Admin.findByIdAndDelete(req.params.id);
-
-    if (!admin) {
-      return res.status(404).json({ message: 'Admin user not found' });
-    }
-
-    res.json({ message: 'Admin account deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting admin user:', error);
-    res.status(500).json({ message: 'Error deleting admin user' });
   }
 });
 
