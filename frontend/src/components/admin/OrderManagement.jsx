@@ -116,26 +116,23 @@ const OrderManagement = () => {
     }
   };
 
-  const handleStatusUpdate = async (orderId, newStatus, trackingNumber = '', note = '', location = '') => {
-    try {
-      const response = await api.put(`/orders/${orderId}/status`, {
-        status: newStatus,
-        trackingNumber,
-        note,
-        location,
-        sendNotification: true
-      });
+  // Throws when the update fails: the dialog stays open and says why
+  const handleStatusUpdate = async (orderId, newStatus, trackingNumber = '', note = '', location = '', sendNotification = true) => {
+    const response = await api.put(`/orders/${orderId}/status`, {
+      status: newStatus,
+      trackingNumber,
+      note,
+      location,
+      sendNotification
+    });
 
-      // Update the order in the list
-      setOrders(orders.map(order => 
-        order._id === orderId ? response.data.order : order
-      ));
+    // Update the order in the list
+    setOrders(orders.map(order =>
+      order._id === orderId ? response.data.order : order
+    ));
 
-      setShowStatusModal(false);
-      setSelectedOrder(null);
-    } catch (error) {
-      console.error('Error updating order status:', error);
-    }
+    setShowStatusModal(false);
+    setSelectedOrder(null);
   };
 
   const filteredOrders = orders.filter(order => {
@@ -291,6 +288,7 @@ const OrderManagement = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                     <button
                       onClick={() => setSelectedOrder(order)}
+                      aria-label={`Voir la commande ${order.orderNumber}`}
                       className="text-blue-600 hover:text-blue-900"
                     >
                       <Eye className="w-4 h-4" />
@@ -300,6 +298,7 @@ const OrderManagement = () => {
                         setSelectedOrder(order);
                         setShowStatusModal(true);
                       }}
+                      aria-label={`Modifier le statut de ${order.orderNumber}`}
                       className="text-green-600 hover:text-green-900"
                     >
                       <Edit className="w-4 h-4" />
@@ -517,16 +516,30 @@ const OrderDetailsModal = ({ order, onClose, onEditStatus }) => {
   );
 };
 
+// Statuses the customer is emailed about (see backend notificationService)
+const EMAILED_STATUSES = ['confirmed', 'shipped', 'delivered', 'cancelled'];
+
 // Status Update Modal Component
 const StatusUpdateModal = ({ order, onClose, onUpdate }) => {
   const [newStatus, setNewStatus] = useState(order.status);
   const [trackingNumber, setTrackingNumber] = useState(order.trackingNumber || '');
   const [note, setNote] = useState('');
   const [location, setLocation] = useState('');
+  const [notify, setNotify] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const emailed = EMAILED_STATUSES.includes(newStatus) && newStatus !== order.status;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onUpdate(order._id, newStatus, trackingNumber, note, location);
+    setSaving(true);
+    setError('');
+    try {
+      await onUpdate(order._id, newStatus, trackingNumber, note, location, notify);
+    } catch (err) {
+      setError(`Le statut n'a pas pu être modifié : ${err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || err.message}`);
+      setSaving(false);
+    }
   };
 
   return (
@@ -558,13 +571,16 @@ const StatusUpdateModal = ({ order, onClose, onUpdate }) => {
             </button>
           </div>
 
+          {error && <p role="alert" className="mb-4 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">{error}</p>}
+
           <div className="space-y-4">
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="order-new-status" className="block text-sm font-medium text-gray-700 mb-2">
                 Nouveau statut
               </label>
               <select
+                id="order-new-status"
                 value={newStatus}
                 onChange={(e) => setNewStatus(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -595,16 +611,19 @@ const StatusUpdateModal = ({ order, onClose, onUpdate }) => {
 
             {/* Note */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Note (optionnelle)
+              <label htmlFor="order-status-note" className="block text-sm font-medium text-gray-700 mb-2">
+                Message au client (optionnel)
               </label>
               <textarea
+                id="order-status-note"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={3}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Ajouter une note sur cette mise à jour..."
+                maxLength={200}
+                placeholder="Ex : Livraison prévue demain matin"
               />
+              <p className="mt-1 text-xs text-gray-500">Visible sur la page de suivi et dans l'email.</p>
             </div>
 
             {/* Location */}
@@ -622,10 +641,18 @@ const StatusUpdateModal = ({ order, onClose, onUpdate }) => {
             </div>
           </div>
 
+          {emailed && (
+            <label className="flex items-start gap-2 mt-4 text-sm text-gray-700">
+              <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} className="mt-0.5" />
+              <span>Prévenir le client par email ({order.customer?.email})</span>
+            </label>
+          )}
+
           <div className="flex space-x-3 mt-6">
             <button
               type="submit"
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+              disabled={saving}
+              className="flex-1 disabled:opacity-50 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
             >
               <Save className="w-4 h-4 mr-2" />
               Mettre à jour

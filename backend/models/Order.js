@@ -381,14 +381,16 @@ orderSchema.pre('save', async function(next) {
     this.estimatedDelivery = estimatedDate;
   }
 
-  // Track status changes
+  // Track status changes. The admin's note and place, when given, are set in
+  // order.$locals.statusUpdate by the status route.
   if (this.isModified('status') && !this.isNew) {
+    const update = this.$locals.statusUpdate || {};
     this.statusHistory.push({
       status: this.status,
       timestamp: new Date(),
-      note: this.getStatusNote(this.status),
-      location: this.getStatusLocation(this.status),
-      updatedBy: 'admin'
+      note: update.note || this.getStatusNote(this.status),
+      location: update.location || this.getStatusLocation(this.status),
+      updatedBy: update.updatedBy || 'admin'
     });
 
     // Set actual delivery date when delivered
