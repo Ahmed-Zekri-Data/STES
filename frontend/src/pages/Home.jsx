@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { ShoppingBag, Wrench, Star, Users, Award, Clock, Waves, Droplets, Sparkles, ArrowRight } from 'lucide-react';
@@ -6,10 +6,25 @@ import { motion } from 'framer-motion';
 import { Parallax } from 'react-parallax';
 import AnimatedProductCard from '../components/AnimatedProductCard';
 import { useShopSettings, whatsappLink } from '../context/shopSettings';
+import { pickProducts } from '../utils/productPicks';
 
 const Home = () => {
   const whatsapp = whatsappLink(useShopSettings().contact.whatsapp);
   const { t } = useLanguage();
+  // The products marked "featured" in Admin → Products, topped up with the
+  // newest ones; null while loading
+  const [popularProducts, setPopularProducts] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    pickProducts({ limit: 3 })
+      .then(products => { if (!cancelled) setPopularProducts(products); })
+      .catch(error => {
+        console.error('Error loading popular products:', error);
+        if (!cancelled) setPopularProducts([]);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   // Animation variants
   const containerVariants = {
@@ -73,29 +88,6 @@ const Home = () => {
     }
   ];
 
-  const popularProducts = [
-    {
-      id: 1,
-      name: 'Moteur de Piscine 1.5HP',
-      price: 850,
-      image: '/api/placeholder/300/200',
-      category: 'motors'
-    },
-    {
-      id: 2,
-      name: 'Filtre à Sable Premium',
-      price: 450,
-      image: '/api/placeholder/300/200',
-      category: 'filters'
-    },
-    {
-      id: 3,
-      name: 'Chlore Granulé 5kg',
-      price: 65,
-      image: '/api/placeholder/300/200',
-      category: 'chemicals'
-    }
-  ];
 
   return (
     <div className="min-h-screen overflow-hidden">
@@ -283,8 +275,8 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Popular Products Section */}
-      <section className="py-20 bg-white relative overflow-hidden">
+      {/* Popular Products Section (hidden when the shop has no products) */}
+      {popularProducts?.length !== 0 && <section className="py-20 bg-white relative overflow-hidden">
         {/* Background Decoration */}
         <div className="absolute top-0 left-0 w-full h-full">
           <div className="absolute top-20 left-10 w-32 h-32 bg-blue-100 rounded-full opacity-20 blur-3xl"></div>
@@ -322,13 +314,15 @@ const Home = () => {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-            {popularProducts.map((product, index) => (
-              <AnimatedProductCard
-                key={product.id}
-                product={product}
-                index={index}
-              />
-            ))}
+            {popularProducts === null
+              ? [0, 1, 2].map(i => <div key={i} className="h-96 rounded-2xl bg-gray-100 animate-pulse" />)
+              : popularProducts.map((product, index) => (
+                <AnimatedProductCard
+                  key={product._id}
+                  product={product}
+                  index={index}
+                />
+              ))}
           </div>
 
           <motion.div
@@ -353,7 +347,7 @@ const Home = () => {
             </motion.div>
           </motion.div>
         </div>
-      </section>
+      </section>}
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-br from-blue-600 via-blue-700 to-cyan-600 text-white relative overflow-hidden">
