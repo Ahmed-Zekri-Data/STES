@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
 const Wishlist = require('../models/Wishlist');
 const Product = require('../models/Product');
@@ -64,7 +65,7 @@ router.post('/items', customerAuth, [
     const productSnapshot = {
       name: product.name,
       price: product.price,
-      image: product.images && product.images.length > 0 ? product.images[0] : '',
+      image: product.image || '',
       category: product.category
     };
 
@@ -95,6 +96,9 @@ router.post('/items', customerAuth, [
 router.delete('/items/:productId', customerAuth, async (req, res) => {
   try {
     const { productId } = req.params;
+    if (!mongoose.isValidObjectId(productId)) {
+      return res.status(400).json({ message: 'Valid product ID is required' });
+    }
 
     // Get wishlist
     const wishlist = await Wishlist.findOne({ customer: req.customer.customerId });
@@ -212,13 +216,16 @@ router.put('/settings', customerAuth, [
 router.get('/public/:customerId', async (req, res) => {
   try {
     const { customerId } = req.params;
+    if (!mongoose.isValidObjectId(customerId)) {
+      return res.status(404).json({ message: 'Public wishlist not found' });
+    }
 
     const wishlist = await Wishlist.findOne({ 
       customer: customerId, 
       isPublic: true 
     }).populate({
       path: 'items.product',
-      select: 'name price images category inStock'
+      select: 'name price image category inStock'
     }).populate({
       path: 'customer',
       select: 'firstName lastName'
