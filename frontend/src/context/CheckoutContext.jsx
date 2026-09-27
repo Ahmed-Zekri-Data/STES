@@ -107,7 +107,8 @@ export const CheckoutProvider = ({ children }) => {
   // Tunisian Governorates for address selection
   const tunisianGovernorates = TUNISIAN_GOVERNORATES;
 
-  // Payment methods state
+  // Payment methods offered by the shop (GET /api/payments/methods). Until
+  // they load, only cash on delivery, which is always offered.
   const [paymentMethods, setPaymentMethods] = useState([
     {
       id: 'cash_on_delivery',
@@ -117,15 +118,6 @@ export const CheckoutProvider = ({ children }) => {
       fee: 5,
       enabled: true,
       processingTime: 'À la livraison'
-    },
-    {
-      id: 'bank_transfer',
-      name: 'Virement Bancaire',
-      description: 'Transfert depuis votre banque',
-      icon: '🏦',
-      fee: 0,
-      enabled: true,
-      processingTime: '1-2 jours ouvrables'
     }
   ]);
 

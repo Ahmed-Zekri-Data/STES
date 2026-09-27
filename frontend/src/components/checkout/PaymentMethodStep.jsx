@@ -17,7 +17,7 @@ import {
 
 const PaymentMethodStep = () => {
   // The cash-on-delivery fee is set in Admin → Settings
-  const { delivery } = useShopSettings();
+  const { delivery, bank } = useShopSettings();
   const feeFor = (method) => (method.id === 'cash_on_delivery' ? delivery.cashOnDeliveryFee : method.fee);
   const { 
     checkoutData, 
@@ -278,15 +278,18 @@ const PaymentMethodStep = () => {
               Informations de Virement
             </h3>
             
-            <div className="bg-white rounded-lg p-4 mb-4">
-              <h4 className="font-medium text-gray-900 mb-2">Coordonnées bancaires STES:</h4>
-              <div className="space-y-1 text-sm text-gray-600">
-                <p><strong>Banque:</strong> Banque de Tunisie</p>
-                <p><strong>RIB:</strong> 04 018 0000123456789 12</p>
-                <p><strong>IBAN:</strong> TN59 04 018 0000123456789 12</p>
-                <p><strong>Bénéficiaire:</strong> STES - Société Tunisienne d'Équipements de Piscines</p>
+            {/* The account set in Admin → Settings → Shop */}
+            {bank && (
+              <div className="bg-white rounded-lg p-4 mb-4">
+                <h4 className="font-medium text-gray-900 mb-2">Coordonnées bancaires :</h4>
+                <div className="space-y-1 text-sm text-gray-600">
+                  <p><strong>Bénéficiaire :</strong> {bank.beneficiary}</p>
+                  {bank.bankName && <p><strong>Banque :</strong> {bank.bankName}</p>}
+                  <p><strong>RIB :</strong> {bank.rib}</p>
+                  <p><strong>IBAN :</strong> {bank.iban}</p>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <div className="flex items-start">

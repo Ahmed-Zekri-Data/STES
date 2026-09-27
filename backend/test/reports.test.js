@@ -96,6 +96,8 @@ describe('sales reports', () => {
   });
 
   it('breaks sales down by category, product, governorate and payment method', async () => {
+    // Bank transfer is offered once the shop has an account
+    await require('../models/Settings').create({ key: 'shop', bank: { beneficiary: 'STES SARL', rib: '08104000123456789034' } });
     await order({ at: '2026-09-02T10:00:00Z', items: [[pump, 1], [filter, 2]], governorate: 'Sfax' });
     await order({ at: '2026-09-03T10:00:00Z', items: [[filter, 1]], governorate: 'Sfax', method: 'bank_transfer' });
     await order({ at: '2026-09-04T10:00:00Z', items: [[filter, 1]], governorate: 'Tunis' });

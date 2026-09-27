@@ -10,7 +10,7 @@ const { auth } = require('../middleware/auth');
 // GET /api/payments/methods - Get available payment methods
 router.get('/methods', async (req, res) => {
   try {
-    const methods = paymentService.getAvailablePaymentMethods();
+    const methods = await paymentService.getAvailablePaymentMethods();
     res.json({ methods });
   } catch (error) {
     console.error('Error fetching payment methods:', error);
@@ -41,6 +41,10 @@ router.post('/initiate', [
     const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
+    }
+    // Paid the way it was ordered (and priced: cash on delivery has a fee)
+    if (paymentMethod !== order.paymentMethod) {
+      return res.status(400).json({ message: 'The payment method does not match the order' });
     }
 
     // Check if order already has a completed payment

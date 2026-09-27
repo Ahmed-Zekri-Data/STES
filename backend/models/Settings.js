@@ -10,6 +10,12 @@ const settingsSchema = new mongoose.Schema({
     email: String,
     address: String
   },
+  // Shown to customers who pay by bank transfer
+  bank: {
+    bankName: String,
+    beneficiary: String,
+    rib: String
+  },
   delivery: {
     freeDeliveryOver: Number, // TND; orders above this ship free
     baseCost: Number, // TND, before the governorate factor

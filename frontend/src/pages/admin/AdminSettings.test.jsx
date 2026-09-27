@@ -63,4 +63,28 @@ describe('admin settings', () => {
     expect(await screen.findByText('Profile')).toBeTruthy();
     expect(screen.queryByRole('tab', { name: /Shop/ })).toBeNull();
   });
+
+  it('saves the bank account for bank transfers with the other shop settings', async () => {
+    const shopAdmin = { ...account, role: 'super_admin', permissions: [] };
+    localStorage.setItem('adminUser', JSON.stringify(shopAdmin));
+    const settings = {
+      contact: { phone: '+216 71 234 567', whatsapp: '', email: 'info@stes.tn', address: 'Tunis' },
+      bank: { bankName: '', beneficiary: '', rib: '' },
+      delivery: { freeDeliveryOver: 200, baseCost: 7, cashOnDeliveryFee: 5 },
+      lowStockThreshold: 5
+    };
+    vi.spyOn(adminApi, 'get').mockImplementation(async (url) => (url === '/admin/settings' ? { data: settings } : { data: { admin: shopAdmin } }));
+    const put = vi.spyOn(adminApi, 'put').mockResolvedValue({ data: { settings } });
+    renderPage('/admin/settings?tab=shop');
+
+    fireEvent.change(await screen.findByLabelText('Account holder'), { target: { value: 'STES SARL' } });
+    fireEvent.change(screen.getByLabelText('Bank'), { target: { value: 'BIAT' } });
+    fireEvent.change(screen.getByLabelText('RIB'), { target: { value: '08104000123456789034' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save shop settings/ }));
+
+    expect(await screen.findByText(/Saved/)).toBeTruthy();
+    expect(put).toHaveBeenCalledWith('/admin/settings', expect.objectContaining({
+      bank: { bankName: 'BIAT', beneficiary: 'STES SARL', rib: '08104000123456789034' }
+    }));
+  });
 });
