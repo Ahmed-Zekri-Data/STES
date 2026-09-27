@@ -4,6 +4,7 @@ import { useCart } from '../../context/CartContext';
 import { useCheckout } from '../../context/CheckoutContext';
 import { useShopSettings, phoneLink } from '../../context/shopSettings';
 import { ShoppingBag, Truck, CreditCard, Tag, Shield } from 'lucide-react';
+import ProductVisual from '../product/ProductVisual';
 
 const OrderSummary = () => {
   const { cartItems } = useCart();
@@ -14,18 +15,18 @@ const OrderSummary = () => {
 
   return (
     <motion.div
-      className="bg-surface rounded-2xl shadow-lg p-6 sticky top-8"
+      className="glass rounded-[1.75rem] p-6"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
     >
       {/* Header */}
       <div className="flex items-center mb-6">
-        <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center">
-          <ShoppingBag className="w-5 h-5 text-white" />
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-glow" style={{ background: 'rgb(var(--brand))' }}>
+          <ShoppingBag className="w-5 h-5 text-on-brand" />
         </div>
         <div className="ml-3">
-          <h2 className="text-xl font-bold text-gray-900">Résumé</h2>
+          <h2 className="font-display text-xl font-bold text-gray-900">Résumé</h2>
           <p className="text-sm text-gray-600">{cartItems.length} article{cartItems.length > 1 ? 's' : ''}</p>
         </div>
       </div>
@@ -41,17 +42,13 @@ const OrderSummary = () => {
         {cartItems.map((item, index) => (
           <motion.div
             key={item._id}
-            className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg"
+            className="flex items-center gap-3 p-2 rounded-xl"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
           >
-            <div className="w-12 h-12 bg-surface rounded-lg overflow-hidden">
-              <img
-                src={item.image || '/api/placeholder/48/48'}
-                alt={item.name}
-                className="w-full h-full object-cover"
-              />
+            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden">
+              <ProductVisual product={item} iconClassName="h-1/2 w-1/2" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">

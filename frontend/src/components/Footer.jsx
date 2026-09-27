@@ -10,25 +10,25 @@ import { LogoMark } from './brand/Logo';
 const Waves = () => (
   <div className="pointer-events-none absolute inset-x-0 bottom-full h-16 overflow-hidden sm:h-24" aria-hidden="true">
     {[
-      { opacity: 0.35, duration: '14s', offset: 0 },
-      { opacity: 0.6, duration: '10s', offset: 6 },
-      { opacity: 1, duration: '7s', offset: 12 }
-    ].map(({ opacity, duration, offset }) => (
+      { fill: 'rgb(var(--aqua-400) / 0.35)', duration: '14s', offset: 0 },
+      { fill: 'rgb(var(--aqua-700) / 0.6)', duration: '10s', offset: 6 },
+      { fill: 'rgb(var(--deep))', duration: '7s', offset: 12 }
+    ].map(({ fill, duration, offset }) => (
       <svg
         key={duration}
         viewBox="0 0 1440 100"
         preserveAspectRatio="none"
         className="absolute bottom-0 h-full w-[200%] motion-safe:animate-[wave_var(--d)_linear_infinite]"
-        style={{ '--d': duration, opacity }}
+        style={{ '--d': duration }}
       >
         <path
           d={`M0 ${50 + offset}c120 0 240-${30 - offset} 360-${30 - offset}s240 ${30 - offset} 360 ${30 - offset} 240-${30 - offset} 360-${30 - offset} 240 ${30 - offset} 360 ${30 - offset}v${50 - offset}H0z`}
-          fill="rgb(var(--deep))"
+          fill={fill}
         />
         <path
           transform="translate(1440 0)"
           d={`M0 ${50 + offset}c120 0 240-${30 - offset} 360-${30 - offset}s240 ${30 - offset} 360 ${30 - offset} 240-${30 - offset} 360-${30 - offset} 240 ${30 - offset} 360 ${30 - offset}v${50 - offset}H0z`}
-          fill="rgb(var(--deep))"
+          fill={fill}
         />
       </svg>
     ))}

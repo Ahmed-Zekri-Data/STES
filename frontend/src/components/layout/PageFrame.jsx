@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { motion, useScroll, useSpring, useReducedMotion } from 'framer-motion';
+import { motion, useScroll, useSpring } from 'framer-motion';
 
 // A thin line of light across the top of the screen, showing how far down
 // the page is scrolled
@@ -16,33 +16,20 @@ export const ScrollProgress = () => {
   );
 };
 
-// Each page rises out of a light blur when it opens, and the window starts
-// at its top. Changing only the query (shop filters) keeps the scroll.
+// Each page fades in when it opens, and the window starts at its top.
+// Changing only the query (shop filters) keeps the scroll. Only opacity is
+// animated here: a transform or filter on this wrapper would make every
+// fixed-position element of the page (dialogs, bottom bars) position itself
+// inside the page instead of the screen. Pages animate their own content.
 export const PageTransition = ({ children }) => {
   const { pathname } = useLocation();
-  const reduce = useReducedMotion();
-  const ref = useRef(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [pathname]);
 
   return (
-    <motion.div
-      key={pathname}
-      initial={reduce ? false : { opacity: 0, y: 18, filter: 'blur(8px)' }}
-      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      // Any filter or transform left on would make fixed-position children
-      // (dialogs, sticky bars) position themselves inside this box
-      onAnimationComplete={() => {
-        if (ref.current) {
-          ref.current.style.filter = 'none';
-          ref.current.style.transform = 'none';
-        }
-      }}
-      ref={ref}
-    >
+    <motion.div key={pathname} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.45, ease: 'easeOut' }}>
       {children}
     </motion.div>
   );
