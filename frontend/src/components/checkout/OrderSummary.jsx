@@ -82,7 +82,7 @@ const OrderSummary = () => {
           <input
             type="text"
             placeholder="Entrez votre code"
-            className="flex-1 px-3 py-2 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-3 py-2 text-sm border border-blue-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
           />
           <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
             Appliquer

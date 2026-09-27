@@ -48,7 +48,7 @@ const CustomerInfoStep = () => {
             value={customer.firstName}
             onChange={handleInputChange}
             required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-300"
             placeholder="Votre prénom"
             variants={inputVariants}
             whileFocus="focus"
@@ -72,7 +72,7 @@ const CustomerInfoStep = () => {
             value={customer.lastName}
             onChange={handleInputChange}
             required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-300"
             placeholder="Votre nom"
             variants={inputVariants}
             whileFocus="focus"
@@ -96,7 +96,7 @@ const CustomerInfoStep = () => {
             value={customer.email}
             onChange={handleInputChange}
             required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-300"
             placeholder="votre@email.com"
             variants={inputVariants}
             whileFocus="focus"
@@ -120,7 +120,7 @@ const CustomerInfoStep = () => {
             value={customer.phone}
             onChange={handleInputChange}
             required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-300"
             placeholder="+216 XX XXX XXX"
             variants={inputVariants}
             whileFocus="focus"
@@ -144,7 +144,7 @@ const CustomerInfoStep = () => {
           name="company"
           value={customer.company}
           onChange={handleInputChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-300"
           placeholder="Nom de votre entreprise"
           variants={inputVariants}
           whileFocus="focus"

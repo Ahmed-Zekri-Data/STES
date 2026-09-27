@@ -158,7 +158,7 @@ const CustomerLogin = ({ onClose, onSwitchToRegister, onForgotPassword }) => {
               value={formData.email}
               onChange={handleChange}
               placeholder={text.emailPlaceholder}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-200"
               required
             />
           </div>
@@ -180,7 +180,7 @@ const CustomerLogin = ({ onClose, onSwitchToRegister, onForgotPassword }) => {
               value={formData.password}
               onChange={handleChange}
               placeholder={text.passwordPlaceholder}
-              className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-200"
               required
             />
             <button

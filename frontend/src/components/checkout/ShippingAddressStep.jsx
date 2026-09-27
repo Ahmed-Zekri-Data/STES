@@ -104,7 +104,7 @@ const ShippingAddressStep = () => {
               value={shipping.address}
               onChange={handleInputChange}
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-300"
               placeholder="Rue, avenue, numéro, étage, appartement..."
               variants={inputVariants}
               whileFocus="focus"
@@ -128,7 +128,7 @@ const ShippingAddressStep = () => {
                 value={shipping.city}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-300"
                 placeholder="Tunis, Sousse, Sfax..."
                 variants={inputVariants}
                 whileFocus="focus"
@@ -150,7 +150,7 @@ const ShippingAddressStep = () => {
                 value={shipping.governorate}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-300"
                 variants={inputVariants}
                 whileFocus="focus"
               >
@@ -180,7 +180,7 @@ const ShippingAddressStep = () => {
               name="postalCode"
               value={shipping.postalCode}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-300"
               placeholder="1000"
               variants={inputVariants}
               whileFocus="focus"
@@ -236,7 +236,7 @@ const ShippingAddressStep = () => {
                 value={billing.address}
                 onChange={handleBillingChange}
                 required={!billing.sameAsShipping}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-300"
                 placeholder="Adresse de facturation..."
               />
             </div>
@@ -253,7 +253,7 @@ const ShippingAddressStep = () => {
                   value={billing.city}
                   onChange={handleBillingChange}
                   required={!billing.sameAsShipping}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-300"
                   placeholder="Ville..."
                 />
               </div>
@@ -268,7 +268,7 @@ const ShippingAddressStep = () => {
                   value={billing.governorate}
                   onChange={handleBillingChange}
                   required={!billing.sameAsShipping}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-300"
                 >
                   <option value="">Sélectionnez un gouvernorat</option>
                   {tunisianGovernorates.map((gov) => (

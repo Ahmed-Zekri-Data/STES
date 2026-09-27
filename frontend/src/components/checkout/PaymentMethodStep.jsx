@@ -180,7 +180,7 @@ const PaymentMethodStep = () => {
                   name="holderName"
                   value={payment.cardDetails.holderName}
                   onChange={handleCardDetailsChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                   placeholder="Nom tel qu'il apparaît sur la carte"
                 />
               </div>
@@ -194,7 +194,7 @@ const PaymentMethodStep = () => {
                   name="number"
                   value={payment.cardDetails.number}
                   onChange={handleCardDetailsChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                   placeholder="1234 5678 9012 3456"
                   maxLength="19"
                 />
@@ -209,7 +209,7 @@ const PaymentMethodStep = () => {
                     name="expiryMonth"
                     value={payment.cardDetails.expiryMonth}
                     onChange={handleCardDetailsChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                   >
                     <option value="">MM</option>
                     {Array.from({ length: 12 }, (_, i) => (
@@ -228,7 +228,7 @@ const PaymentMethodStep = () => {
                     name="expiryYear"
                     value={payment.cardDetails.expiryYear}
                     onChange={handleCardDetailsChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                   >
                     <option value="">AAAA</option>
                     {Array.from({ length: 10 }, (_, i) => (
@@ -248,7 +248,7 @@ const PaymentMethodStep = () => {
                     name="cvv"
                     value={payment.cardDetails.cvv}
                     onChange={handleCardDetailsChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                     placeholder="123"
                     maxLength="4"
                   />

@@ -75,7 +75,7 @@ const translations = {
   }
 };
 
-const inputClass = 'w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200';
+const inputClass = 'w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-200';
 
 // Opened from the link in the password reset email
 const ResetPassword = () => {

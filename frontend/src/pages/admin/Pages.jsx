@@ -309,7 +309,7 @@ const Pages = () => {
                       'titleAr',
                       e.target.value
                     )}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                     placeholder="Titre de la page"
                   />
                 </div>
@@ -332,7 +332,7 @@ const Pages = () => {
                       e.target.value
                     )}
                     rows={15}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 font-mono text-sm"
                     placeholder="Contenu HTML de la page"
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -359,7 +359,7 @@ const Pages = () => {
                     )}
                     rows={2}
                     maxLength={160}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                     placeholder="Description pour les moteurs de recherche (max 160 caractères)"
                   />
                 </div>

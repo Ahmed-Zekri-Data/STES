@@ -79,7 +79,7 @@ const Reviews = () => {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search a product, title or comment"
             aria-label="Search reviews"
-            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
           />
         </div>
         <select

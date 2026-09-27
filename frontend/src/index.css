@@ -227,6 +227,24 @@
     radial-gradient(45% 40% at 60% 100%, rgb(var(--glow-a) / 0.08), transparent 70%);
 }
 
+/* Text written in Admin → Pages (About, Contact), already sanitised */
+.prose-stes { max-width: 70ch; color: rgb(var(--ink-t600)); font-size: 1.125rem; line-height: 1.75; }
+.prose-stes > * + * { margin-top: 1em; }
+.prose-stes h1, .prose-stes h2, .prose-stes h3 { color: rgb(var(--ink-t900)); font-weight: 700; line-height: 1.2; margin-top: 1.6em; }
+.prose-stes h1 { font-size: 2rem; }
+.prose-stes h2 { font-size: 1.6rem; }
+.prose-stes h3 { font-size: 1.25rem; }
+.prose-stes > :first-child { margin-top: 0; }
+.prose-stes ul, .prose-stes ol { padding-inline-start: 1.25em; }
+.prose-stes ul { list-style: none; }
+.prose-stes ul > li { position: relative; }
+.prose-stes ul > li::before { content: ''; position: absolute; inset-inline-start: -1.1em; top: 0.7em; width: 0.4em; height: 0.4em; border-radius: 9999px; background: rgb(var(--aqua-500)); }
+.prose-stes ol { list-style: decimal; }
+.prose-stes li + li { margin-top: 0.4em; }
+.prose-stes a { color: rgb(var(--aqua-t600)); text-decoration: underline; text-underline-offset: 3px; }
+.prose-stes strong { color: rgb(var(--ink-t900)); }
+.prose-stes blockquote { border-inline-start: 3px solid rgb(var(--aqua-500)); padding-inline-start: 1em; font-style: italic; }
+
 /* Spotlight cards: a glow under the mouse (--mx/--my set by SpotlightCard) */
 .spotlight {
   position: relative;

@@ -184,7 +184,7 @@ const OrderManagement = () => {
               placeholder="Rechercher par numéro, client..."
               value={filters.search}
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
             />
           </div>
 
@@ -194,7 +194,7 @@ const OrderManagement = () => {
             <select
               value={filters.status}
               onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 appearance-none"
             >
               <option value="">Tous les statuts</option>
               <option value="pending">En attente</option>
@@ -831,7 +831,7 @@ const CreateOrderModal = ({ onClose, onOrderCreated }) => {
                     ...prev,
                     customer: { ...prev.customer, firstName: e.target.value }
                   }))}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                   required
                 />
                 <input
@@ -842,7 +842,7 @@ const CreateOrderModal = ({ onClose, onOrderCreated }) => {
                     ...prev,
                     customer: { ...prev.customer, lastName: e.target.value }
                   }))}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                   required
                 />
               </div>
@@ -855,7 +855,7 @@ const CreateOrderModal = ({ onClose, onOrderCreated }) => {
                   ...prev,
                   customer: { ...prev.customer, email: e.target.value }
                 }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                 required
               />
 
@@ -867,7 +867,7 @@ const CreateOrderModal = ({ onClose, onOrderCreated }) => {
                   ...prev,
                   customer: { ...prev.customer, phone: e.target.value }
                 }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                 required
               />
 
@@ -882,7 +882,7 @@ const CreateOrderModal = ({ onClose, onOrderCreated }) => {
                     address: { ...prev.customer.address, street: e.target.value }
                   }
                 }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                 required
               />
 
@@ -898,7 +898,7 @@ const CreateOrderModal = ({ onClose, onOrderCreated }) => {
                       address: { ...prev.customer.address, city: e.target.value }
                     }
                   }))}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                   required
                 />
                 <input
@@ -912,7 +912,7 @@ const CreateOrderModal = ({ onClose, onOrderCreated }) => {
                       address: { ...prev.customer.address, postalCode: e.target.value }
                     }
                   }))}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                 />
               </div>
             </div>
@@ -926,7 +926,7 @@ const CreateOrderModal = ({ onClose, onOrderCreated }) => {
                 <select
                   value={selectedProduct}
                   onChange={(e) => setSelectedProduct(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                 >
                   <option value="">Sélectionner un produit</option>
                   {products.map(product => (
@@ -940,7 +940,7 @@ const CreateOrderModal = ({ onClose, onOrderCreated }) => {
                   min="1"
                   value={quantity}
                   onChange={(e) => setQuantity(parseInt(e.target.value))}
-                  className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-20 px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                 />
                 <button
                   type="button"
@@ -1006,7 +1006,7 @@ const CreateOrderModal = ({ onClose, onOrderCreated }) => {
               value={formData.notes}
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
               placeholder="Notes sur la commande..."
             />
           </div>

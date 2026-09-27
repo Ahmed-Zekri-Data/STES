@@ -97,7 +97,7 @@ const TrackingDashboard = () => {
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
           >
             <option value="24h">Dernières 24h</option>
             <option value="7d">7 derniers jours</option>

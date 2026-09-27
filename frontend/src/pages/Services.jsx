@@ -4,6 +4,8 @@ import { Wrench, CheckCircle, Phone, Mail, MapPin, Clock } from 'lucide-react';
 import axios from 'axios';
 import { submitErrorMessage } from '../utils/forms';
 import { useShopSettings, phoneLink } from '../context/shopSettings';
+import PageHero from '../components/layout/PageHero';
+import { Reveal, SpotlightCard } from '../components/fx/Motion';
 
 const Services = () => {
   const { contact } = useShopSettings();
@@ -85,18 +87,14 @@ const Services = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="bg-primary-600 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            {t('installationService')}
-          </h1>
-          <p className="text-xl text-primary-100 max-w-3xl mx-auto">
-            {t('installationDesc')}
-          </p>
-        </div>
-      </section>
+    <div>
+      <PageHero
+        eyebrow="Services · Installation et entretien"
+        title={t('installationService')}
+        subtitle={t('installationDesc')}
+      >
+        <a href="#devis" className="btn-brand">Demander un devis</a>
+      </PageHero>
 
       {/* Services Grid */}
       <section className="py-16">
@@ -112,11 +110,13 @@ const Services = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {services.map((service, index) => (
-              <div key={index} className="bg-surface rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-center justify-center w-16 h-16 bg-primary-100 text-primary-600 rounded-full mb-4">
+              <Reveal key={index} delay={index * 0.08}>
+              <SpotlightCard className="panel h-full p-7">
+                <p className="font-mono text-xs text-gray-400">0{index + 1}</p>
+                <div className="mt-3 flex items-center justify-center w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl mb-5">
                   {service.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                <h3 className="font-display text-2xl font-semibold text-gray-900 mb-3">
                   {service.title}
                 </h3>
                 <p className="text-gray-600 mb-4">
@@ -130,15 +130,16 @@ const Services = () => {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </SpotlightCard>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* Quote Request Form */}
-      <section className="py-16 bg-surface">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="devis" className="py-16 scroll-mt-28">
+        <div className="panel max-w-4xl mx-auto px-6 py-10 sm:px-10">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               {t('requestQuote')}
@@ -172,7 +173,7 @@ const Services = () => {
                     value={formData.name}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                     placeholder="Votre nom complet"
                   />
                 </div>
@@ -188,7 +189,7 @@ const Services = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                     placeholder="votre@email.com"
                   />
                 </div>
@@ -204,7 +205,7 @@ const Services = () => {
                     value={formData.phone}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                     placeholder="+216 XX XXX XXX"
                   />
                 </div>
@@ -220,7 +221,7 @@ const Services = () => {
                     value={formData.city}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                     placeholder="Votre ville"
                   />
                 </div>
@@ -238,7 +239,7 @@ const Services = () => {
                   required
                   maxLength={1000}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                   placeholder="Décrivez votre projet et vos besoins..."
                 />
               </div>
@@ -247,7 +248,7 @@ const Services = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-primary-600 text-white py-3 px-8 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="btn-brand px-10 py-4"
                 >
                   {loading ? 'Envoi en cours...' : t('submit')}
                 </button>
@@ -258,7 +259,7 @@ const Services = () => {
       </section>
 
       {/* Contact Info */}
-      <section className="py-16 bg-gray-100">
+      <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">

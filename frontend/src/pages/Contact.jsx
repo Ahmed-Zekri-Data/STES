@@ -4,6 +4,9 @@ import { Phone, Mail, MapPin, Clock, MessageCircle, Send, CheckCircle } from 'lu
 import axios from 'axios';
 import { submitErrorMessage } from '../utils/forms';
 import { useShopSettings, whatsappLink, phoneLink } from '../context/shopSettings';
+import PageHero from '../components/layout/PageHero';
+import PageLoader from '../components/PageLoader';
+import { Reveal, SpotlightCard } from '../components/fx/Motion';
 
 const Contact = () => {
   const { t, language } = useLanguage();
@@ -107,56 +110,37 @@ const Contact = () => {
   };
 
   if (pageLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="bg-primary-600 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            {getLocalizedContent('title') || t('contact')}
-          </h1>
-          <p className="text-xl text-primary-100 max-w-3xl mx-auto">
-            {getLocalizedContent('metaDescription') || 'Nous sommes là pour répondre à toutes vos questions et vous accompagner dans vos projets'}
-          </p>
-        </div>
-      </section>
+    <div>
+      <PageHero
+        eyebrow="Contact · Réponse sous 24h"
+        title={getLocalizedContent('title') || t('contact')}
+        subtitle={getLocalizedContent('metaDescription') || 'Nous sommes là pour répondre à toutes vos questions et vous accompagner dans vos projets'}
+      />
 
       {/* Dynamic Content */}
       {pageData && (
-        <section className="py-16 bg-surface">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="prose prose-lg max-w-none">
-              <div
-                className="text-gray-600 leading-relaxed"
-                dangerouslySetInnerHTML={{
-                  __html: getLocalizedContent('content')
-                }}
-              />
-            </div>
-          </div>
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <Reveal className="panel p-6 sm:p-10">
+            <div className="prose-stes" dangerouslySetInnerHTML={{ __html: getLocalizedContent('content') }} />
+          </Reveal>
         </section>
       )}
 
       {/* Contact Info Cards */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
             {contactInfo.map((info, index) => (
-              <div key={index} className="bg-surface rounded-lg shadow-md p-6 text-center hover:shadow-lg transition-shadow">
-                <div className="flex items-center justify-center w-12 h-12 bg-primary-100 text-primary-600 rounded-full mx-auto mb-4">
+              <Reveal key={index} delay={index * 0.06}>
+              <SpotlightCard className="panel h-full p-6">
+                <div className="flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl mb-5">
                   {info.icon}
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                <h3 className="font-display text-lg font-semibold text-gray-900 mb-2">
                   {info.title}
                 </h3>
                 <div className="space-y-1">
@@ -175,14 +159,16 @@ const Contact = () => {
                     </p>
                   ))}
                 </div>
-              </div>
+              </SpotlightCard>
+              </Reveal>
             ))}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Contact Form */}
-            <div className="bg-surface rounded-lg shadow-md p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            <div className="panel p-6 sm:p-8">
+              <p className="eyebrow">Formulaire</p>
+              <h2 className="mt-2 font-display text-3xl font-bold text-gray-900 mb-6">
                 Envoyez-nous un message
               </h2>
 
@@ -210,7 +196,7 @@ const Contact = () => {
                         value={formData.name}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                         placeholder="Votre nom complet"
                       />
                     </div>
@@ -226,7 +212,7 @@ const Contact = () => {
                         value={formData.email}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                         placeholder="votre@email.com"
                       />
                     </div>
@@ -243,7 +229,7 @@ const Contact = () => {
                         name="phone"
                         value={formData.phone}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                         placeholder="+216 XX XXX XXX"
                       />
                     </div>
@@ -258,7 +244,7 @@ const Contact = () => {
                         name="subject"
                         value={formData.subject}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                         placeholder="Sujet de votre message"
                       />
                     </div>
@@ -276,7 +262,7 @@ const Contact = () => {
                       required
                       maxLength={1000}
                       rows={5}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                       placeholder="Votre message..."
                     />
                   </div>
@@ -284,7 +270,7 @@ const Contact = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-primary-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                    className="btn-brand w-full py-4"
                   >
                     <Send className="w-5 h-5" />
                     <span>{loading ? 'Envoi en cours...' : 'Envoyer le message'}</span>
@@ -296,18 +282,33 @@ const Contact = () => {
             {/* Map and Additional Info */}
             <div className="space-y-8">
               {/* Map Placeholder */}
-              <div className="bg-surface rounded-lg shadow-md overflow-hidden">
-                <div className="h-64 bg-gray-200 flex items-center justify-center">
-                  <div className="text-center text-gray-500">
-                    <MapPin className="w-12 h-12 mx-auto mb-2" />
-                    <p>Carte interactive</p>
-                    <p className="text-sm">{contact.address}</p>
-                  </div>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contact.address)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group panel relative block h-64 overflow-hidden"
+              >
+                <div className="absolute inset-0 grid-lines opacity-80" aria-hidden="true" />
+                <svg viewBox="0 0 400 240" className="absolute inset-0 h-full w-full" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+                  <path d="M-10 180 C 80 140, 120 200, 200 150 S 330 90, 410 120" fill="none" stroke="rgb(var(--aqua-400) / 0.5)" strokeWidth="10" strokeLinecap="round" />
+                  <path d="M120 -10 C 150 80, 170 140, 160 250" fill="none" stroke="rgb(var(--ink-300))" strokeWidth="6" />
+                  <path d="M-10 70 L 410 95" fill="none" stroke="rgb(var(--ink-300))" strokeWidth="4" />
+                </svg>
+                <div className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-full" aria-hidden="true">
+                  <span className="absolute left-1/2 top-full h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/30 motion-safe:animate-ping" />
+                  <MapPin className="relative h-12 w-12 fill-blue-600 text-white drop-shadow-lg transition-transform duration-300 group-hover:-translate-y-1" />
                 </div>
-              </div>
+                <div className="glass absolute inset-x-4 bottom-4 flex items-center justify-between gap-3 rounded-2xl px-4 py-3">
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-gray-900">{contact.address}</span>
+                    <span className="text-xs text-gray-500">Ouvrir dans Google Maps</span>
+                  </span>
+                  <MapPin className="h-5 w-5 shrink-0 text-blue-600" aria-hidden="true" />
+                </div>
+              </a>
 
               {/* WhatsApp Contact */}
-              {whatsapp && <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+              {whatsapp && <div className="panel p-6">
                 <div className="flex items-center space-x-3 mb-4">
                   <MessageCircle className="w-8 h-8 text-green-600" />
                   <h3 className="text-lg font-semibold text-green-800">
@@ -321,7 +322,7 @@ const Contact = () => {
                   href={whatsapp}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-full bg-green-600 px-5 py-2.5 font-medium text-white transition-transform hover:-translate-y-0.5"
                 >
                   <MessageCircle className="w-5 h-5" />
                   <span>Ouvrir WhatsApp</span>
@@ -329,8 +330,8 @@ const Contact = () => {
               </div>}
 
               {/* FAQ Quick Links */}
-              <div className="bg-surface rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <div className="panel p-6">
+                <h3 className="font-display text-lg font-semibold text-gray-900 mb-4">
                   Questions Fréquentes
                 </h3>
                 <div className="space-y-3">

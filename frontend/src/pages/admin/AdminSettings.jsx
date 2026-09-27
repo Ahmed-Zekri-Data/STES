@@ -7,7 +7,7 @@ import { useAdmin } from '../../context/AdminContext';
 const MIN_PASSWORD_LENGTH = 8;
 const ROLE_LABELS = { super_admin: 'Super admin', admin: 'Admin' };
 
-const inputClass = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100';
+const inputClass = 'w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 disabled:bg-gray-100';
 
 const Field = ({ label, id, hint, suffix, ...props }) => (
   <div>

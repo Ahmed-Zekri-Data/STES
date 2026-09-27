@@ -36,7 +36,7 @@ const formatDate = (date) => (date
 const Field = ({ label, id, hint, ...props }) => (
   <div>
     <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-    <input id={id} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" {...props} />
+    <input id={id} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15" {...props} />
     {hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
   </div>
 );
