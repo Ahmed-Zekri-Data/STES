@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { body, param, validationResult } = require('express-validator');
 const Order = require('../models/Order');
 const { releaseOrderStock } = require('../services/orderService');
 const { customerAuth } = require('../middleware/customerAuth');
@@ -100,8 +101,16 @@ router.get('/:orderId', customerAuth, async (req, res) => {
 });
 
 // POST /api/customer-orders/:orderId/cancel - Cancel an order
-router.post('/:orderId/cancel', customerAuth, async (req, res) => {
+router.post('/:orderId/cancel', customerAuth, [
+  param('orderId').isMongoId().withMessage('Invalid order ID'),
+  body('reason').optional().isString().trim().isLength({ max: 500 }).withMessage('The reason is limited to 500 characters')
+], async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
     const { orderId } = req.params;
     const { reason } = req.body;
 

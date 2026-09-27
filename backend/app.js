@@ -84,6 +84,13 @@ const createApp = () => {
     message: limitMessage('Trop de comptes créés. Veuillez réessayer plus tard.')
   }));
 
+  // A test sends an email, a push message and (when set up) a paid SMS
+  app.post('/api/notifications/test', rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 3,
+    message: limitMessage('Trop de tests de notification. Veuillez réessayer plus tard.')
+  }));
+
   // Every contact, quote or newsletter form lands in the admin's inbox
   const formLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
