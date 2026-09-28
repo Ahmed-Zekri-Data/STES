@@ -4,6 +4,7 @@ const router = express.Router();
 const { body, param, validationResult } = require('express-validator');
 const Order = require('../models/Order');
 const { customerAuth } = require('../middleware/customerAuth');
+const { sendInvoice } = require('../services/invoiceService');
 
 // GET /api/tracking/:identifier - Public order tracking (by order number or tracking code)
 router.get('/:identifier', [
@@ -85,6 +86,28 @@ router.get('/:identifier', [
   } catch (error) {
     console.error('Error tracking order:', error);
     res.status(500).json({ message: 'Erreur lors du suivi de la commande' });
+  }
+});
+
+// POST /api/tracking/invoice - A guest's invoice (or bon de commande) as a
+// PDF. It shows the full address and phone, which tracking by code alone
+// keeps private: both the tracking code and the order's email are needed.
+router.post('/invoice', [
+  body('trackingCode').isString().trim().toUpperCase().isLength({ min: 1, max: 60 }),
+  body('email').isEmail().normalizeEmail()
+], async (req, res) => {
+  try {
+    if (!validationResult(req).isEmpty()) {
+      return res.status(400).json({ message: 'Code de suivi et email requis' });
+    }
+    const order = await Order.findOne({ trackingCode: req.body.trackingCode, 'customer.email': req.body.email });
+    if (!order) {
+      return res.status(404).json({ message: 'Aucune commande ne correspond à ce code de suivi et cet email.' });
+    }
+    await sendInvoice(res, order);
+  } catch (error) {
+    console.error('Error creating invoice:', error);
+    res.status(500).json({ message: 'Erreur lors de la création de la facture' });
   }
 });
 

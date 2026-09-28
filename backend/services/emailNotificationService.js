@@ -49,7 +49,7 @@ const STATUS_EMAILS = {
     subject: 'a été livrée',
     title: 'Commande livrée',
     color: '#059669',
-    message: 'Votre commande a été livrée. Merci pour votre confiance ! Nous espérons que vos produits vous donnent entière satisfaction.'
+    message: 'Votre commande a été livrée. Merci pour votre confiance ! Nous espérons que vos produits vous donnent entière satisfaction. Votre facture est jointe à cet email.'
   },
   cancelled: {
     subject: 'a été annulée',
@@ -368,7 +368,8 @@ class EmailNotificationService {
       ...(pricing.discountAmount ? [[`Réduction (${pricing.discountCode})`, `−${formatTND(pricing.discountAmount)}`]] : []),
       ['Livraison', delivery],
       ...(pricing.paymentFee ? [['Frais de paiement', formatTND(pricing.paymentFee)]] : []),
-      ...(pricing.taxIncluded ? [] : [tax])
+      ...(pricing.taxIncluded ? [] : [tax]),
+      ...(pricing.stampDuty ? [['Timbre fiscal', formatTND(pricing.stampDuty)]] : [])
     ];
     const includedTax = pricing.taxIncluded ? `dont ${tax[0]} : ${tax[1]}` : '';
 
@@ -464,12 +465,24 @@ class EmailNotificationService {
 
     try {
       const content = this.generateStatusUpdateEmail(order, { note });
+      // Delivered: the invoice goes with it. Without it (a PDF problem) the
+      // email is still sent; the customer can download it later.
+      const attachments = [];
+      if (order.status === 'delivered' && order.invoice?.number) {
+        try {
+          const { buffer, filename } = await require('./invoiceService').invoiceDocument(order);
+          attachments.push({ filename, content: buffer, contentType: 'application/pdf' });
+        } catch (error) {
+          console.error(`Invoice for order ${order.orderNumber} could not be attached:`, error.message);
+        }
+      }
       const result = await this.transporter.sendMail({
         from: `"STES Piscines" <${process.env.EMAIL_USER}>`,
         to: order.customer.email,
         subject: content.subject,
         html: content.html,
-        text: content.text
+        text: content.text,
+        ...(attachments.length && { attachments })
       });
 
       // Not order.save(): the admin may be changing the order at the same time

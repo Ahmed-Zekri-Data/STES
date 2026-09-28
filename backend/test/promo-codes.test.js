@@ -97,7 +97,7 @@ describe('promo codes', () => {
       const items = [{ productId: product._id, quantity: 2 }];
 
       const without = (await quote(items).expect(200)).body.pricing;
-      assert.equal(without.totalAmount, 212); // 200 + 7 delivery + 5 cash on delivery
+      assert.equal(without.totalAmount, 213); // 200 + 7 delivery + 5 cash on delivery + 1 timbre
 
       const res = await quote(items, 'summer10').expect(200);
       assert.equal(res.body.promoError, undefined);
@@ -106,11 +106,12 @@ describe('promo codes', () => {
         discountAmount: 20,
         discountCode: 'SUMMER10',
         shippingCost: 7,
-        taxAmount: 28.739, // the VAT inside 180 TND
+        taxAmount: 30.655, // the VAT inside 180 + 7 + 5 TND
         taxRate: 0.19,
         taxIncluded: true,
         paymentFee: 5,
-        totalAmount: 192
+        stampDuty: 1,
+        totalAmount: 193
       });
     });
 
@@ -130,7 +131,7 @@ describe('promo codes', () => {
       assert.equal((await quote(items, 'CAP').expect(200)).body.pricing.discountAmount, 100);
       const all = (await quote(items, 'GROS').expect(200)).body.pricing;
       assert.equal(all.discountAmount, 1000);
-      assert.equal(all.totalAmount, 12); // delivery 7 + cash on delivery 5
+      assert.equal(all.totalAmount, 13); // delivery 7 + cash on delivery 5 + timbre 1
     });
 
     it('explains why a code cannot be used, and prices without it', async () => {
@@ -155,7 +156,7 @@ describe('promo codes', () => {
         const res = await quote(items, code).expect(200);
         assert.equal(res.body.promoError, message, code);
         assert.equal(res.body.pricing.discountAmount, undefined);
-        assert.equal(res.body.pricing.totalAmount, 112);
+        assert.equal(res.body.pricing.totalAmount, 113);
       }
 
       // Placing the order with it is refused, and nothing is taken from stock
@@ -174,7 +175,7 @@ describe('promo codes', () => {
       const first = (await placeOrder(items, 'UNE').expect(201)).body.order;
       assert.equal(first.pricing.discountCode, 'UNE');
       assert.equal(first.pricing.discountAmount, 10);
-      assert.equal(first.totalAmount, 102);
+      assert.equal(first.totalAmount, 103);
       assert.equal(await usedCount('UNE'), 1);
 
       assert.equal((await placeOrder(items, 'UNE').expect(400)).body.message, "Ce code promo a atteint sa limite d'utilisation.");

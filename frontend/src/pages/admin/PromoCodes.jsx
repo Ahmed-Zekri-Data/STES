@@ -209,7 +209,7 @@ const PromoCard = ({ promo, onEdit, onToggle, onDelete }) => {
       <div className="flex items-start justify-between gap-3 p-5 pb-4">
         <div className="min-w-0">
           <p className="truncate font-mono text-xl font-semibold tracking-wide text-gray-900">{promo.code}</p>
-          <p className="truncate text-sm text-gray-500">{promo.description || ' '}</p>
+          <p className="truncate text-sm text-gray-500">{promo.description || '\u00a0'}</p>
         </div>
         <span className="font-display text-2xl font-bold text-gradient">{valueLabel(promo)}</span>
       </div>

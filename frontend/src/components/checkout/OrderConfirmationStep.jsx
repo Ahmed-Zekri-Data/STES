@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
+import axios from 'axios';
 import { motion } from 'framer-motion';
+import { saveResponse, blobErrorMessage } from '../../utils/download';
 import { useNavigate } from 'react-router-dom';
 import { useCheckout } from '../../context/CheckoutContext';
 import { useShopSettings, phoneLink } from '../../context/shopSettings';
@@ -21,6 +23,7 @@ const OrderConfirmationStep = () => {
   const { contact } = useShopSettings();
   const navigate = useNavigate();
   const { orderConfirmation, resetCheckout } = useCheckout();
+  const [pdfState, setPdfState] = useState({ busy: false, error: '' });
 
   if (!orderConfirmation) {
     return null;
@@ -42,13 +45,29 @@ const OrderConfirmationStep = () => {
     window.print();
   };
 
+  // The order's tracking page, which anyone with the code can follow
+  const trackingUrl = `${window.location.origin}/track-order?code=${encodeURIComponent(orderConfirmation.trackingCode)}`;
+  const canShare = typeof navigator !== 'undefined' && Boolean(navigator.share);
   const handleShareOrder = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: 'Ma commande STES',
-        text: `Commande ${orderConfirmation.orderId} confirmée!`,
-        url: window.location.href
-      });
+    navigator.share?.({
+      title: 'Ma commande STES',
+      text: `Commande ${orderConfirmation.orderId} : suivez-la ici`,
+      url: trackingUrl
+    }).catch(() => {});
+  };
+
+  // Bon de commande now; the invoice once the order is delivered
+  const handleDownloadPdf = async () => {
+    setPdfState({ busy: true, error: '' });
+    try {
+      const response = await axios.post('/api/tracking/invoice', {
+        trackingCode: orderConfirmation.trackingCode,
+        email: orderConfirmation.customer.email
+      }, { responseType: 'blob' });
+      saveResponse(response, `bon-de-commande-${orderConfirmation.orderId}.pdf`);
+      setPdfState({ busy: false, error: '' });
+    } catch (error) {
+      setPdfState({ busy: false, error: await blobErrorMessage(error, 'Le document n\'a pas pu être téléchargé.') });
     }
   };
 
@@ -141,19 +160,27 @@ const OrderConfirmationStep = () => {
           Imprimer
         </button>
         
+        {canShare && (
+          <button
+            onClick={handleShareOrder}
+            className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            <Share2 className="w-4 h-4 mr-2" />
+            Partager
+          </button>
+        )}
+
         <button
-          onClick={handleShareOrder}
-          className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          type="button"
+          onClick={handleDownloadPdf}
+          disabled={pdfState.busy}
+          className="flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors disabled:opacity-60"
         >
-          <Share2 className="w-4 h-4 mr-2" />
-          Partager
-        </button>
-        
-        <button className="flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
           <Download className="w-4 h-4 mr-2" />
-          Télécharger PDF
+          {pdfState.busy ? 'Préparation…' : 'Télécharger PDF'}
         </button>
       </motion.div>
+      {pdfState.error && <p role="alert" className="-mt-6 mb-8 text-center text-sm text-red-600">{pdfState.error}</p>}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Order Details */}
@@ -213,6 +240,12 @@ const OrderConfirmationStep = () => {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Frais de paiement:</span>
                     <span className="font-medium">{orderConfirmation.totals.paymentFee} TND</span>
+                  </div>
+                )}
+                {orderConfirmation.totals.stampDuty && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Timbre fiscal:</span>
+                    <span className="font-medium">{orderConfirmation.totals.stampDuty} TND</span>
                   </div>
                 )}
                 <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-300">

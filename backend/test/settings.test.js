@@ -35,7 +35,9 @@ describe('shop settings', () => {
       contact: { phone: '+216 12 345 678', whatsapp: '+216 12 345 678', email: 'info@stes.tn', address: 'Tunis, Tunisie' },
       // No bank account yet: bank transfer is not offered
       bank: null,
-      delivery: { freeDeliveryOver: 200, baseCost: 7, cashOnDeliveryFee: 5 }
+      delivery: { freeDeliveryOver: 200, baseCost: 7, cashOnDeliveryFee: 5 },
+      // Timbre fiscal added to each order
+      stampDuty: 1
     });
   });
 

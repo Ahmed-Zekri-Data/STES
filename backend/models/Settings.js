@@ -21,6 +21,14 @@ const settingsSchema = new mongoose.Schema({
     baseCost: Number, // TND, before the governorate factor
     cashOnDeliveryFee: Number // TND
   },
+  // Printed on invoices; stampDuty (TND) is added to every order
+  invoice: {
+    companyName: String,
+    taxId: String, // matricule fiscal
+    tradeRegister: String, // registre de commerce / RNE
+    address: String,
+    stampDuty: Number
+  },
   lowStockThreshold: Number // products at or below this many units are "low"
 }, {
   timestamps: true

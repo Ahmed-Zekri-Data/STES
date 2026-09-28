@@ -12,10 +12,40 @@ import {
   Calendar,
   MapPin,
   Phone,
-  Mail
+  Mail,
+  FileDown
 } from 'lucide-react';
 import axios from 'axios';
 import LoadingSpinner from '../LoadingSpinner';
+import { saveResponse, blobErrorMessage } from '../../utils/download';
+
+// The order's invoice once delivered, its bon de commande before
+const InvoiceButton = ({ order }) => {
+  const [busy, setBusy] = useState(false);
+  const label = order.invoice?.number ? 'Facture' : 'Bon de commande';
+  const download = async () => {
+    setBusy(true);
+    try {
+      saveResponse(await axios.get(`/api/customer-orders/${order._id}/invoice`, { responseType: 'blob' }));
+    } catch (error) {
+      window.alert(await blobErrorMessage(error, 'Le document n’a pas pu être téléchargé.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={download}
+      disabled={busy}
+      aria-label={`${label} de la commande ${order.orderNumber} (PDF)`}
+      className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-surface hover:bg-gray-50 disabled:opacity-60"
+    >
+      <FileDown className="w-4 h-4 mr-1" aria-hidden="true" />
+      {busy ? '…' : label}
+    </button>
+  );
+};
 
 // Shared by the order list and the order details popup
 const getStatusIcon = (status) => {
@@ -230,6 +260,7 @@ const OrderHistory = () => {
                         <Eye className="w-4 h-4 mr-1" />
                         Détails
                       </button>
+                      <InvoiceButton order={order} />
                       <a
                         href={`/track-order?order=${order.orderNumber}`}
                         className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"

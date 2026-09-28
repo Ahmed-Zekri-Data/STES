@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const { auth, checkPermission } = require('../middleware/auth');
 const { getSettings, updateSettings, publicSettings } = require('../services/settingsService');
 const { isValidRib, formatRib } = require('../utils/rib');
+const { isValidTaxId, normalizeTaxId } = require('../utils/taxId');
 
 // GET /api/settings - Contact details and delivery prices for the shop pages
 const publicRouter = express.Router();
@@ -51,6 +52,14 @@ adminRouter.put('/', [
   price('delivery.freeDeliveryOver'),
   price('delivery.baseCost'),
   price('delivery.cashOnDeliveryFee'),
+  body('invoice.companyName').optional().isString().trim().isLength({ max: 120 }).withMessage('The company name is too long (up to 120 characters)'),
+  body('invoice.taxId').optional().isString().trim()
+    .custom(value => value === '' || isValidTaxId(value))
+    .withMessage('Enter the matricule fiscal as on your tax card, for example 1234567A/A/M/000')
+    .customSanitizer(value => normalizeTaxId(value)),
+  body('invoice.tradeRegister').optional().isString().trim().isLength({ max: 60 }).withMessage('The trade register number is too long (up to 60 characters)'),
+  body('invoice.address').optional().isString().trim().isLength({ max: 200 }).withMessage('The legal address is too long (up to 200 characters)'),
+  body('invoice.stampDuty').optional().isFloat({ min: 0, max: 100 }).withMessage('The stamp duty must be between 0 and 100 TND').toFloat(),
   body('lowStockThreshold').optional().isInt({ min: 0, max: 10000 }).withMessage('Low stock must be a whole number from 0').toInt()
 ], async (req, res) => {
   try {

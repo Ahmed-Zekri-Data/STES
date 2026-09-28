@@ -93,11 +93,12 @@ describe('orders', () => {
       assert.deepEqual(quoted.body.pricing, {
         subtotal: 120,
         shippingCost: 8, // 7 × 1.2
-        taxAmount: 19.16, // the VAT inside the 120 TND: 120 × 0.19 / 1.19
+        taxAmount: 21.235, // the VAT inside 120 + 8 + 5 TND: 133 × 0.19 / 1.19
         taxRate: 0.19,
         taxIncluded: true,
         paymentFee: 5,
-        totalAmount: 133 // prices include VAT: nothing is added for it
+        stampDuty: 1, // timbre fiscal, no VAT on it
+        totalAmount: 134 // prices include VAT: nothing is added for it
       });
     });
 

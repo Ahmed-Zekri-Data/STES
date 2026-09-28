@@ -12,10 +12,57 @@ import {
   User,
   Mail,
   Phone,
-  AlertCircle
+  AlertCircle,
+  FileDown
 } from 'lucide-react';
 import axios from 'axios';
 import PageHero from '../components/layout/PageHero';
+import { saveResponse, blobErrorMessage } from '../utils/download';
+
+// The invoice (or, before delivery, the bon de commande). It shows the full
+// address, which the tracking page keeps private: the order's email is
+// asked for as well as the tracking code.
+const TrackingInvoice = ({ trackingCode, delivered, initialEmail }) => {
+  const [email, setEmail] = useState(initialEmail || '');
+  const [state, setState] = useState({ busy: false, error: '' });
+  const label = delivered ? 'Télécharger la facture' : 'Télécharger le bon de commande';
+  const download = async (event) => {
+    event.preventDefault();
+    setState({ busy: true, error: '' });
+    try {
+      saveResponse(await axios.post('/api/tracking/invoice', { trackingCode, email }, { responseType: 'blob' }));
+      setState({ busy: false, error: '' });
+    } catch (error) {
+      setState({ busy: false, error: await blobErrorMessage(error, 'Le document n’a pas pu être téléchargé.') });
+    }
+  };
+  return (
+    <form onSubmit={download} className="panel p-6">
+      <h3 className="font-display text-lg font-semibold text-gray-900 flex items-center">
+        <FileDown className="w-5 h-5 mr-2 text-blue-600" aria-hidden="true" />
+        {delivered ? 'Facture' : 'Bon de commande'} (PDF)
+      </h3>
+      <p className="mt-1 text-sm text-gray-600">Pour protéger vos coordonnées, confirmez l’email de la commande.</p>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <label htmlFor="invoice-email" className="sr-only">Email de la commande</label>
+        <input
+          id="invoice-email"
+          type="email"
+          required
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="votre@email.com"
+          className="min-w-0 flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
+        />
+        <button type="submit" disabled={state.busy || !email} className="btn-brand !py-3">
+          {state.busy ? 'Préparation…' : label}
+        </button>
+      </div>
+      {state.error && <p role="alert" className="mt-2 text-sm text-red-600">{state.error}</p>}
+    </form>
+  );
+};
 
 const TrackOrder = () => {
   const [searchParams] = useSearchParams();
@@ -335,6 +382,13 @@ const TrackOrder = () => {
                   </div>
                 </div>
               </div>
+
+              <TrackingInvoice
+                key={orderData.order.trackingCode}
+                trackingCode={orderData.order.trackingCode}
+                delivered={orderData.order.status === 'delivered'}
+                initialEmail={searchMethod === 'email' ? email : ''}
+              />
 
               {/* Order Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

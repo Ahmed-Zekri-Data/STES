@@ -55,6 +55,15 @@ const orderSchema = new mongoose.Schema({
       required: [true, 'Customer phone is required'],
       trim: true
     },
+    // Business customers: printed on the invoice
+    company: {
+      type: String,
+      trim: true
+    },
+    taxId: {
+      type: String, // matricule fiscal
+      trim: true
+    },
     address: {
       street: {
         type: String,
@@ -106,6 +115,12 @@ const orderSchema = new mongoose.Schema({
   stockReserved: {
     type: Boolean,
     default: false
+  },
+  // Numbered when the order is delivered (see invoiceService); never
+  // changed afterwards
+  invoice: {
+    number: { type: String, unique: true, sparse: true },
+    issuedAt: Date
   },
   // Whether the order holds one use of pricing.discountCode (given back when
   // it is cancelled or deleted)
@@ -210,6 +225,12 @@ const orderSchema = new mongoose.Schema({
     },
     discountCode: String,
     paymentFee: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    // Timbre fiscal, added after VAT
+    stampDuty: {
       type: Number,
       default: 0,
       min: 0

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useCart } from './CartContext';
 import { useCustomer } from './CustomerContext';
 import { TUNISIAN_GOVERNORATES } from '../utils/governorates';
+import { isValidTaxId } from '../utils/taxId';
 
 // A saved address (Account → Adresses) as checkout's shipping fields
 export const toShipping = (address) => ({
@@ -48,7 +49,9 @@ export const CheckoutProvider = ({ children }) => {
       lastName: '',
       email: '',
       phone: '',
-      company: '' // Optional for B2B customers
+      company: '', // Optional for B2B customers
+      customerType: 'individual', // or 'business'
+      taxId: '' // Businesses: matricule fiscal, printed on the invoice
     },
     
     // Shipping Address
@@ -202,8 +205,9 @@ export const CheckoutProvider = ({ children }) => {
   const validateStep = (step) => {
     switch (step) {
       case 1: { // Customer Information
-        const { firstName, lastName, email, phone } = checkoutData.customer;
-        return firstName && lastName && email && phone;
+        const { firstName, lastName, email, phone, customerType, taxId } = checkoutData.customer;
+        const taxIdOk = customerType !== 'business' || !taxId || isValidTaxId(taxId);
+        return Boolean(firstName && lastName && email && phone && taxIdOk);
       }
 
       case 2: { // Shipping Address
@@ -311,6 +315,7 @@ export const CheckoutProvider = ({ children }) => {
       subtotal: formatMoney(quote.subtotal),
       discountAmount: quote.discountAmount ? formatMoney(quote.discountAmount) : null,
       discountCode: quote.discountCode || null,
+      stampDuty: quote.stampDuty ? formatMoney(quote.stampDuty) : null,
       deliveryFee: formatMoney(quote.shippingCost),
       paymentFee: formatMoney(quote.paymentFee),
       taxAmount: formatMoney(quote.taxAmount),
@@ -338,7 +343,8 @@ export const CheckoutProvider = ({ children }) => {
             lastName: customer.lastName,
             email: customer.email,
             phone: customer.phone,
-            company: customer.company
+            company: customer.company,
+            taxId: customer.customerType === 'business' && customer.taxId ? customer.taxId : undefined
           },
           shipping,
           billing: billing.sameAsShipping ? { ...shipping, sameAsShipping: true } : billing,
@@ -402,6 +408,7 @@ export const CheckoutProvider = ({ children }) => {
           subtotal: formatMoney(pricing.subtotal),
           discountAmount: pricing.discountAmount ? formatMoney(pricing.discountAmount) : null,
           discountCode: pricing.discountCode || null,
+          stampDuty: pricing.stampDuty ? formatMoney(pricing.stampDuty) : null,
           deliveryFee: formatMoney(pricing.shippingCost),
           paymentFee: formatMoney(pricing.paymentFee),
           taxAmount: formatMoney(pricing.taxAmount),

@@ -44,7 +44,7 @@ const CartSuggestions = ({ cartItems }) => {
 };
 
 const Cart = () => {
-  const { delivery } = useShopSettings();
+  const { delivery, stampDuty = 0 } = useShopSettings();
   const { cartItems, updateQuantity, removeFromCart, getCartTotal, clearCart } = useCart();
   const { t } = useLanguage();
   const subtotal = getCartTotal();
@@ -170,11 +170,11 @@ const Cart = () => {
                 <div className="flex items-baseline justify-between">
                   <span className="text-lg font-semibold text-gray-900">{t('total')}:</span>
                   <span className="font-display text-3xl font-bold text-gray-900 tabular">
-                    {shipping.free ? '' : 'dès '}{(subtotal + shipping.from).toFixed(3)} {t('currency')}
+                    {shipping.free ? '' : 'dès '}{(subtotal + shipping.from + stampDuty).toFixed(3)} {t('currency')}
                   </span>
                 </div>
                 <p className="mt-2 text-xs text-gray-500">
-                  Prix TTC.
+                  Prix TTC{stampDuty > 0 && `, timbre fiscal (${stampDuty} ${t('currency')}) compris`}.
                   {!shipping.free && ' La livraison dépend du gouvernorat : le prix exact s\'affiche à l\'étape Livraison.'}
                   {delivery.cashOnDeliveryFee > 0 && ` Paiement à la livraison : +${delivery.cashOnDeliveryFee} ${t('currency')}.`}
                 </p>

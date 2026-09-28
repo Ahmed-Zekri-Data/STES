@@ -95,11 +95,13 @@ const deliveryCost = (subtotal, place, isUrgent = false, prices = DEFAULTS.deliv
 // and to show the customer the total before they confirm.
 //
 // A promo code comes off the products; delivery (free above the threshold)
-// and VAT are worked out on what is left. When quoting, a code that cannot
+// is worked out on what is left. All prices include VAT: taxAmount is the
+// VAT inside the products, delivery and payment fee. The stamp duty
+// (timbre fiscal, Admin → Settings) is added last and carries no VAT. When quoting, a code that cannot
 // be used only returns `promoError` (checkout shows it and prices without
 // it); with `strictPromo` (placing the order) it is refused.
 const quoteOrder = async ({ items, place, isUrgent = false, paymentMethod = 'cash_on_delivery', promoCode, strictPromo = false }) => {
-  const [{ orderItems, subtotal }, { delivery }] = await Promise.all([priceOrderItems(items), getSettings()]);
+  const [{ orderItems, subtotal }, { delivery, invoice }] = await Promise.all([priceOrderItems(items), getSettings()]);
 
   let discount = 0;
   let discountCode;
@@ -118,6 +120,8 @@ const quoteOrder = async ({ items, place, isUrgent = false, paymentMethod = 'cas
   const products = subtotal - discount;
   const shippingCost = deliveryCost(products, place, isUrgent, delivery);
   const paymentFee = paymentMethod === 'cash_on_delivery' ? delivery.cashOnDeliveryFee : 0;
+  const stampDuty = invoice.stampDuty || 0;
+  const withVat = products + shippingCost + paymentFee;
 
   return {
     orderItems,
@@ -126,11 +130,12 @@ const quoteOrder = async ({ items, place, isUrgent = false, paymentMethod = 'cas
       subtotal: roundMillimes(subtotal),
       ...(discountCode && { discountAmount: discount, discountCode }),
       shippingCost,
-      taxAmount: includedTax(products),
+      taxAmount: includedTax(withVat),
       taxRate: TAX_RATE,
       taxIncluded: true,
       paymentFee,
-      totalAmount: roundMillimes(products + shippingCost + paymentFee)
+      stampDuty,
+      totalAmount: roundMillimes(withVat + stampDuty)
     }
   };
 };
