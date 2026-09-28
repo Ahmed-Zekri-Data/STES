@@ -25,7 +25,7 @@ const clearDatabase = async () => {
   await Promise.all(collections.map(collection => collection.deleteMany({})));
 };
 
-const createApp = () => require('../app')();
+const createApp = (options) => require('../app')(options);
 
 const createProduct = (overrides = {}) => {
   const Product = require('../models/Product');

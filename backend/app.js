@@ -3,11 +3,25 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
+const fs = require('fs');
 const { uploadRoot } = require('./config/uploads');
+
+// The built shop, served by this server when SERVE_FRONTEND=true (see
+// routes/shopPages.js). Tests pass their own folder.
+const defaultFrontendDir = () => {
+  if (process.env.SERVE_FRONTEND !== 'true') return null;
+  const dir = path.resolve(__dirname, process.env.FRONTEND_DIST || '../frontend/dist');
+  if (!fs.existsSync(path.join(dir, 'index.html'))) {
+    console.error(`⚠️  SERVE_FRONTEND is set but ${dir} has no index.html: run "npm run build" in frontend/`);
+    return null;
+  }
+  return dir;
+};
 
 // Builds the Express app without connecting to MongoDB or listening, so
 // tests can create their own instance. server.js does both for real runs.
-const createApp = () => {
+const createApp = ({ frontendDir = defaultFrontendDir() } = {}) => {
   const app = express();
 
   // Security middleware
@@ -138,6 +152,9 @@ const createApp = () => {
   app.use('/api/payments', require('./routes/payments'));
   app.use('/api/pages', require('./routes/pages'));
 
+  // sitemap.xml and robots.txt, for search engines
+  app.use(require('./routes/seo'));
+
   // Health check endpoint
   app.get('/api/health', (req, res) => {
     res.json({
@@ -147,6 +164,9 @@ const createApp = () => {
       environment: process.env.NODE_ENV || 'development'
     });
   });
+
+  // The shop itself, when this server hosts it
+  if (frontendDir) app.use(require('./routes/shopPages').shopPages(frontendDir));
 
   // Error handling middleware
   // eslint-disable-next-line no-unused-vars -- Express needs the 4-argument signature

@@ -8,6 +8,7 @@ import ProductFilters, { CategoryRail } from '../components/shop/ProductFilters'
 import ProductSearch from '../components/shop/ProductSearch';
 import { SplitWords } from '../components/fx/Motion';
 import { EASE } from '../utils/motion';
+import { PAGES, summary, usePageMeta } from '../utils/pageMeta';
 
 const EMPTY_FILTERS = {
   category: '',
@@ -103,6 +104,18 @@ const EnhancedShop = () => {
     Object.entries(filters).forEach(([key, value]) => { if (value) next.set(key, value); });
     setSearchParams(next, { replace: true });
   }, [filters, setSearchParams]);
+
+  // The tab title and search-engine tags follow the category or search shown
+  const shownCategory = categories[filters.category];
+  usePageMeta(filters.search
+    ? { ...PAGES['/shop'], title: `Résultats pour « ${summary(filters.search, 60)} »`, noindex: true }
+    : shownCategory
+      ? {
+          title: shownCategory.name,
+          description: summary(shownCategory.description) || PAGES['/shop'].description,
+          path: `/shop?category=${encodeURIComponent(filters.category)}`
+        }
+      : { ...PAGES['/shop'], path: '/shop' });
 
   const handleFiltersChange = (changes) => setFilters(prev => ({ ...prev, ...changes, page: 1 }));
   const handleClearFilters = () => setFilters(EMPTY_FILTERS);
