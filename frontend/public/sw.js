@@ -1,65 +1,32 @@
-// Service Worker for Push Notifications
-const CACHE_NAME = 'stes-notifications-v1';
-const urlsToCache = [
-  '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
-];
+// Service Worker for Push Notifications only.
+// It does not cache or intercept page requests: the shop always loads from
+// the network, so visitors get the latest version after every deploy.
 
-// Install event
-self.addEventListener('install', (event) => {
-  console.log('Service Worker installing...');
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
-      .catch((error) => {
-        console.error('Cache installation failed:', error);
-      })
-  );
+const DEFAULT_ICON = '/logo.png';
+
+// Take over from any older worker straight away
+self.addEventListener('install', () => {
+  self.skipWaiting();
 });
 
-// Activate event
+// Older versions of this worker pre-cached files (cache 'stes-notifications-v1').
+// This one uses no cache, so delete every cache left behind.
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker activating...');
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-  );
-});
-
-// Fetch event (basic caching strategy)
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request);
-      })
+    (async () => {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
+      await self.clients.claim();
+    })()
   );
 });
 
 // Push event - Handle incoming push notifications
 self.addEventListener('push', (event) => {
-  console.log('Push notification received:', event);
-
   let notificationData = {
     title: 'STES Piscines',
     body: 'Vous avez une nouvelle notification',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/badge-72x72.png',
+    icon: DEFAULT_ICON,
     tag: 'default',
     data: {},
     actions: [],
@@ -82,7 +49,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(notificationData.title, {
       body: notificationData.body,
-      icon: notificationData.icon,
+      icon: notificationData.icon || DEFAULT_ICON,
       badge: notificationData.badge,
       image: notificationData.image,
       tag: notificationData.tag,
@@ -98,8 +65,6 @@ self.addEventListener('push', (event) => {
 
 // Notification click event
 self.addEventListener('notificationclick', (event) => {
-  console.log('Notification clicked:', event);
-
   const notification = event.notification;
   const data = notification.data || {};
   const action = event.action;
@@ -116,7 +81,7 @@ self.addEventListener('notificationclick', (event) => {
       });
 
       let url = '/';
-      
+
       // Determine URL based on action and data
       if (action === 'view' || action === 'rate') {
         if (data.orderId) {
@@ -173,103 +138,3 @@ self.addEventListener('notificationclick', (event) => {
     })()
   );
 });
-
-// Notification close event
-self.addEventListener('notificationclose', (event) => {
-  console.log('Notification closed:', event);
-  
-  const notification = event.notification;
-  const data = notification.data || {};
-
-  // Track notification dismissal (optional)
-  if (data.trackingId) {
-    // Could send analytics data here
-    console.log('Notification dismissed:', data.trackingId);
-  }
-});
-
-// Background sync event (for offline notifications)
-self.addEventListener('sync', (event) => {
-  console.log('Background sync triggered:', event.tag);
-
-  if (event.tag === 'notification-sync') {
-    event.waitUntil(
-      // Sync pending notifications when back online
-      syncPendingNotifications()
-    );
-  }
-});
-
-// Sync pending notifications function
-async function syncPendingNotifications() {
-  try {
-    // Get pending notifications from IndexedDB or localStorage
-    const pendingNotifications = await getPendingNotifications();
-    
-    for (const notification of pendingNotifications) {
-      await self.registration.showNotification(notification.title, notification.options);
-    }
-
-    // Clear pending notifications after showing
-    await clearPendingNotifications();
-  } catch (error) {
-    console.error('Error syncing pending notifications:', error);
-  }
-}
-
-// Helper functions for offline notification storage
-async function getPendingNotifications() {
-  // Implementation would depend on your storage strategy
-  // This is a placeholder
-  return [];
-}
-
-async function clearPendingNotifications() {
-  // Implementation would depend on your storage strategy
-  // This is a placeholder
-}
-
-// Message event - Handle messages from main thread
-self.addEventListener('message', (event) => {
-  console.log('Service Worker received message:', event.data);
-
-  const { type, data } = event.data;
-
-  switch (type) {
-    case 'SKIP_WAITING':
-      self.skipWaiting();
-      break;
-    case 'GET_VERSION':
-      event.ports[0].postMessage({ version: CACHE_NAME });
-      break;
-    case 'CACHE_NOTIFICATION':
-      // Cache notification for offline display
-      cacheNotificationForOffline(data);
-      break;
-    default:
-      console.log('Unknown message type:', type);
-  }
-});
-
-// Cache notification for offline display
-async function cacheNotificationForOffline(notificationData) {
-  try {
-    // Store in IndexedDB or localStorage for offline access
-    // This is a placeholder implementation
-    console.log('Caching notification for offline:', notificationData);
-  } catch (error) {
-    console.error('Error caching notification:', error);
-  }
-}
-
-// Error event
-self.addEventListener('error', (event) => {
-  console.error('Service Worker error:', event.error);
-});
-
-// Unhandled rejection event
-self.addEventListener('unhandledrejection', (event) => {
-  console.error('Service Worker unhandled rejection:', event.reason);
-});
-
-console.log('Service Worker loaded successfully');
