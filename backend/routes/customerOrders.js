@@ -3,6 +3,8 @@ const router = express.Router();
 const { body, param, validationResult } = require('express-validator');
 const Order = require('../models/Order');
 const { releaseOrderStock } = require('../services/orderService');
+const { releaseOrderPromo } = require('../services/promoService');
+const { sendInvoice } = require('../services/invoiceService');
 const { customerAuth } = require('../middleware/customerAuth');
 
 // GET /api/customer-orders - Get customer's orders
@@ -100,6 +102,24 @@ router.get('/:orderId', customerAuth, async (req, res) => {
   }
 });
 
+// GET /api/customer-orders/:orderId/invoice - The customer's invoice (or,
+// before delivery, bon de commande) as a PDF
+router.get('/:orderId/invoice', customerAuth, param('orderId').isMongoId(), async (req, res) => {
+  try {
+    if (!validationResult(req).isEmpty()) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    const order = await Order.findOne({ _id: req.params.orderId, customerId: req.customer.customerId });
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    await sendInvoice(res, order);
+  } catch (error) {
+    console.error('Error creating invoice:', error);
+    res.status(500).json({ message: 'Error creating invoice' });
+  }
+});
+
 // POST /api/customer-orders/:orderId/cancel - Cancel an order
 router.post('/:orderId/cancel', customerAuth, [
   param('orderId').isMongoId().withMessage('Invalid order ID'),
@@ -137,6 +157,7 @@ router.post('/:orderId/cancel', customerAuth, [
     }
     await order.save();
     await releaseOrderStock(order);
+    await releaseOrderPromo(order);
 
     res.json({
       message: 'Order cancelled successfully',

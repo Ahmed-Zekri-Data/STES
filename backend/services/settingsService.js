@@ -21,6 +21,15 @@ const DEFAULTS = {
     baseCost: 7,
     cashOnDeliveryFee: 5
   },
+  // Legal details printed on invoices, and the stamp duty (timbre fiscal)
+  // added to each order; 0 turns it off
+  invoice: {
+    companyName: '',
+    taxId: '',
+    tradeRegister: '',
+    address: '',
+    stampDuty: 1
+  },
   lowStockThreshold: LOW_STOCK_THRESHOLD
 };
 
@@ -35,15 +44,16 @@ const getSettings = async () => {
     contact: pick(saved?.contact, DEFAULTS.contact),
     bank: pick(saved?.bank, DEFAULTS.bank),
     delivery: pick(saved?.delivery, DEFAULTS.delivery),
+    invoice: pick(saved?.invoice, DEFAULTS.invoice),
     lowStockThreshold: saved?.lowStockThreshold ?? DEFAULTS.lowStockThreshold,
     updatedAt: saved?.updatedAt || null
   };
 };
 
 // Saves the given sections; anything not given keeps its value
-const updateSettings = async ({ contact, bank, delivery, lowStockThreshold }) => {
+const updateSettings = async ({ contact, bank, delivery, invoice, lowStockThreshold }) => {
   const set = {};
-  for (const [section, values] of Object.entries({ contact, bank, delivery })) {
+  for (const [section, values] of Object.entries({ contact, bank, delivery, invoice })) {
     for (const [key, value] of Object.entries(values || {})) {
       if (key in DEFAULTS[section]) set[`${section}.${key}`] = value;
     }
@@ -61,10 +71,11 @@ const bankTransferDetails = (bank) => (bank?.rib && bank.beneficiary
   ? { bankName: bank.bankName, beneficiary: bank.beneficiary, rib: formatRib(bank.rib), iban: ibanOf(bank.rib) }
   : null);
 
-// What the shop pages show: contact details, bank account and delivery prices
+// What the shop pages show: contact details, bank account, delivery prices
+// and the stamp duty added to orders
 const publicSettings = async () => {
-  const { contact, bank, delivery } = await getSettings();
-  return { contact, bank: bankTransferDetails(bank), delivery };
+  const { contact, bank, delivery, invoice } = await getSettings();
+  return { contact, bank: bankTransferDetails(bank), delivery, stampDuty: invoice.stampDuty };
 };
 
 module.exports = { DEFAULTS, getSettings, updateSettings, publicSettings, bankTransferDetails };

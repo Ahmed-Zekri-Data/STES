@@ -16,7 +16,9 @@ export const DEFAULT_SHOP_SETTINGS = {
     freeDeliveryOver: 200,
     baseCost: 7,
     cashOnDeliveryFee: 5
-  }
+  },
+  // Timbre fiscal added to every order (TND)
+  stampDuty: 1
 };
 
 export const ShopSettingsContext = createContext(DEFAULT_SHOP_SETTINGS);

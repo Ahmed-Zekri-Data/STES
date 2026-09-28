@@ -11,6 +11,8 @@ const ordersAdmin = [auth, checkPermission('orders')];
 const { optionalCustomerAuth } = require('../middleware/customerAuth');
 const { CheckoutError, priceOrderItems, quoteOrder, includedTax, TAX_RATE, reserveStock, releaseStock, reserveOrderStock, releaseOrderStock } = require('../services/orderService');
 const { claimPromoUse, unclaimPromoUse, releaseOrderPromo, reclaimOrderPromo } = require('../services/promoService');
+const { issueInvoice, sendInvoice } = require('../services/invoiceService');
+const { isValidTaxId, normalizeTaxId } = require('../utils/taxId');
 
 // Delivery is priced by governorate when the address has one, else by city
 const deliveryPlace = (address) => address?.governorate || address?.city || 'tunis';
@@ -25,6 +27,10 @@ router.post('/', optionalCustomerAuth, [
   body('customer.lastName').optional().trim().isLength({ min: 1, max: 50 }).withMessage('Last name is required'),
   body('customer.email').isEmail().normalizeEmail().withMessage('Valid email is required'),
   body('customer.phone').trim().isLength({ min: 8, max: 20 }).withMessage('Valid phone number is required'),
+  body('customer.company').optional().isString().trim().isLength({ max: 120 }),
+  body('customer.taxId').optional({ values: 'falsy' }).isString()
+    .custom(isValidTaxId).withMessage('Matricule fiscal invalide (par exemple 1234567A/A/M/000)')
+    .customSanitizer(normalizeTaxId),
 
   // Shipping address (required)
   body('shipping.address').optional().trim().isLength({ min: 1, max: 200 }).withMessage('Shipping address is required'),
@@ -84,6 +90,7 @@ router.post('/', optionalCustomerAuth, [
         email: customer.email,
         phone: customer.phone,
         company: customer.company,
+        taxId: customer.taxId || undefined,
         address: {
           street: shippingAddress?.address || shippingAddress?.street || customer.address?.street,
           city: shippingAddress?.city || customer.address?.city,
@@ -651,6 +658,11 @@ router.put('/:id/status', ordersAdmin, [
       await order.addTrackingEvent(status, note, location, updatedBy);
     }
 
+    // Delivered: the sale is done and gets its invoice number (once)
+    if (status === 'delivered') {
+      order.invoice = await issueInvoice(order);
+    }
+
     // In the background: slow email or SMS providers must not hold up the
     // admin. Failures are logged by the services.
     const notifyCustomer = sendNotification && statusChanged;
@@ -766,6 +778,21 @@ router.get('/stats/summary', ordersAdmin, async (req, res) => {
   }
 });
 
+
+// GET /api/orders/:id/invoice - The invoice (or, before delivery, bon de
+// commande) as a PDF
+router.get('/:id/invoice', ordersAdmin, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id).catch(() => null);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    await sendInvoice(res, order);
+  } catch (error) {
+    console.error('Error creating invoice:', error);
+    res.status(500).json({ message: 'Error creating invoice' });
+  }
+});
 
 // DELETE /api/orders/:id - Delete order (Admin only)
 router.delete('/:id', ordersAdmin, async (req, res) => {

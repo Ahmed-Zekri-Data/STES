@@ -116,6 +116,13 @@ const OrderSummary = () => {
           </div>
         )}
 
+        {totals.stampDuty && (
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Timbre fiscal:</span>
+            <span className="font-medium text-gray-900">{totals.stampDuty} TND</span>
+          </div>
+        )}
+
         <div className="border-t border-gray-200 pt-3">
           <div className="flex justify-between">
             <span className="text-lg font-semibold text-gray-900">Total TTC:</span>

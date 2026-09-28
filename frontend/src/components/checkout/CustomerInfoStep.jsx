@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useCheckout } from '../../context/CheckoutContext';
-import { User, Mail, Phone, Building, ArrowRight } from 'lucide-react';
+import { User, Mail, Phone, Building, ArrowRight, FileText } from 'lucide-react';
+import { isValidTaxId } from '../../utils/taxId';
 
 const CustomerInfoStep = () => {
   const { checkoutData, updateCheckoutData, nextStep, validateStep } = useCheckout();
@@ -168,7 +169,8 @@ const CustomerInfoStep = () => {
               type="radio"
               name="customerType"
               value="individual"
-              defaultChecked
+              checked={customer.customerType !== 'business'}
+              onChange={handleInputChange}
               className="mr-3 text-blue-600"
             />
             <div>
@@ -181,6 +183,8 @@ const CustomerInfoStep = () => {
               type="radio"
               name="customerType"
               value="business"
+              checked={customer.customerType === 'business'}
+              onChange={handleInputChange}
               className="mr-3 text-blue-600"
             />
             <div>
@@ -189,6 +193,31 @@ const CustomerInfoStep = () => {
             </div>
           </label>
         </div>
+        {customer.customerType === 'business' && (
+          <div className="mt-4">
+            <label htmlFor="taxId" className="block text-sm font-medium text-gray-700 mb-2">
+              <FileText className="w-4 h-4 inline mr-2" aria-hidden="true" />
+              Matricule fiscal (optionnel)
+            </label>
+            <input
+              type="text"
+              id="taxId"
+              name="taxId"
+              value={customer.taxId || ''}
+              onChange={handleInputChange}
+              placeholder="1234567A/A/M/000"
+              autoComplete="off"
+              aria-invalid={Boolean(customer.taxId) && !isValidTaxId(customer.taxId)}
+              aria-describedby="taxId-help"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl font-mono uppercase focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
+            />
+            <p id="taxId-help" className={`text-sm mt-1 ${customer.taxId && !isValidTaxId(customer.taxId) ? 'text-red-600' : 'text-gray-500'}`}>
+              {customer.taxId && !isValidTaxId(customer.taxId)
+                ? 'Format attendu : 7 chiffres et une lettre, puis le code TVA, la catégorie et le numéro d\u2019établissement (ex. 1234567A/A/M/000).'
+                : 'Il figurera sur votre facture.'}
+            </p>
+          </div>
+        )}
       </motion.div>
 
       {/* Continue Button */}

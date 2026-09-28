@@ -216,6 +216,12 @@ const OrderReviewStep = () => {
                 <span className="font-medium">{totals.paymentFee} TND</span>
               </div>
             )}
+            {totals.stampDuty && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Timbre fiscal:</span>
+                <span className="font-medium">{totals.stampDuty} TND</span>
+              </div>
+            )}
             <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-300">
               <span>Total TTC:</span>
               <span className="text-blue-600">{totals.total} TND</span>

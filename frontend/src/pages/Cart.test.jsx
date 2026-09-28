@@ -38,8 +38,8 @@ describe('cart page totals', () => {
 
     expect(summary()).toContain('Sous-total:180.000 TND');
     expect(summary()).toContain('Livraison:dès 7.000 TND');
-    expect(summary()).toContain('dès 187.000 TND');
-    expect(summary()).toContain('Prix TTC.');
+    expect(summary()).toContain('dès 188.000 TND'); // with the 1 TND timbre fiscal
+    expect(summary()).toContain('Prix TTC, timbre fiscal (1 TND) compris.');
     expect(summary()).toContain('Paiement à la livraison : +5 TND.');
     expect(summary()).not.toContain('10.00');
   });
@@ -48,17 +48,18 @@ describe('cart page totals', () => {
     renderCart([{ _id: 'p1', name: 'Pompe', price: 850, quantity: 1 }]);
 
     expect(summary()).toContain('Livraison:Gratuite');
-    expect(summary()).toContain('Total:850.000 TND');
+    expect(summary()).toContain('Total:851.000 TND');
     expect(summary()).not.toContain('gouvernorat');
   });
 
   it('uses the saved delivery prices', () => {
     renderCart(
       [{ _id: 'p1', name: 'Pompe', price: 850, quantity: 1 }],
-      { ...DEFAULT_SHOP_SETTINGS, delivery: { freeDeliveryOver: 1000, baseCost: 9, cashOnDeliveryFee: 0 } }
+      { ...DEFAULT_SHOP_SETTINGS, delivery: { freeDeliveryOver: 1000, baseCost: 9, cashOnDeliveryFee: 0 }, stampDuty: 0 }
     );
 
     expect(summary()).toContain('dès 859.000 TND');
+    expect(summary()).toContain('Prix TTC.');
     expect(summary()).not.toContain('Paiement à la livraison');
   });
 });

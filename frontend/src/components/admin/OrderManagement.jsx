@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
+  FileDown,
   Package, 
   Clock, 
   Truck, 
@@ -20,6 +21,33 @@ import {
   X
 } from 'lucide-react';
 import api from '../../utils/adminApi';
+import { saveResponse, blobErrorMessage } from '../../utils/download';
+
+// The invoice PDF once the order is delivered, the bon de commande before
+const InvoiceDownload = ({ order }) => {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const download = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      saveResponse(await api.get(`/orders/${order._id}/invoice`, { responseType: 'blob' }));
+    } catch (err) {
+      setError(await blobErrorMessage(err, 'The document could not be downloaded.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="pt-2">
+      <button type="button" onClick={download} disabled={busy} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-surface px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60">
+        <FileDown className="h-4 w-4" aria-hidden="true" />
+        {busy ? 'Preparing…' : order.invoice?.number ? 'Invoice PDF' : 'Order summary PDF (bon de commande)'}
+      </button>
+      {error && <p role="alert" className="mt-1 text-sm text-red-600">{error}</p>}
+    </div>
+  );
+};
 import LoadingSpinner from '../LoadingSpinner';
 
 // Status display helpers, shared by the order list and the order details modal
@@ -443,6 +471,13 @@ const OrderDetailsModal = ({ order, onClose, onEditStatus }) => {
                   <span className="text-gray-600">Total:</span>
                   <span className="font-bold text-lg">{order.totalAmount} TND</span>
                 </div>
+                {order.invoice?.number && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Invoice:</span>
+                    <span className="font-mono font-medium">{order.invoice.number}</span>
+                  </div>
+                )}
+                <InvoiceDownload order={order} />
               </div>
             </div>
 

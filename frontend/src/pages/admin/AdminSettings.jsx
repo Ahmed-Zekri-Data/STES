@@ -160,8 +160,8 @@ const ShopSettings = () => {
     setSaving(true);
     setResult(null);
     try {
-      const { contact, bank, delivery, lowStockThreshold } = settings;
-      const response = await adminApi.put('/admin/settings', { contact, bank, delivery, lowStockThreshold });
+      const { contact, bank, delivery, invoice, lowStockThreshold } = settings;
+      const response = await adminApi.put('/admin/settings', { contact, bank, delivery, invoice, lowStockThreshold });
       setSettings(response.data.settings);
       setResult({ ok: true, message: 'Saved. The shop shows the new values on the next page load.' });
     } catch (error) {
@@ -181,6 +181,7 @@ const ShopSettings = () => {
   if (!settings) return <p className="text-gray-500">Loading…</p>;
 
   const { contact, bank, delivery } = settings;
+  const invoice = settings.invoice || {};
   return (
     <form onSubmit={save} className="space-y-6">
       <Section title="Contact details" description="Shown in the shop's footer, on the Contact and Services pages, and on the WhatsApp buttons.">
@@ -205,6 +206,16 @@ const ShopSettings = () => {
           <Field id="free-delivery-over" label="Free delivery above" type="number" min="0" step="0.001" suffix="TND" value={delivery.freeDeliveryOver} onChange={set('delivery', 'freeDeliveryOver')} required />
           <Field id="base-delivery-cost" label="Base delivery cost" type="number" min="0" step="0.001" suffix="TND" value={delivery.baseCost} onChange={set('delivery', 'baseCost')} required />
           <Field id="cash-on-delivery-fee" label="Cash on delivery fee" type="number" min="0" step="0.001" suffix="TND" value={delivery.cashOnDeliveryFee} onChange={set('delivery', 'cashOnDeliveryFee')} required />
+        </div>
+      </Section>
+
+      <Section title="Invoices" description="Printed on invoices and order summaries (PDF). An order gets its invoice number when you mark it delivered. The stamp duty (timbre fiscal) is added to every order's total; 0 turns it off.">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field id="invoice-company" label="Company name" value={invoice.companyName ?? ''} onChange={set('invoice', 'companyName')} placeholder="STES SARL" hint="As registered. Empty: STES.tn" />
+          <Field id="invoice-tax-id" label="Matricule fiscal" value={invoice.taxId ?? ''} onChange={set('invoice', 'taxId')} placeholder="1234567A/A/M/000" hint="As on your tax card (carte d'identification fiscale)." />
+          <Field id="invoice-trade-register" label="Trade register (RNE)" value={invoice.tradeRegister ?? ''} onChange={set('invoice', 'tradeRegister')} placeholder="B0123452026" />
+          <Field id="invoice-address" label="Legal address" value={invoice.address ?? ''} onChange={set('invoice', 'address')} hint="Empty: the contact address above." />
+          <Field id="invoice-stamp-duty" label="Stamp duty (timbre fiscal)" type="number" min="0" step="0.001" suffix="TND" value={invoice.stampDuty ?? 1} onChange={set('invoice', 'stampDuty')} />
         </div>
       </Section>
 
