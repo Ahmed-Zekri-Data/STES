@@ -10,7 +10,10 @@ export default defineConfig({
         target: 'http://localhost:9000',
         changeOrigin: true,
         secure: false,
-      }
+      },
+      // Made by the server from the catalogue
+      '/sitemap.xml': 'http://localhost:9000',
+      '/robots.txt': 'http://localhost:9000'
     }
   },
   build: {

@@ -18,6 +18,7 @@ import CartSidebar from './components/CartSidebar';
 import PageLoader from './components/PageLoader';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Ambient, PageTransition, ScrollProgress } from './components/layout/PageFrame';
+import RouteMeta from './components/layout/RouteMeta';
 
 // Browsing pages are in the main bundle, so the shop opens without waiting
 import Home from './pages/Home';
@@ -37,6 +38,7 @@ const TrackOrder = lazy(() => import('./pages/TrackOrder'));
 const PaymentResult = lazy(() => import('./pages/PaymentResult'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
 const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
@@ -96,6 +98,7 @@ function App() {
                   <AdminProvider>
                 <Router>
                   <ErrorBoundary>
+                  <RouteMeta />
                   <Routes>
                     {/* Shop */}
                     <Route element={<ShopLayout />}>
@@ -115,6 +118,7 @@ function App() {
                       <Route path="/payment/success" element={<PaymentResult />} />
                       <Route path="/payment/failed" element={<PaymentResult />} />
                       <Route path="/payment/cancel" element={<PaymentResult />} />
+                      <Route path="*" element={<NotFound />} />
                     </Route>
                     <Route path="/boutique" element={<RedirectToShop />} />
 

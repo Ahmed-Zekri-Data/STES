@@ -15,6 +15,7 @@ import { categoryLook } from '../utils/categoryIcons';
 import { pickProducts } from '../utils/productPicks';
 import { flyToCart } from '../utils/flyToCart';
 import { EASE } from '../utils/motion';
+import { productMeta, usePageMeta } from '../utils/pageMeta';
 
 // The product on a lit stage that turns towards the pointer
 const Stage = ({ product }) => {
@@ -124,6 +125,10 @@ const ProductDetails = () => {
       tabsRef.current?.scrollIntoView({ block: 'start' });
     }
   }, [product, hash]);
+
+  usePageMeta(loading ? null : product
+    ? productMeta(product, window.location.origin)
+    : { title: 'Produit introuvable', noindex: true });
 
   const showReviews = () => {
     setActiveTab('reviews');

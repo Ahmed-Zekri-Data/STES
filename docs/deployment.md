@@ -210,10 +210,33 @@ values from `.env` (the password must be at least 12 characters).
 4. Set up backups
 
 ### Hosting
-1. **Frontend**: Deploy to Vercel/Netlify
-2. **Backend**: Deploy to Heroku/Railway
-3. **Database**: MongoDB Atlas
-4. **Images**: Cloudinary/AWS S3
+The simplest setup is one Node server for both the shop and the API:
+
+```bash
+npm run build          # builds frontend/dist
+cd backend && npm start
+```
+
+with `SERVE_FRONTEND=true` and `FRONTEND_URL=https://your-domain` in `.env`.
+The server then sends every page with its own title, description and
+preview picture (what Google, WhatsApp and Facebook show), answers 404 for
+addresses that do not exist, and serves `/sitemap.xml` and `/robots.txt`.
+Put it behind HTTPS (nginx, Caddy or the host's proxy) and set
+`TRUST_PROXY=1`.
+
+If the shop is hosted elsewhere (Vercel, Netlify...), that host must pass
+`/api/*`, `/sitemap.xml` and `/robots.txt` to the backend. Pages then
+get their titles in the browser only, so link previews show the shop's
+generic picture and text.
+
+Database: MongoDB Atlas or your own server. Uploaded photos: keep
+`UPLOAD_PATH` on a disk that survives deployments.
+
+### Search engines
+After launch, add the site to Google Search Console
+(https://search.google.com/search-console) and submit
+`https://your-domain/sitemap.xml`. Product pages carry price, stock and
+rating data that Google can show in results.
 
 ### Security
 1. Change default admin password
