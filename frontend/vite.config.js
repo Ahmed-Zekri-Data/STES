@@ -17,6 +17,9 @@ export default defineConfig({
     }
   },
   build: {
+    // three.js (about 160 kB gzipped) only loads with the home page's 3D,
+    // after the page itself has shown
+    chunkSizeWarningLimit: 650,
     rollupOptions: {
       output: {
         // Libraries change rarely, so they get their own file that stays
