@@ -10,7 +10,7 @@
   --pl-glass-line: rgba(160, 244, 251, 0.28);
   position: relative;
   color: var(--pl-white);
-  font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 html.pl-locked, html.pl-locked body { overflow: hidden; }
 .pl-sr { position: absolute; }

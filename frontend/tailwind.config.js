@@ -60,12 +60,13 @@ export default {
     textColor: { ...base, ...palette('t'), ...semantic },
     extend: {
       fontFamily: {
-        sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
-        display: ['"Space Grotesk"', '"DM Sans"', 'system-ui', 'sans-serif'],
-        body: ['"DM Sans"', 'system-ui', 'sans-serif'],
+        // The home page's type: Plus Jakarta Sans for text, Unbounded for titles
+        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        display: ['Unbounded', '"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        body: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
         arabic: ['"Noto Sans Arabic"', 'sans-serif'],
-        french: ['"DM Sans"', 'sans-serif']
+        french: ['"Plus Jakarta Sans"', 'sans-serif']
       },
       spacing: {
         18: '4.5rem',

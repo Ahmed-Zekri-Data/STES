@@ -3,30 +3,27 @@ import { motion } from 'framer-motion';
 import { SplitWords } from '../fx/Motion';
 import { EASE } from '../../utils/motion';
 
-// Three glowing rings turning in 3D around a drop of light
-const Rings = () => (
-  <div className="pointer-events-none absolute end-[-6rem] top-1/2 hidden h-[26rem] w-[26rem] -translate-y-1/2 [perspective:900px] md:block" aria-hidden="true">
-    {[0, 1, 2].map(i => (
-      <div
-        key={i}
-        className="absolute inset-0 m-auto rounded-full border motion-safe:animate-[tilt-spin_var(--d)_linear_infinite]"
-        style={{
-          width: `${16 + i * 5}rem`,
-          height: `${16 + i * 5}rem`,
-          borderColor: i === 1 ? 'rgb(var(--violet-500) / 0.4)' : 'rgb(var(--aqua-500) / 0.45)',
-          boxShadow: `0 0 36px ${i === 1 ? 'rgb(var(--violet-500) / 0.18)' : 'rgb(var(--aqua-500) / 0.18)'}`,
-          '--d': `${18 + i * 7}s`,
-          '--tilt': `${58 + i * 9}deg`
-        }}
-      />
-    ))}
-    <div
-      className="absolute inset-0 m-auto h-20 w-20 rounded-full motion-safe:animate-float"
-      style={{
-        background: 'radial-gradient(circle at 35% 30%, rgb(255 255 255 / 0.9), rgb(var(--aqua-400)) 35%, rgb(var(--violet-500)) 100%)',
-        boxShadow: '0 0 60px rgb(var(--aqua-400) / 0.6)'
-      }}
-    />
+// A striped float ring bobbing on moving water, like on the home page's pool
+const Float = () => (
+  <div className="pointer-events-none absolute end-[4%] top-1/2 hidden h-72 w-96 -translate-y-1/2 md:block" aria-hidden="true">
+    <div className="page-float absolute left-1/2 top-[42%] h-40 w-40 -translate-x-1/2 -translate-y-1/2 motion-safe:animate-[bob_5s_ease-in-out_infinite]">
+      <div className="page-float__ring" />
+    </div>
+    <svg viewBox="0 0 400 120" className="absolute inset-x-0 bottom-10 h-28 w-full overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_20%,#000_80%,transparent)]">
+      {[0, 1, 2].map(i => (
+        <path
+          key={i}
+          d="M-200 60 q50 -18 100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0"
+          fill="none"
+          stroke={i === 1 ? 'rgb(var(--violet-500) / 0.35)' : 'rgb(var(--aqua-500) / 0.4)'}
+          strokeWidth={2.5 - i * 0.6}
+          strokeLinecap="round"
+          transform={`translate(0 ${i * 16})`}
+          className="motion-safe:animate-[wave_var(--d)_linear_infinite]"
+          style={{ '--d': `${6 + i * 3}s` }}
+        />
+      ))}
+    </svg>
   </div>
 );
 
@@ -34,7 +31,7 @@ const Rings = () => (
 const PageHero = ({ eyebrow, title, subtitle, children }) => (
   <header className="relative overflow-hidden">
     <div className="pointer-events-none absolute inset-0 grid-lines opacity-70" aria-hidden="true" />
-    <Rings />
+    <Float />
     <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-12 sm:px-6 sm:pb-20 sm:pt-20 lg:px-8">
       {eyebrow && (
         <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE }} className="eyebrow">
