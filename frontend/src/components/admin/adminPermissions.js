@@ -11,6 +11,7 @@ export const PAGE_PERMISSIONS = {
   '/admin/promo-codes': 'orders',
   '/admin/customers': 'users',
   '/admin/forms': 'forms',
+  '/admin/reminders': 'forms',
   '/admin/pages': 'settings'
 };
 

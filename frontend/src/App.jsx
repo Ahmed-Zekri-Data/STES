@@ -40,6 +40,8 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const PoolBuilder = lazy(() => import('./pages/PoolBuilder'));
+const Maintenance = lazy(() => import('./pages/Maintenance'));
+const MaintenanceSubscription = lazy(() => import('./pages/MaintenanceSubscription'));
 
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
 const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
@@ -57,6 +59,7 @@ const TrackingDashboard = lazy(() => import('./pages/admin/TrackingDashboard'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
 const PromoCodes = lazy(() => import('./pages/admin/PromoCodes'));
+const Reminders = lazy(() => import('./pages/admin/Reminders'));
 
 // Shop pages share the header and footer; they stay in place while a page
 // that is not loaded yet is being downloaded
@@ -108,6 +111,8 @@ function App() {
                       <Route path="/product/:id" element={<ProductDetails />} />
                       <Route path="/services" element={<Services />} />
                       <Route path="/construire" element={<PoolBuilder />} />
+                      <Route path="/entretien" element={<Maintenance />} />
+                      <Route path="/entretien/mes-rappels" element={<MaintenanceSubscription />} />
                       <Route path="/about" element={<About />} />
                       <Route path="/contact" element={<Contact />} />
                       <Route path="/cart" element={<Cart />} />
@@ -149,6 +154,7 @@ function App() {
                       <Route path="promo-codes" element={<PromoCodes />} />
                       <Route path="customers" element={<Customers />} />
                       <Route path="forms" element={<Forms />} />
+                      <Route path="reminders" element={<Reminders />} />
                       <Route path="pages" element={<Pages />} />
                       <Route path="users" element={<AdminUsers />} />
                       <Route path="settings" element={<AdminSettings />} />

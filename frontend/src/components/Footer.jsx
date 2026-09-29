@@ -102,6 +102,8 @@ const Footer = () => {
     { name: t('shop'), href: '/shop' },
     { name: 'Suivi Commande', href: '/track-order' },
     { name: t('services'), href: '/services' },
+    { name: 'Construire ma piscine', href: '/construire' },
+    { name: 'Calendrier d’entretien', href: '/entretien' },
     { name: t('about'), href: '/about' },
     { name: t('contact'), href: '/contact' }
   ];

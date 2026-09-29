@@ -97,6 +97,7 @@ const Services = () => {
         <div className="flex flex-wrap gap-3">
           <Link to="/construire" className="btn-brand">Dessiner ma piscine</Link>
           <a href="#devis" className="btn-ghost">Demander un devis</a>
+          <Link to="/entretien" className="btn-ghost">Calendrier d’entretien</Link>
         </div>
       </PageHero>
 

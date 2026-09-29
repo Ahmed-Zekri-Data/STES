@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { User, Store, Save, CheckCircle, Waves, Ruler } from 'lucide-react';
+import { User, Store, Save, CheckCircle, Waves, Ruler, Bell } from 'lucide-react';
 import adminApi, { errorMessage } from '../../utils/adminApi';
 import { useAdmin } from '../../context/AdminContext';
 import HomePageSettings from './HomePageSettings';
 import PoolBuilderSettings from './PoolBuilderSettings';
+import RemindersSettings from './RemindersSettings';
 
 const MIN_PASSWORD_LENGTH = 8;
 const ROLE_LABELS = { super_admin: 'Super admin', admin: 'Admin' };
@@ -240,17 +241,17 @@ const AdminSettings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const canEditShop = hasPermission('settings');
   const requested = searchParams.get('tab');
-  const tab = canEditShop && ['shop', 'home', 'builder'].includes(requested) ? requested : 'account';
+  const tab = canEditShop && ['shop', 'home', 'builder', 'reminders'].includes(requested) ? requested : 'account';
 
   const tabs = [
     { id: 'account', label: 'My account', icon: User },
-    ...(canEditShop ? [{ id: 'shop', label: 'Shop', icon: Store }, { id: 'home', label: 'Home page', icon: Waves }, { id: 'builder', label: 'Pool builder', icon: Ruler }] : [])
+    ...(canEditShop ? [{ id: 'shop', label: 'Shop', icon: Store }, { id: 'home', label: 'Home page', icon: Waves }, { id: 'builder', label: 'Pool builder', icon: Ruler }, { id: 'reminders', label: 'Reminders', icon: Bell }] : [])
   ];
 
   return (
     <div className="space-y-6">
       {tabs.length > 1 && (
-        <div role="tablist" className="inline-flex p-1 bg-gray-100 rounded-lg">
+        <div role="tablist" className="inline-flex flex-wrap p-1 bg-gray-100 rounded-lg">
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -268,6 +269,7 @@ const AdminSettings = () => {
       {tab === 'shop' && <ShopSettings />}
       {tab === 'home' && <HomePageSettings />}
       {tab === 'builder' && <PoolBuilderSettings />}
+      {tab === 'reminders' && <RemindersSettings />}
       {tab === 'account' && <MyAccount />}
     </div>
   );

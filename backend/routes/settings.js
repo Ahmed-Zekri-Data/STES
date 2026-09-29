@@ -5,6 +5,7 @@ const { getSettings, updateSettings, publicSettings } = require('../services/set
 const { isValidRib, formatRib } = require('../utils/rib');
 const { isValidTaxId, normalizeTaxId } = require('../utils/taxId');
 const { KINDS } = require('../services/poolPlanService');
+const { REMINDER_KEYS } = require('../config/maintenanceCalendar');
 
 // GET /api/settings - Contact details and delivery prices for the shop pages
 const publicRouter = express.Router();
@@ -91,7 +92,16 @@ adminRouter.put('/', [
   body('builder.pricePerM2Min').optional().isFloat({ min: 0, max: 100000 }).withMessage('Prices per m² must be between 0 and 100000 TND').toFloat(),
   body('builder.pricePerM2Max').optional().isFloat({ min: 0, max: 100000 }).withMessage('Prices per m² must be between 0 and 100000 TND').toFloat(),
   body('builder').optional().custom(b => !(b?.pricePerM2Min > 0) || b.pricePerM2Max >= b.pricePerM2Min)
-    .withMessage('The highest price per m² must be at least the lowest')
+    .withMessage('The highest price per m² must be at least the lowest'),
+  body('reminders.calendar').optional().isArray({ max: REMINDER_KEYS.length }).withMessage('Unknown reminders')
+    .custom(list => new Set(list.map(r => r?.key)).size === list.length).withMessage('Each reminder only once'),
+  body('reminders.calendar.*.key').isIn(REMINDER_KEYS).withMessage('Unknown reminder'),
+  body('reminders.calendar.*.month').isInt({ min: 1, max: 12 }).withMessage('Choose the month of each reminder').toInt(),
+  body('reminders.calendar.*.day').isInt({ min: 1, max: 28 }).withMessage('The day of each reminder must be between 1 and 28').toInt(),
+  body('reminders.calendar.*.title').isString().trim().isLength({ min: 1, max: 80 }).withMessage('Each reminder needs a title (up to 80 characters)'),
+  body('reminders.calendar.*.message').isString().trim().isLength({ min: 1, max: 600 }).withMessage('Each reminder needs a text (up to 600 characters)'),
+  productList('reminders.calendar.*.products', 3),
+  body('reminders.calendar.*.active').optional().isBoolean().withMessage('Send the reminder: yes or no').toBoolean()
 ], async (req, res) => {
   try {
     const errors = validationResult(req);

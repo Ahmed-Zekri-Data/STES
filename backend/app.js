@@ -111,7 +111,7 @@ const createApp = ({ frontendDir = defaultFrontendDir() } = {}) => {
     max: 10,
     message: limitMessage('Trop de messages envoyés. Veuillez réessayer plus tard.')
   });
-  for (const path of ['/api/forms/contact', '/api/forms/quote', '/api/forms/newsletter']) {
+  for (const path of ['/api/forms/contact', '/api/forms/quote', '/api/forms/newsletter', '/api/maintenance/subscribe']) {
     app.post(path, formLimiter);
   }
 
@@ -153,6 +153,8 @@ const createApp = ({ frontendDir = defaultFrontendDir() } = {}) => {
   app.use('/api/pages', require('./routes/pages'));
   app.use('/api/showcase', require('./routes/showcase'));
   app.use('/api/builder', require('./routes/builder'));
+  app.use('/api/maintenance', require('./routes/maintenance').publicRouter);
+  app.use('/api/admin/maintenance', require('./routes/maintenance').adminRouter);
 
   // sitemap.xml and robots.txt, for search engines
   app.use(require('./routes/seo'));

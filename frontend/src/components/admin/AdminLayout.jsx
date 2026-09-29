@@ -28,7 +28,8 @@ import {
   UserCog,
   Truck,
   MessageSquare,
-  BarChart3
+  BarChart3,
+  Bell
 } from 'lucide-react';
 
 // Tailwind's lg breakpoint: from here the sidebar is always shown
@@ -73,6 +74,7 @@ const AdminLayout = () => {
     ] },
     { label: 'Content', items: [
       { name: 'Forms', href: '/admin/forms', icon: Inbox },
+      { name: 'Reminders', href: '/admin/reminders', icon: Bell },
       { name: 'Pages', href: '/admin/pages', icon: FileText }
     ] },
     { label: 'System', items: [

@@ -1,6 +1,7 @@
 const Settings = require('../models/Settings');
 const { LOW_STOCK_THRESHOLD } = require('../config/inventory');
 const { formatRib, ibanOf } = require('../utils/rib');
+const { DEFAULT_CALENDAR } = require('../config/maintenanceCalendar');
 
 // Used until an admin saves other values in Admin → Settings
 const DEFAULTS = {
@@ -47,12 +48,21 @@ const DEFAULTS = {
     equipment: [],
     pricePerM2Min: 0,
     pricePerM2Max: 0
+  },
+  // Pool care reminders: the default calendar until the shop changes it
+  reminders: {
+    calendar: DEFAULT_CALENDAR
   }
 };
 
 const pick = (saved, defaults) => Object.fromEntries(
   Object.keys(defaults).map(key => [key, saved?.[key] ?? defaults[key]])
 );
+
+// Each reminder as saved, or its default; in date order
+const calendarOf = (saved) => DEFAULT_CALENDAR
+  .map(reminder => ({ ...reminder, ...saved?.find(s => s.key === reminder.key) }))
+  .sort((a, b) => a.month - b.month || a.day - b.day);
 
 // The shop settings, with defaults for anything never saved
 const getSettings = async () => {
@@ -69,14 +79,15 @@ const getSettings = async () => {
       problems: pick(saved?.showcase?.problems, DEFAULTS.showcase.problems)
     },
     builder: pick(saved?.builder, DEFAULTS.builder),
+    reminders: { calendar: calendarOf(saved?.reminders?.calendar) },
     updatedAt: saved?.updatedAt || null
   };
 };
 
 // Saves the given sections; anything not given keeps its value
-const updateSettings = async ({ contact, bank, delivery, invoice, lowStockThreshold, showcase, builder }) => {
+const updateSettings = async ({ contact, bank, delivery, invoice, lowStockThreshold, showcase, builder, reminders }) => {
   const set = {};
-  for (const [section, values] of Object.entries({ contact, bank, delivery, invoice, showcase, builder })) {
+  for (const [section, values] of Object.entries({ contact, bank, delivery, invoice, showcase, builder, reminders })) {
     for (const [key, value] of Object.entries(values || {})) {
       if (key in DEFAULTS[section]) set[`${section}.${key}`] = value;
     }

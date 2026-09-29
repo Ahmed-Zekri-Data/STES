@@ -267,3 +267,4 @@ html.pl-locked, html.pl-locked body { overflow: hidden; }
   .pl-temperature { right: 16px; top: 16vh; }
 }
 .pl-proof__count { margin: 0 0 18px; }
+.pl-steps p a { color: var(--pl-aqua-2); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
