@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { query, validationResult } = require('express-validator');
+const { query, body, validationResult } = require('express-validator');
+const { importProducts, MAX_ROWS } = require('../services/productImportService');
 const Product = require('../models/Product');
 const { auth, checkPermission } = require('../middleware/auth');
 const { containing } = require('../utils/text');
@@ -47,7 +48,7 @@ router.get('/', auth, checkPermission('products'), [
     const base = {};
     if (search) {
       const text = containing(search);
-      base.$or = [{ name: text }, { description: text }, { brand: text }, { sku: text }];
+      base.$or = [{ name: text }, { description: text }, { brand: text }, { sku: text }, { 'variants.sku': text }];
     }
     if (category) {
       base.category = String(category).toLowerCase();
@@ -81,6 +82,27 @@ router.get('/', auth, checkPermission('products'), [
   } catch (error) {
     console.error('Error fetching admin products:', error);
     res.status(500).json({ message: 'Error fetching products' });
+  }
+});
+
+// POST /api/admin/products/import - Products from a spreadsheet (read in the
+// browser into rows). With dryRun, reports what would change without saving.
+router.post('/import', auth, checkPermission('products'), [
+  body('rows').isArray({ min: 1, max: MAX_ROWS }).withMessage(`The file must have between 1 and ${MAX_ROWS} rows`),
+  body('dryRun').optional().isBoolean().toBoolean(),
+  body('brand').optional({ values: 'falsy' }).isString().trim().isLength({ max: 60 }).withMessage('The brand is up to 60 characters')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: errors.array()[0].msg, errors: errors.array() });
+    }
+    const { rows, dryRun = true, brand } = req.body;
+    res.json(await importProducts(rows, { dryRun, brand }));
+  } catch (error) {
+    if (error.status) return res.status(error.status).json({ message: error.message });
+    console.error('Error importing products:', error);
+    res.status(500).json({ message: 'Error importing products' });
   }
 });
 

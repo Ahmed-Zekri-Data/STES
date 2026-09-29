@@ -80,6 +80,13 @@ describe('product page', () => {
     });
   });
 
+  it('offers the price request right away when every version is on request', async () => {
+    renderPage({ ...pump, priceOnRequest: true, price: 0, variants: pump.variants.map(v => ({ ...v, price: null })) });
+    expect(await screen.findByRole('form', { name: 'Demander le prix' })).toBeTruthy();
+    expect(screen.getByText('Prix et délai donnés sur devis')).toBeTruthy();
+    expect(screen.getByText('Réf. 65557')).toBeTruthy();
+  });
+
   it('sells a product "sur commande" without stock', async () => {
     renderPage({ ...pump, backorder: true, variants: [{ sku: '65562', label: '1 HP 230 V', price: 903, stockQuantity: 0 }] });
     expect(await screen.findByText(/Sur commande : nous le commandons pour vous/)).toBeTruthy();
