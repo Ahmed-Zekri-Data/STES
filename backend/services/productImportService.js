@@ -6,8 +6,8 @@ const { slugify, exactly } = require('../utils/text');
 // Admin → Products → Import: rows of a spreadsheet (one per maker's code)
 // become products. Rows with the same category and product name are the
 // versions of one product. A code already in the shop updates that product
-// (prices, stock, new versions) and leaves its name, text, category and
-// photo as edited in the admin.
+// (prices, stock, version names, new versions) and leaves its name, text,
+// category and photo as edited in the admin, unless `texts` is asked for.
 //
 // Price empty: price on request. Stock empty: a new product is sold on
 // order ("sur commande"); an existing one keeps its stock. Rows with an
@@ -169,6 +169,18 @@ const updateProduct = (product, group) => {
   return { added, priceChanges };
 };
 
+// With "update names and texts": the product's name, description and
+// sub-family take the file's (e.g. after translating or correcting them)
+const updateTexts = (product, group) => {
+  const [first] = group;
+  const description = group.find(r => r.description)?.description;
+  const before = [product.name, product.description, (product.tags || []).join('|')].join('\n');
+  product.name = cut(first.name, 100);
+  if (description) product.description = cut(description, 1000);
+  if (first.subfamily) product.tags = [cut(first.subfamily, 60)];
+  return before !== [product.name, product.description, (product.tags || []).join('|')].join('\n');
+};
+
 const newProduct = (group, { category, brand }) => {
   const [first] = group;
   const description = group.find(r => r.description)?.description || first.name;
@@ -195,7 +207,7 @@ const newProduct = (group, { category, brand }) => {
 };
 
 // dryRun: works everything out and reports it, without saving
-const importProducts = async (rawRows, { dryRun = true, brand = '' } = {}) => {
+const importProducts = async (rawRows, { dryRun = true, brand = '', texts = false } = {}) => {
   if (!Array.isArray(rawRows) || rawRows.length === 0) throw Object.assign(new Error('The file has no rows'), { status: 400 });
   if (rawRows.length > MAX_ROWS) throw Object.assign(new Error(`Up to ${MAX_ROWS} rows at a time`), { status: 400 });
 
@@ -219,12 +231,14 @@ const importProducts = async (rawRows, { dryRun = true, brand = '' } = {}) => {
   const toUpdate = new Set();
   let versionsAdded = 0;
   let priceChanges = 0;
+  let textChanges = 0;
   for (const group of groups) {
     const product = group.map(r => productOfCode.get(r.code)).find(Boolean);
     if (product) {
       const result = updateProduct(product, group);
       versionsAdded += result.added;
       priceChanges += result.priceChanges;
+      if (texts && updateTexts(product, group)) textChanges++;
       toUpdate.add(product);
     } else {
       toCreate.push(newProduct(group, { category: slugOf(group[0].category), brand: brandName }));
@@ -262,6 +276,7 @@ const importProducts = async (rawRows, { dryRun = true, brand = '' } = {}) => {
     versions: rows.length,
     versionsAdded,
     priceChanges,
+    textChanges,
     onRequest: rows.filter(r => r.price === null).length,
     newCategories,
     errors: errors.slice(0, 200),

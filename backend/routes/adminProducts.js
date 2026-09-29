@@ -90,6 +90,7 @@ router.get('/', auth, checkPermission('products'), [
 router.post('/import', auth, checkPermission('products'), [
   body('rows').isArray({ min: 1, max: MAX_ROWS }).withMessage(`The file must have between 1 and ${MAX_ROWS} rows`),
   body('dryRun').optional().isBoolean().toBoolean(),
+  body('texts').optional().isBoolean().toBoolean(),
   body('brand').optional({ values: 'falsy' }).isString().trim().isLength({ max: 60 }).withMessage('The brand is up to 60 characters')
 ], async (req, res) => {
   try {
@@ -97,8 +98,8 @@ router.post('/import', auth, checkPermission('products'), [
     if (!errors.isEmpty()) {
       return res.status(400).json({ message: errors.array()[0].msg, errors: errors.array() });
     }
-    const { rows, dryRun = true, brand } = req.body;
-    res.json(await importProducts(rows, { dryRun, brand }));
+    const { rows, dryRun = true, brand, texts = false } = req.body;
+    res.json(await importProducts(rows, { dryRun, brand, texts }));
   } catch (error) {
     if (error.status) return res.status(error.status).json({ message: error.message });
     console.error('Error importing products:', error);

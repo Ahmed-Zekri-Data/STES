@@ -14,7 +14,8 @@ const COLUMNS = {
   price: ['prixstestndttc', 'prixstes', 'prixtnd', 'prixttc', 'prix', 'price'],
   stock: ['stock', 'quantite', 'qty'],
   sell: ['avendreouinon', 'avendre', 'sell'],
-  description: ['descriptionanglais', 'descriptionfrancais', 'description']
+  // The French text when the file has both (the English one is kept for reference)
+  description: ['description', 'descriptionfrancais', 'descriptionanglais']
 };
 
 export const normalizeTitle = (title) => String(title ?? '')

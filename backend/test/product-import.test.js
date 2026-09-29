@@ -99,6 +99,26 @@ describe('product import', () => {
     assert.equal(pump.stockQuantity, 9);
   });
 
+  it('replaces names and texts too when asked, for a translated file', async () => {
+    await send(catalogue, { dryRun: false }).expect(200);
+    const french = [
+      row(2, '65557', 'Pompe Victoria Plus Silent', '1/2 CV 230 V', 1290, 3, { description: 'Pompe auto-amorçante silencieuse.', subfamily: 'Pompes auto-amorçantes' }),
+      row(3, '65562', 'Pompe Victoria Plus Silent', '1 CV 230 V', 1420.5, null),
+      row(4, '65569', 'Pompe Victoria Plus Silent', '3 CV 230 V', null, 0)
+    ];
+
+    // Without the option, only the version names change
+    let report = (await send(french, { dryRun: false }).expect(200)).body;
+    assert.equal(report.textChanges, 0);
+    let pump = await Product.findOne({ 'variants.sku': '65557' }).lean();
+    assert.deepEqual([pump.name, pump.variants[0].label], ['Victoria Plus Silent', '1/2 CV 230 V']);
+
+    report = (await send(french, { dryRun: false, texts: true }).expect(200)).body;
+    assert.deepEqual([report.created, report.updated, report.textChanges], [0, 1, 1]);
+    pump = await Product.findOne({ 'variants.sku': '65557' }).lean();
+    assert.deepEqual([pump.name, pump.description, pump.tags], ['Pompe Victoria Plus Silent', 'Pompe auto-amorçante silencieuse.', ['Pompes auto-amorçantes']]);
+  });
+
   it('lists the rows it cannot read and imports the others', async () => {
     const report = (await send([
       row(2, '65557', 'Victoria Plus Silent', '1/2 HP', 'cher', 1),

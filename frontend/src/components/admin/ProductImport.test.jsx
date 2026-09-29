@@ -40,6 +40,22 @@ describe('product import', () => {
     expect(onImported).toHaveBeenCalled();
   });
 
+  it('can also update the names and texts of products already in the shop', async () => {
+    const post = vi.spyOn(adminApi, 'post').mockImplementation((url, body) => Promise.resolve({ data: report({ created: 0, updated: 1, textChanges: body.texts ? 1 : 0 }) }));
+    render(<ProductImport onClose={() => {}} onImported={() => {}} />);
+    fireEvent.change(screen.getByLabelText(/Choose the Excel file/), { target: { files: [new File(['x'], 'catalogue.xlsx')] } });
+    await screen.findByText('Before importing');
+    expect(screen.queryByText(/with new names and texts/)).toBeNull();
+
+    fireEvent.click(screen.getByLabelText(/Also update names and texts/));
+    expect(await screen.findByText('1 product with new names and texts')).toBeTruthy();
+    expect(post).toHaveBeenLastCalledWith('/admin/products/import', expect.objectContaining({ texts: true, dryRun: true }), expect.anything());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import 1 product' }));
+    await screen.findByText('Import done');
+    expect(post).toHaveBeenLastCalledWith('/admin/products/import', expect.objectContaining({ texts: true, dryRun: false }), expect.anything());
+  });
+
   it('lists the rows it will leave out', async () => {
     vi.spyOn(adminApi, 'post').mockResolvedValue({ data: report({ errorCount: 1, errors: [{ row: 3, message: 'The price of 65562 must be a number in TND, or empty for a price on request' }] }) });
     render(<ProductImport onClose={() => {}} onImported={() => {}} />);
