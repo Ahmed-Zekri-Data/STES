@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { Map as MapIcon, Camera, Plus, Trash2, Share2, Check, RotateCcw, ShoppingBag, Send, Minus, Info } from 'lucide-react';
+import { Map as MapIcon, Camera, Plus, Trash2, Share2, Check, RotateCcw, ShoppingBag, Send, Minus, Info, Bell } from 'lucide-react';
 import GardenPlan from '../components/builder/GardenPlan';
 import GardenPhoto from '../components/builder/GardenPhoto';
 import { KIND_ICONS } from '../components/builder/kindIcons';
@@ -283,6 +283,7 @@ const PoolBuilder = () => {
                 <button type="button" className="btn-ghost !px-3 text-sm" onClick={copy}>{copied ? <><Check className="h-4 w-4" aria-hidden="true" /> Lien copié</> : <><Share2 className="h-4 w-4" aria-hidden="true" /> Copier le lien</>}</button>
                 <a className="btn-ghost !px-3 text-sm" href={whatsapp} target="_blank" rel="noopener noreferrer">Partager sur WhatsApp</a>
               </div>
+              <Link to={`/entretien?volume=${volume}&from=construire#rappels`} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-50 px-3 py-2.5 text-sm font-medium text-blue-800 hover:bg-blue-100"><Bell className="h-4 w-4" aria-hidden="true" /> Rappels d’entretien pour {num(volume)} m³</Link>
               <button type="button" className="mt-1 inline-flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-800" onClick={() => { setPlan(DEFAULT_PLAN); setSelected(null); }}><RotateCcw className="h-4 w-4" aria-hidden="true" /> Recommencer</button>
             </div>
           </div>

@@ -16,6 +16,7 @@ const Breadcrumb = () => {
       'products': 'Products',
       'orders': 'Orders',
       'forms': 'Forms',
+      'reminders': 'Reminders',
       'users': 'Admin Users',
       'promo-codes': 'Promo codes',
       'settings': 'Settings'

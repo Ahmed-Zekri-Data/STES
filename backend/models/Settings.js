@@ -78,6 +78,20 @@ const settingsSchema = new mongoose.Schema({
     // Construction price per m² of water (TND); 0 hides the estimate
     pricePerM2Min: Number,
     pricePerM2Max: Number
+  },
+  // Pool care reminders (Admin → Settings → Reminders). Each one is kept by
+  // its key (see config/maintenanceCalendar.js)
+  reminders: {
+    calendar: [{
+      _id: false,
+      key: String,
+      month: Number, // 1–12
+      day: Number, // 1–28
+      title: String,
+      message: String,
+      products: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+      active: Boolean
+    }]
   }
 }, {
   timestamps: true

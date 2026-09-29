@@ -591,6 +591,115 @@ class EmailNotificationService {
     return { subject, html, text };
   }
 
+  // Pool care reminders (see maintenanceService). Both never throw.
+  async sendMaintenanceWelcome(subscriber, options) {
+    return this.sendMaintenanceEmail(subscriber, this.generateMaintenanceWelcomeEmail(subscriber, options), options.manageUrl);
+  }
+
+  async sendMaintenanceReminder(subscriber, reminder, options) {
+    return this.sendMaintenanceEmail(subscriber, this.generateMaintenanceReminderEmail(subscriber, reminder, options), options.manageUrl);
+  }
+
+  async sendMaintenanceEmail(subscriber, content, manageUrl) {
+    if (!this.isConfigured()) {
+      console.log(`Email not configured (EMAIL_USER / EMAIL_PASS): no pool care email sent to ${subscriber.email}`);
+      return { success: false, reason: 'email_not_configured' };
+    }
+    try {
+      const result = await this.transporter.sendMail({
+        from: `"STES Piscines" <${process.env.EMAIL_USER}>`,
+        to: subscriber.email,
+        subject: content.subject,
+        html: content.html,
+        text: content.text,
+        // The unsubscribe button of mail apps opens the page to stop them
+        headers: { 'List-Unsubscribe': `<${manageUrl}>` }
+      });
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error(`Error sending a pool care email to ${subscriber.email}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // The frame shared by the pool care emails: header, body, and the link to
+  // change or stop the reminders
+  maintenanceLayout(title, bodyHtml, manageUrl) {
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
+        <div style="background: #0e7490; color: #fff; padding: 20px; border-radius: 8px 8px 0 0;">
+          <p style="margin: 0 0 4px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; opacity: .85;">Entretien de votre piscine</p>
+          <h1 style="margin: 0; font-size: 20px;">${escapeHtml(title)}</h1>
+        </div>
+        <div style="border: 1px solid #e5e7eb; border-top: 0; padding: 20px; border-radius: 0 0 8px 8px;">
+          ${bodyHtml}
+          <p style="color: #6b7280; font-size: 12px; margin: 24px 0 0; border-top: 1px solid #e5e7eb; padding-top: 12px;">
+            Vous recevez cet email car vous avez demandé les rappels d'entretien de STES Piscines.
+            <a href="${escapeHtml(manageUrl)}" style="color: #0e7490;">Modifier ou arrêter mes rappels</a>
+          </p>
+        </div>
+      </div>`;
+  }
+
+  generateMaintenanceWelcomeEmail(subscriber, { next, manageUrl, already }) {
+    const site = String(process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
+    const nextDate = next && next.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+    const volume = subscriber.volume ? String(subscriber.volume).replace('.', ',') : null;
+    const subject = already ? 'Vos rappels d’entretien STES Piscines' : 'Vos rappels d’entretien sont activés';
+    const intro = already
+      ? 'Vous êtes déjà inscrit à nos rappels d’entretien. Pour changer le volume de votre bassin ou la façon de vous prévenir, utilisez le lien en bas de cet email.'
+      : 'Merci ! Nous vous préviendrons aux bons moments de l’année (remise en route, analyses de l’eau, canicule, hivernage) avec les produits adaptés.';
+    const html = this.maintenanceLayout(already ? 'Vos rappels d’entretien' : 'Vos rappels sont activés', `
+          <p style="margin: 0 0 12px;">Bonjour ${escapeHtml(subscriber.firstName)},</p>
+          <p style="margin: 0 0 12px; line-height: 1.5;">${escapeHtml(intro)}</p>
+          ${volume ? `<p style="margin: 0 0 12px;">Votre piscine : <strong>${escapeHtml(volume)} m³</strong>.</p>` : ''}
+          ${next ? `<p style="margin: 0 0 12px;">Prochain rappel le <strong>${escapeHtml(nextDate)}</strong> : ${escapeHtml(next.reminder.title)}.</p>` : ''}
+          <p style="margin: 20px 0 0;">
+            <a href="${escapeHtml(`${site}/entretien`)}" style="background: #0e7490; color: #fff; padding: 10px 18px; border-radius: 6px; text-decoration: none; display: inline-block;">Voir mon calendrier d’entretien</a>
+          </p>`, manageUrl);
+    const text = [
+      `Bonjour ${subscriber.firstName},`,
+      '',
+      intro,
+      ...(volume ? [`Votre piscine : ${volume} m³.`] : []),
+      ...(next ? [`Prochain rappel le ${nextDate} : ${next.reminder.title}.`] : []),
+      '',
+      `Mon calendrier d’entretien : ${site}/entretien`,
+      `Modifier ou arrêter mes rappels : ${manageUrl}`
+    ].join('\n');
+    return { subject, html, text };
+  }
+
+  generateMaintenanceReminderEmail(subscriber, reminder, { products, manageUrl }) {
+    const site = String(process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
+    const productUrl = (product) => `${site}/product/${product._id}`;
+    const volume = subscriber.volume ? String(subscriber.volume).replace('.', ',') : null;
+    const productRows = products.map(product => `
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #f3f4f6;"><a href="${escapeHtml(productUrl(product))}" style="color: #111827; font-weight: bold; text-decoration: none;">${escapeHtml(product.name)}</a></td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #f3f4f6; text-align: right; white-space: nowrap;">${escapeHtml(formatTND(product.price))}</td>
+              <td style="padding: 8px 0 8px 12px; border-bottom: 1px solid #f3f4f6; text-align: right;"><a href="${escapeHtml(productUrl(product))}" style="color: #0e7490;">Voir</a></td>
+            </tr>`).join('');
+    const html = this.maintenanceLayout(reminder.title, `
+          <p style="margin: 0 0 12px;">Bonjour ${escapeHtml(subscriber.firstName)},</p>
+          <p style="margin: 0 0 12px; line-height: 1.5;">${escapeHtml(reminder.message)}</p>
+          ${volume ? `<p style="margin: 0 0 12px; color: #374151;">Pour vos ${escapeHtml(volume)} m³ d’eau, suivez la dose indiquée sur chaque produit.</p>` : ''}
+          ${products.length ? `<h2 style="font-size: 16px; margin: 20px 0 4px;">Nos conseils</h2><table style="width: 100%; border-collapse: collapse; font-size: 14px;">${productRows}</table>` : ''}
+          <p style="margin: 20px 0 0;">Une question ? Répondez simplement à cet email, un technicien vous répond.</p>`, manageUrl);
+    const text = [
+      `Bonjour ${subscriber.firstName},`,
+      '',
+      reminder.title,
+      reminder.message,
+      ...(volume ? ['', `Pour vos ${volume} m³ d’eau, suivez la dose indiquée sur chaque produit.`] : []),
+      ...(products.length ? ['', 'Nos conseils :', ...products.map(p => `- ${p.name} (${formatTND(p.price)}) : ${productUrl(p)}`)] : []),
+      '',
+      'Une question ? Répondez simplement à cet email.',
+      `Modifier ou arrêter mes rappels : ${manageUrl}`
+    ].join('\n');
+    return { subject: `${reminder.title} · STES Piscines`, html, text };
+  }
+
   // Test email configuration
   async testEmailConfiguration() {
     try {

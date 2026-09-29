@@ -35,6 +35,10 @@ export const PAGES = {
     title: 'Construire ma piscine',
     description: 'Dessinez votre piscine sur votre terrain, placez les équipements, voyez-la dans votre jardin et obtenez une estimation. Devis gratuit.'
   },
+  '/entretien': {
+    title: 'Calendrier d’entretien de piscine',
+    description: 'Que faire pour votre piscine, et quand : remise en route, analyses, canicule, hivernage. Recevez gratuitement nos rappels par email ou WhatsApp.'
+  },
   '/track-order': {
     title: 'Suivi de commande',
     description: 'Suivez votre commande STES.tn en temps réel avec votre code de suivi.'
@@ -49,6 +53,7 @@ const PRIVATE_PAGES = [
   ['/wishlist', 'Mes favoris'],
   ['/reset-password', 'Nouveau mot de passe'],
   ['/verify-email', 'Confirmation de l’email'],
+  ['/entretien/mes-rappels', 'Mes rappels d’entretien'],
   ['/payment/', 'Paiement'],
   ['/admin', 'Administration']
 ];

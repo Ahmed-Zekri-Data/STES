@@ -446,7 +446,7 @@ const PlongeeHome = () => {
                 <li><b>01</b><div><h3>Étude &amp; devis</h3><p>Visite sur place et devis détaillé.</p></div></li>
                 <li><b>02</b><div><h3>Conception</h3><p>Forme, mosaïque, éclairage et équipements.</p></div></li>
                 <li><b>03</b><div><h3>Construction</h3><p>Pose, raccordement, mise en eau.</p></div></li>
-                <li><b>04</b><div><h3>Entretien</h3><p>Suivi, hivernage et dépannage.</p></div></li>
+                <li><b>04</b><div><h3>Entretien</h3><p>Suivi, hivernage et dépannage. <Link to="/entretien">Recevoir nos rappels</Link></p></div></li>
               </ol>
               <ul className="pl-trust">
                 <li><Truck aria-hidden="true" /> Livraison dans les 24 gouvernorats</li>
