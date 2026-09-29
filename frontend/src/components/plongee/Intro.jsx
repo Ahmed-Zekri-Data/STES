@@ -49,17 +49,23 @@ const Intro = ({ ready, short, onImpact, onSkip }) => {
   // Returning visitors: gone as soon as the pool is ready
   useEffect(() => { if (short && ready) finish(false); }, [short, ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Once full: the welcome, then the drop
+  // Once full: the welcome
   useEffect(() => {
-    if (short || level < 100 || phase !== 'load') return undefined;
-    setPhase('hello');
-    const timers = [
+    if (!short && level >= 100 && phase === 'load') setPhase('hello');
+  }, [level, phase, short]);
+
+  // Then the drop: started once with the welcome, and only cancelled if
+  // the page closes (not when the phase moves on to "out" and "drop")
+  const sequence = useRef([]);
+  useEffect(() => {
+    if (phase !== 'hello' || sequence.current.length) return;
+    sequence.current = [
       setTimeout(() => setPhase('out'), 4000),
       setTimeout(() => setPhase('drop'), 4400),
       setTimeout(() => finish(true), 5200)
     ];
-    return () => timers.forEach(clearTimeout);
-  }, [level, phase, short]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => sequence.current.forEach(clearTimeout), []);
 
   // "Marhba" settles as if the water calms
   useEffect(() => {
