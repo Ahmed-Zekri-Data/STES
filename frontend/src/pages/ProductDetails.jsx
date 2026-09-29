@@ -215,9 +215,10 @@ const ProductDetails = () => {
       .then(response => {
         if (cancelled) return;
         setProduct(response.data);
-        // A single version, or the first one that can be bought, is chosen for the visitor
+        // The first version that can be bought is chosen for the visitor; when
+        // none can (all on request, or out of stock), the first one
         const list = response.data.variants || [];
-        const first = list.length === 1 ? list[0] : list.find(v => canBuy(response.data, v));
+        const first = list.find(v => canBuy(response.data, v)) || list[0];
         setVariantSku(first?.sku ?? null);
       })
       .catch(error => {
@@ -306,6 +307,8 @@ const ProductDetails = () => {
   const { icon: CategoryIcon } = categoryLook(product.category);
   const stockLevel = Math.min(1, (stock.stock || 0) / 30);
   const range = priceRange(product);
+  // "Prix sur demande" in place of a price
+  const askPrice = onRequest || (!versions && isOnRequest(product)) || (versions && !variant && !range);
   const specifications = Object.entries(product.specifications || {});
   const brand = typeof product.brand === 'object' ? product.brand?.name : product.brand;
   const freeDelivery = unitPrice * quantity > delivery.freeDeliveryOver;
@@ -356,7 +359,7 @@ const ProductDetails = () => {
                 </span>
               </button>
 
-              {onRequest || (!versions && isOnRequest(product)) || (versions && !variant && !range) ? (
+              {askPrice ? (
                 <p className="mt-6 font-display text-4xl font-bold tracking-tight text-gray-900">Prix sur demande</p>
               ) : versions && !variant ? (
                 <p className="mt-6 font-display text-4xl font-bold tracking-tight text-gray-900 tabular">
@@ -369,7 +372,7 @@ const ProductDetails = () => {
                   <span className="ms-2 text-xl font-medium text-gray-500">{t('currency')}</span>
                 </p>
               )}
-              <p className="mt-1 text-sm text-gray-500">{onRequest || (!versions && isOnRequest(product)) ? 'Prix et délai donnés sur devis' : 'Prix TTC'}</p>
+              <p className="mt-1 text-sm text-gray-500">{askPrice ? 'Prix et délai donnés sur devis' : 'Prix TTC'}</p>
 
               {product.description && <p className="mt-6 text-lg leading-relaxed text-gray-600">{product.description}</p>}
             </motion.div>

@@ -14,13 +14,15 @@ import {
   Image as ImageIcon,
   Save,
   X,
-  Upload
+  Upload,
+  FileSpreadsheet
 } from 'lucide-react';
 import api from '../../utils/adminApi';
 import AnimatedButton from '../../components/AnimatedButton';
 import { showPlaceholderOnError } from '../../utils/images';
 import VariantsEditor from '../../components/admin/VariantsEditor';
 import { variantsToForm, variantsFromForm } from '../../components/admin/variantRows';
+import ProductImport from '../../components/admin/ProductImport';
 
 const PAGE_SIZE = 24;
 
@@ -56,6 +58,7 @@ const Products = () => {
   const [stockCounts, setStockCounts] = useState({ all: 0, low: 0, out: 0 });
   const [lowStockThreshold, setLowStockThreshold] = useState(5);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -347,14 +350,26 @@ const Products = () => {
             Manage your product catalog
           </p>
         </div>
-        <AnimatedButton
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center space-x-2"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Add Product</span>
-        </AnimatedButton>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setShowImport(true)}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-surface px-4 py-3 font-medium text-gray-700 hover:bg-gray-50"
+          >
+            <FileSpreadsheet className="w-5 h-5 text-green-600" />
+            Import from Excel
+          </button>
+          <AnimatedButton
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center space-x-2"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Add Product</span>
+          </AnimatedButton>
+        </div>
       </motion.div>
+
+      {showImport && <ProductImport onClose={() => setShowImport(false)} onImported={fetchProducts} />}
 
       {/* Filters */}
       <motion.div

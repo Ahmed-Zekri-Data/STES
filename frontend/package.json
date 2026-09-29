@@ -21,6 +21,7 @@
     "react-parallax": "^3.5.1",
     "react-router-dom": "^6.8.1",
     "react-spring": "^9.7.3",
+    "read-excel-file": "^9.3.10",
     "three": "^0.170.0"
   },
   "devDependencies": {
