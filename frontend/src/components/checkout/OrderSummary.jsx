@@ -6,6 +6,7 @@ import { useShopSettings, phoneLink } from '../../context/shopSettings';
 import { ShoppingBag, Truck, CreditCard, Tag, Shield } from 'lucide-react';
 import ProductVisual from '../product/ProductVisual';
 import PromoCodeBox from './PromoCodeBox';
+import { cartKey as lineKey } from '../../utils/productOffer';
 
 const OrderSummary = () => {
   const { cartItems } = useCart();
@@ -42,7 +43,7 @@ const OrderSummary = () => {
       <div className="space-y-4 mb-6">
         {cartItems.map((item, index) => (
           <motion.div
-            key={item._id}
+            key={lineKey(item)}
             className="flex items-center gap-3 p-2 rounded-xl"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}

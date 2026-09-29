@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const { getSettings } = require('./settingsService');
 const { categoryNames } = require('./categoryService');
 const { roundMillimes } = require('../utils/checkout');
+const { OFFER_FIELDS, offerOf } = require('../utils/productOffer');
 
 // "Construire ma piscine": the pool a visitor draws, its size and water,
 // the equipment placed around it (Admin → Settings → Pool builder) and the
@@ -34,7 +35,7 @@ const getBuilder = async () => {
   const { builder } = await getSettings();
   const ids = builder.equipment.map(item => item.product).filter(Boolean);
   const [products, names] = await Promise.all([
-    Product.find({ _id: { $in: ids } }).select('name price image category inStock stockQuantity').lean(),
+    Product.find({ _id: { $in: ids } }).select(`name price image category inStock stockQuantity ${OFFER_FIELDS}`).lean(),
     categoryNames()
   ]);
   const byId = new Map(products.map(p => [String(p._id), p]));
@@ -47,7 +48,7 @@ const getBuilder = async () => {
         product: {
           _id: String(p._id), name: p.name, price: p.price, image: p.image, category: p.category,
           categoryName: names.get(p.category) || p.category,
-          inStock: p.inStock !== false && (p.stockQuantity ?? 0) > 0
+          ...offerOf(p)
         }
       };
     })

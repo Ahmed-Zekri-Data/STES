@@ -27,6 +27,7 @@ export const useCheckout = () => {
 // the server prices everything from the catalog.
 const toOrderItems = (cartItems) => cartItems.map(item => ({
   productId: item._id,
+  ...(item.variant && { variant: item.variant }),
   quantity: item.quantity
 }));
 

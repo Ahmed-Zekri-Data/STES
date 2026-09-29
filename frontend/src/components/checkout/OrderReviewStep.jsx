@@ -13,6 +13,7 @@ import {
   AlertCircle,
   FileText
 } from 'lucide-react';
+import { cartKey as lineKey } from '../../utils/productOffer';
 
 const OrderReviewStep = () => {
   const { cartItems } = useCart();
@@ -166,7 +167,7 @@ const OrderReviewStep = () => {
         <div className="space-y-3">
           {cartItems.map((item, index) => (
             <motion.div
-              key={item._id}
+              key={lineKey(item)}
               className="flex items-center space-x-4 bg-surface rounded-lg p-4"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}

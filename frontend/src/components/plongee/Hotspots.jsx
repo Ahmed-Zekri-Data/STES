@@ -27,8 +27,8 @@ const Hotspots = ({ hotspots, register, open, onOpen, onAdd }) => (
           <p className="pl-mono">{SPOT_LABELS[key]}</p>
           <h3><Link to={`/product/${product._id}`}>{product.name}</Link></h3>
           <div className="pl-spot__buy">
-            <b>{tnd(product.price)}</b>
-            <button type="button" disabled={!product.inStock} onClick={(event) => onAdd(product, event)}>{product.inStock ? 'Ajouter +' : 'Rupture'}</button>
+            <b>{product.priceOnRequest ? 'Prix sur demande' : tnd(product.price)}</b>
+            <button type="button" disabled={!product.inStock} onClick={(event) => onAdd(product, event)}>{product.choose ? 'Choisir →' : product.inStock ? 'Ajouter +' : 'Rupture'}</button>
           </div>
         </div>
       </div>

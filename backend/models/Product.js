@@ -150,6 +150,28 @@ const productSchema = new mongoose.Schema({
     unique: true,
     sparse: true,
     trim: true
+  },
+  // Versions of the product (e.g. a pump in 1/2, 3/4 or 1 HP), each with the
+  // maker's code, its own price and stock. With versions, the product's
+  // price is the lowest one and its stock their total (see pre-validate).
+  variants: [{
+    _id: false,
+    sku: { type: String, trim: true, maxlength: 40 },
+    label: { type: String, trim: true, required: true, maxlength: 120 },
+    price: { type: Number, min: 0, default: null }, // null: price on request
+    stockQuantity: { type: Number, min: 0, default: 0 }
+  }],
+  // "Prix sur demande": shown without a price, with a quote request instead
+  // of "add to cart". Worked out from the versions when there are some.
+  priceOnRequest: {
+    type: Boolean,
+    default: false
+  },
+  // "Sur commande": can still be ordered when out of stock (the shop orders
+  // it from the supplier)
+  backorder: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
@@ -160,6 +182,7 @@ productSchema.index({ name: 'text', description: 'text' });
 productSchema.index({ category: 1 });
 productSchema.index({ price: 1 });
 productSchema.index({ featured: 1 });
+productSchema.index({ 'variants.sku': 1 });
 
 // Virtual for formatted price
 productSchema.virtual('formattedPrice').get(function() {
@@ -180,6 +203,19 @@ productSchema.statics.getByCategory = function(category) {
 productSchema.statics.getFeatured = function() {
   return this.find({ featured: true, inStock: true }).limit(6);
 };
+
+// With versions, the product shows the lowest price ("à partir de") and the
+// total stock, so lists, filters and stock alerts work unchanged
+productSchema.pre('validate', function(next) {
+  if (this.variants?.length) {
+    const priced = this.variants.filter(v => v.price !== null && v.price !== undefined);
+    this.price = priced.length ? Math.min(...priced.map(v => v.price)) : 0;
+    this.priceOnRequest = priced.length === 0;
+    this.stockQuantity = this.variants.reduce((sum, v) => sum + (v.stockQuantity || 0), 0);
+    this.inStock = this.stockQuantity > 0;
+  }
+  next();
+});
 
 // Pre-save middleware to ensure stock consistency
 productSchema.pre('save', function(next) {

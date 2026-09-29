@@ -11,6 +11,7 @@ import ProductCard from '../components/product/ProductCard';
 import { FreeDeliveryMeter } from '../components/CartSidebar';
 import { SplitWords } from '../components/fx/Motion';
 import { categoryLook } from '../utils/categoryIcons';
+import { cartKey as lineKey } from '../utils/productOffer';
 
 // In-stock products from the same categories as the cart, not already in it
 const CartSuggestions = ({ cartItems }) => {
@@ -95,7 +96,7 @@ const Cart = () => {
                 const { icon: Icon } = categoryLook(item.category);
                 return (
                   <motion.li
-                    key={item._id}
+                    key={lineKey(item)}
                     layout
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -119,7 +120,7 @@ const Cart = () => {
                         </div>
                         <button
                           type="button"
-                          onClick={() => removeFromCart(item._id)}
+                          onClick={() => removeFromCart(lineKey(item))}
                           aria-label={`Retirer ${item.name} du panier`}
                           className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
                         >
@@ -128,11 +129,11 @@ const Cart = () => {
                       </div>
                       <div className="flex items-center justify-between gap-3">
                         <div className="inline-flex items-center rounded-full border border-gray-200">
-                          <button type="button" onClick={() => updateQuantity(item._id, item.quantity - 1)} aria-label={`Diminuer la quantité de ${item.name}`} className="grid h-9 w-9 place-items-center rounded-full text-gray-600 hover:bg-gray-100">
+                          <button type="button" onClick={() => updateQuantity(lineKey(item), item.quantity - 1)} aria-label={`Diminuer la quantité de ${item.name}`} className="grid h-9 w-9 place-items-center rounded-full text-gray-600 hover:bg-gray-100">
                             <Minus className="h-4 w-4" />
                           </button>
                           <span className="w-8 text-center font-mono tabular">{item.quantity}</span>
-                          <button type="button" onClick={() => updateQuantity(item._id, item.quantity + 1)} aria-label={`Augmenter la quantité de ${item.name}`} className="grid h-9 w-9 place-items-center rounded-full text-gray-600 hover:bg-gray-100">
+                          <button type="button" onClick={() => updateQuantity(lineKey(item), item.quantity + 1)} aria-label={`Augmenter la quantité de ${item.name}`} className="grid h-9 w-9 place-items-center rounded-full text-gray-600 hover:bg-gray-100">
                             <Plus className="h-4 w-4" />
                           </button>
                         </div>

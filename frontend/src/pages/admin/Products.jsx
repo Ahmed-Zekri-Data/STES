@@ -19,6 +19,8 @@ import {
 import api from '../../utils/adminApi';
 import AnimatedButton from '../../components/AnimatedButton';
 import { showPlaceholderOnError } from '../../utils/images';
+import VariantsEditor from '../../components/admin/VariantsEditor';
+import { variantsToForm, variantsFromForm } from '../../components/admin/variantRows';
 
 const PAGE_SIZE = 24;
 
@@ -63,7 +65,10 @@ const Products = () => {
     brand: '',
     image: '',
     stock: '',
-    featured: false
+    featured: false,
+    variants: [],
+    priceOnRequest: false,
+    backorder: false
   });
 
   // Categories come from Admin → Categories; products store their slug
@@ -211,16 +216,22 @@ const Products = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const withVersions = formData.variants.length > 0;
       const productData = {
         name: formData.name,
         description: formData.description,
-        price: parseFloat(formData.price),
         category: formData.category,
         brand: formData.brand,
-        stockQuantity: parseInt(formData.stock),
-        inStock: parseInt(formData.stock) > 0,
         featured: formData.featured,
-        image: formData.image || '/api/placeholder/300/200'
+        backorder: formData.backorder,
+        image: formData.image || '/api/placeholder/300/200',
+        variants: variantsFromForm(formData.variants),
+        ...(!withVersions && {
+          priceOnRequest: formData.priceOnRequest,
+          price: formData.priceOnRequest ? 0 : parseFloat(formData.price),
+          stockQuantity: parseInt(formData.stock),
+          inStock: parseInt(formData.stock) > 0
+        })
       };
 
       if (editingProduct) {
@@ -253,7 +264,10 @@ const Products = () => {
       brand: product.brand || '',
       image: product.image,
       stock: (product.stockQuantity || product.stock || 0).toString(),
-      featured: product.featured || false
+      featured: product.featured || false,
+      variants: variantsToForm(product.variants),
+      priceOnRequest: Boolean(product.priceOnRequest),
+      backorder: Boolean(product.backorder)
     });
     setShowAddModal(true);
   };
@@ -280,7 +294,10 @@ const Products = () => {
       brand: '',
       image: '',
       stock: '',
-      featured: false
+      featured: false,
+      variants: [],
+      priceOnRequest: false,
+      backorder: false
     });
   };
 
@@ -473,8 +490,15 @@ const Products = () => {
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {product.price} TND
+                  <div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {product.priceOnRequest ? 'On request' : `${product.variants?.length > 1 ? 'from ' : ''}${product.price} TND`}
+                    </div>
+                    {(product.variants?.length > 0 || product.backorder) && (
+                      <p className="text-xs text-gray-500">
+                        {[product.variants?.length > 0 && `${product.variants.length} version${product.variants.length > 1 ? 's' : ''}`, product.backorder && 'sold on order'].filter(Boolean).join(' · ')}
+                      </p>
+                    )}
                   </div>
                   <div className="flex space-x-2">
                     <motion.button
@@ -643,39 +667,60 @@ const Products = () => {
                     </p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Price (TND)
-                    </label>
-                    <input
-                      type="number"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleInputChange}
-                      required
-                      step="0.01"
-                      min="0"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="0.00"
-                    />
-                  </div>
+                  {formData.variants.length === 0 && (
+                    <>
+                      <div>
+                        <label htmlFor="product-price" className="block text-sm font-medium text-gray-700 mb-2">
+                          Price (TND)
+                        </label>
+                        <input
+                          id="product-price"
+                          type="number"
+                          name="price"
+                          value={formData.priceOnRequest ? '' : formData.price}
+                          onChange={handleInputChange}
+                          required={!formData.priceOnRequest}
+                          disabled={formData.priceOnRequest}
+                          step="0.01"
+                          min="0"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                          placeholder={formData.priceOnRequest ? 'On request' : '0.00'}
+                        />
+                        <label className="mt-2 flex items-center gap-2 text-sm text-gray-700">
+                          <input type="checkbox" name="priceOnRequest" checked={formData.priceOnRequest} onChange={handleInputChange} className="w-4 h-4 rounded" />
+                          Price on request (customers ask for a quote)
+                        </label>
+                      </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Stock Quantity
-                    </label>
-                    <input
-                      type="number"
-                      name="stock"
-                      value={formData.stock}
-                      onChange={handleInputChange}
-                      required
-                      min="0"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="0"
-                    />
-                  </div>
+                      <div>
+                        <label htmlFor="product-stock" className="block text-sm font-medium text-gray-700 mb-2">
+                          Stock Quantity
+                        </label>
+                        <input
+                          id="product-stock"
+                          type="number"
+                          name="stock"
+                          value={formData.stock}
+                          onChange={handleInputChange}
+                          required
+                          min="0"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="0"
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
+
+                <div>
+                  <p className="block text-sm font-medium text-gray-700 mb-2">Versions</p>
+                  <VariantsEditor value={formData.variants} onChange={(variants) => setFormData(prev => ({ ...prev, variants }))} />
+                </div>
+
+                <label className="flex items-start gap-2 text-sm text-gray-700">
+                  <input type="checkbox" name="backorder" checked={formData.backorder} onChange={handleInputChange} className="mt-0.5 w-4 h-4 rounded" />
+                  <span><span className="font-medium">Sold on order</span> (“Sur commande”): customers can order it when it is out of stock, and you order it from the supplier.</span>
+                </label>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

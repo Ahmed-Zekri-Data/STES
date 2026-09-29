@@ -18,6 +18,8 @@ import {
 import { useWishlist } from '../context/WishlistContext';
 import { useCustomer } from '../context/CustomerContext';
 import { useCart } from '../context/CartContext';
+import { Link } from 'react-router-dom';
+import { hasVariants, isOnRequest, availability } from '../utils/productOffer';
 import AnimatedButton from '../components/AnimatedButton';
 import LoadingSpinner from '../components/LoadingSpinner';
 import WishlistButton from '../components/WishlistButton';
@@ -307,7 +309,7 @@ const Wishlist = () => {
                     </p>
                     <div className="flex items-center justify-between mb-4">
                       <span className="text-lg font-bold text-red-600">
-                        {item.product?.price || item.productSnapshot?.price} TND
+                        {item.product && isOnRequest(item.product) ? 'Prix sur demande' : `${item.product?.price || item.productSnapshot?.price} TND`}
                       </span>
                       <span className="text-xs text-gray-500">
                         Ajouté le {new Date(item.addedAt).toLocaleDateString('fr-FR')}
@@ -315,14 +317,20 @@ const Wishlist = () => {
                     </div>
 
                     <div className="flex space-x-2">
-                      <AnimatedButton
-                        onClick={() => handleAddToCart(item.product)}
-                        disabled={!item.product?.inStock}
-                        className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                      >
-                        <ShoppingCart className="w-4 h-4" />
-                        <span>{item.product?.inStock ? 'Ajouter au panier' : 'Rupture de stock'}</span>
-                      </AnimatedButton>
+                      {item.product && (hasVariants(item.product) || isOnRequest(item.product)) ? (
+                        <Link to={`/product/${item.product._id}`} className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center">
+                          {isOnRequest(item.product) ? 'Demander le prix' : 'Choisir la version'}
+                        </Link>
+                      ) : (
+                        <AnimatedButton
+                          onClick={() => handleAddToCart(item.product)}
+                          disabled={!item.product || availability(item.product).state === 'out'}
+                          className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                        >
+                          <ShoppingCart className="w-4 h-4" />
+                          <span>{item.product && availability(item.product).state !== 'out' ? 'Ajouter au panier' : 'Rupture de stock'}</span>
+                        </AnimatedButton>
+                      )}
                     </div>
                   </div>
                 </motion.div>

@@ -183,9 +183,11 @@ const Maintenance = () => {
                             {product.image && <img src={product.image} alt="" className="h-11 w-11 shrink-0 rounded-xl object-cover" loading="lazy" />}
                             <span className="min-w-0 flex-1">
                               <Link to={`/product/${product._id}`} className="block truncate text-sm font-semibold text-gray-900 hover:underline">{product.name}</Link>
-                              <span className="text-xs text-gray-500 tabular">{tnd(product.price)}{!product.inStock && <span className="text-red-600"> · rupture</span>}</span>
+                              <span className="text-xs text-gray-500 tabular">{product.priceOnRequest ? 'Prix sur demande' : tnd(product.price)}{!product.inStock && <span className="text-red-600"> · rupture</span>}</span>
                             </span>
-                            {product.inStock && (
+                            {product.choose ? (
+                              <Link to={`/product/${product._id}`} className="shrink-0 rounded-xl bg-blue-600 px-3 py-2.5 text-xs font-semibold text-white hover:bg-blue-700" aria-label={`Choisir ${product.name}`}>Choisir</Link>
+                            ) : product.inStock && (
                               <button type="button" onClick={(event) => add(product, event)} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 text-white hover:bg-blue-700" aria-label={`Ajouter ${product.name} au panier`}>
                                 {added === product._id ? <Check className="h-4 w-4" aria-hidden="true" /> : <ShoppingBag className="h-4 w-4" aria-hidden="true" />}
                               </button>

@@ -21,7 +21,15 @@ const orderItemSchema = new mongoose.Schema({
     required: true,
     min: 1
   },
-  image: String
+  image: String,
+  // The version ordered, for products that have several
+  variant: {
+    sku: String,
+    label: String
+  },
+  // How many were taken from stock: less than the quantity for a product
+  // "sur commande" ordered beyond its stock. Missing on older orders (all).
+  reserved: Number
 });
 
 const orderSchema = new mongoose.Schema({

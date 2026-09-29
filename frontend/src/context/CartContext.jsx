@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { cartKey } from '../utils/productOffer';
 
 const CartContext = createContext();
 
@@ -35,35 +36,43 @@ export const CartProvider = ({ children }) => {
     }
   }, [cartItems]);
 
-  const addToCart = (product, quantity = 1) => {
+  // A product with versions goes in the cart as the version chosen: its
+  // code, its price, and the product's name followed by the version's, as
+  // on the order. Lines are told apart by cartKey (product and version).
+  const addToCart = (product, quantity = 1, variant = null) => {
+    const { variants, ...fields } = product;
+    const line = variant
+      ? { ...fields, variant: variant.sku, name: `${product.name} – ${variant.label}`, price: variant.price, stockQuantity: variant.stockQuantity }
+      : fields;
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item._id === product._id);
-      
+      const key = cartKey(line);
+      const existingItem = prevItems.find(item => cartKey(item) === key);
+
       if (existingItem) {
         return prevItems.map(item =>
-          item._id === product._id
+          cartKey(item) === key
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       } else {
-        return [...prevItems, { ...product, quantity }];
+        return [...prevItems, { ...line, quantity }];
       }
     });
   };
 
-  const removeFromCart = (productId) => {
-    setCartItems(prevItems => prevItems.filter(item => item._id !== productId));
+  const removeFromCart = (key) => {
+    setCartItems(prevItems => prevItems.filter(item => cartKey(item) !== String(key)));
   };
 
-  const updateQuantity = (productId, newQuantity) => {
+  const updateQuantity = (key, newQuantity) => {
     if (newQuantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(key);
       return;
     }
 
     setCartItems(prevItems =>
       prevItems.map(item =>
-        item._id === productId
+        cartKey(item) === String(key)
           ? { ...item, quantity: newQuantity }
           : item
       )
@@ -80,7 +89,7 @@ export const CartProvider = ({ children }) => {
     setCartItems(prevItems => {
       let changed = false;
       const updated = prevItems.map(item => {
-        const serverItem = serverItems.find(s => String(s.product) === String(item._id));
+        const serverItem = serverItems.find(s => String(s.product) === String(item._id) && (s.variant?.sku || '') === (item.variant || ''));
         if (serverItem && (serverItem.price !== item.price || serverItem.name !== item.name)) {
           changed = true;
           return { ...item, price: serverItem.price, name: serverItem.name };

@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useShopSettings } from '../context/shopSettings';
 import ProductVisual from './product/ProductVisual';
+import { cartKey as lineKey } from '../utils/productOffer';
 
 const money = (amount) => Number(amount).toLocaleString('fr-FR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 
@@ -112,7 +113,7 @@ const CartSidebar = () => {
                   <AnimatePresence initial={false}>
                     {cartItems.map((item) => (
                       <motion.li
-                        key={item._id}
+                        key={lineKey(item)}
                         layout
                         initial={{ opacity: 0, x: 30 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -129,7 +130,7 @@ const CartSidebar = () => {
                             </Link>
                             <button
                               type="button"
-                              onClick={() => removeFromCart(item._id)}
+                              onClick={() => removeFromCart(lineKey(item))}
                               aria-label={`Retirer ${item.name} du panier`}
                               className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-gray-400 hover:bg-red-50 hover:text-red-600"
                             >
@@ -138,11 +139,11 @@ const CartSidebar = () => {
                           </div>
                           <div className="flex items-center justify-between">
                             <div className="inline-flex items-center rounded-full border border-gray-200">
-                              <button type="button" onClick={() => updateQuantity(item._id, item.quantity - 1)} aria-label={`Diminuer la quantité de ${item.name}`} className="grid h-8 w-8 place-items-center rounded-full text-gray-600 hover:bg-gray-100">
+                              <button type="button" onClick={() => updateQuantity(lineKey(item), item.quantity - 1)} aria-label={`Diminuer la quantité de ${item.name}`} className="grid h-8 w-8 place-items-center rounded-full text-gray-600 hover:bg-gray-100">
                                 <Minus className="h-3.5 w-3.5" />
                               </button>
                               <span className="w-7 text-center font-mono text-sm tabular">{item.quantity}</span>
-                              <button type="button" onClick={() => updateQuantity(item._id, item.quantity + 1)} aria-label={`Augmenter la quantité de ${item.name}`} className="grid h-8 w-8 place-items-center rounded-full text-gray-600 hover:bg-gray-100">
+                              <button type="button" onClick={() => updateQuantity(lineKey(item), item.quantity + 1)} aria-label={`Augmenter la quantité de ${item.name}`} className="grid h-8 w-8 place-items-center rounded-full text-gray-600 hover:bg-gray-100">
                                 <Plus className="h-3.5 w-3.5" />
                               </button>
                             </div>

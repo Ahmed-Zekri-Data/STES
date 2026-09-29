@@ -9,7 +9,9 @@ const { roundMillimes } = require('../utils/checkout');
 // they save, the orders by governorate and the best reviews. Products that
 // were deleted since they were chosen are left out.
 
-const CARD_FIELDS = 'name price image category inStock stockQuantity ratingStats';
+const { OFFER_FIELDS, offerOf } = require('../utils/productOffer');
+
+const CARD_FIELDS = `name price image category inStock stockQuantity ratingStats ${OFFER_FIELDS}`;
 
 const card = (product, names) => ({
   _id: String(product._id),
@@ -18,7 +20,7 @@ const card = (product, names) => ({
   image: product.image,
   category: product.category,
   categoryName: names.get(product.category) || product.category,
-  inStock: product.inStock !== false && (product.stockQuantity ?? 0) > 0,
+  ...offerOf(product),
   stockQuantity: product.stockQuantity,
   ratingStats: product.ratingStats
 });

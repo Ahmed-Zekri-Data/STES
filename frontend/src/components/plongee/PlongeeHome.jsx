@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowDown, ArrowRight, Plus, Volume2, VolumeX, ShoppingBag, MessageCircle, Phone, Truck, Banknote, Wrench, ShieldCheck } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
@@ -55,6 +55,7 @@ const Beat = ({ beat }) => {
 const PlongeeHome = () => {
   const { isDark } = useTheme();
   const { addToCart } = useCart();
+  const navigate = useNavigate();
   const { contact } = useShopSettings();
   const whatsapp = whatsappLink(contact.whatsapp);
 
@@ -249,14 +250,20 @@ const PlongeeHome = () => {
   const [preview, setPreview] = useState(null);
   useEffect(() => { sceneRef.current?.setPreview(section === 'config' ? preview : null); }, [section, preview]);
   const pickProblem = (key) => { setProblem(key); sceneRef.current?.setWater(key ? PROBLEMS[key].water : null); };
+  // Products with versions or a price on request are chosen on their page:
+  // the others go in the cart, then that page opens
   const addMany = (lines, event) => {
-    for (const [product, quantity] of lines) addToCart(product, quantity);
-    if (lines.length) flyToCart(event.currentTarget);
+    const ready = lines.filter(([product]) => !product.choose);
+    for (const [product, quantity] of ready) addToCart(product, quantity);
+    if (ready.length) flyToCart(event.currentTarget);
+    const toChoose = lines.find(([product]) => product.choose);
+    if (toChoose) navigate(`/product/${toChoose[0]._id}`);
   };
 
   const go = (name) => document.getElementById(sectionId(name))?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
   const toggleSound = () => setSoundOn(audio.current?.toggle() ?? false);
   const add = (product, event) => {
+    if (product.choose) { navigate(`/product/${product._id}`); return; }
     addToCart(product, 1);
     flyToCart(event.currentTarget);
   };

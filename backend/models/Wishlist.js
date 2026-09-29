@@ -113,7 +113,7 @@ wishlistSchema.statics.getWithProducts = async function(customerId) {
   const wishlist = await this.findOne({ customer: customerId })
     .populate({
       path: 'items.product',
-      select: 'name price image category inStock stockQuantity'
+      select: 'name price image category inStock stockQuantity variants priceOnRequest backorder'
     });
   if (wishlist && wishlist.items.some(item => !item.product)) {
     wishlist.items = wishlist.items.filter(item => item.product);

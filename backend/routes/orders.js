@@ -44,6 +44,7 @@ router.post('/', optionalCustomerAuth, [
   body('items.*.product').optional().isMongoId().withMessage('Valid product ID is required'),
   body('items.*.productId').optional().isMongoId().withMessage('Valid product ID is required'),
   body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
+  body('items.*.variant').optional({ values: 'falsy' }).isString().isLength({ max: 40 }).withMessage('Invalid product version'),
   body('paymentMethod').optional().isIn(['cash_on_delivery', 'bank_transfer', 'card', 'paymee', 'flouci', 'd17', 'konnect']),
   body('payment.method').optional().isIn(['cash_on_delivery', 'bank_transfer', 'card', 'paymee', 'flouci', 'd17', 'konnect']),
   body('notes').optional().isLength({ max: 500 }).withMessage('Notes cannot exceed 500 characters'),
@@ -188,6 +189,7 @@ router.post('/', optionalCustomerAuth, [
 router.post('/quote', [
   body('items').isArray({ min: 1 }).withMessage('At least one item is required'),
   body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
+  body('items.*.variant').optional({ values: 'falsy' }).isString().isLength({ max: 40 }).withMessage('Invalid product version'),
   body('paymentMethod').optional().isIn(['cash_on_delivery', 'bank_transfer', 'card', 'paymee', 'flouci', 'd17', 'konnect']),
   body('promoCode').optional({ values: 'falsy' }).isString().trim().isLength({ max: 30 })
 ], async (req, res) => {
@@ -522,6 +524,7 @@ router.post('/admin', ordersAdmin, [
   body('items').isArray({ min: 1 }).withMessage('At least one item is required'),
   body('items.*.product').isMongoId().withMessage('Valid product ID is required'),
   body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
+  body('items.*.variant').optional({ values: 'falsy' }).isString().isLength({ max: 40 }).withMessage('Invalid product version'),
   body('shippingCost').optional().isFloat({ min: 0 }).withMessage('Shipping cost must be non-negative').toFloat(),
   body('notes').optional().trim().isLength({ max: 500 }).withMessage('Notes cannot exceed 500 characters'),
   body('status').optional().isIn(['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'])

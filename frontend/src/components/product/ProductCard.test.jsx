@@ -38,6 +38,26 @@ describe('product card', () => {
     expect(JSON.parse(localStorage.getItem('cart'))).toEqual([expect.objectContaining({ _id: product._id, quantity: 1 })]);
   });
 
+  it('sends products with versions or a price on request to their page', () => {
+    const { unmount } = renderCard({ variants: [{ sku: '1', label: 'A', price: 450, stockQuantity: 2 }, { sku: '2', label: 'B', price: 520, stockQuantity: 0 }] });
+    expect(screen.getByText('dès')).toBeTruthy();
+    expect(screen.getByRole('link', { name: `Choisir la version de ${product.name}` }).getAttribute('href')).toBe(`/product/${product._id}`);
+    expect(screen.queryByRole('button', { name: /au panier/ })).toBeNull();
+    unmount();
+
+    renderCard({ priceOnRequest: true, price: 0 });
+    expect(screen.getByText('Prix sur demande')).toBeTruthy();
+    expect(screen.getByRole('link', { name: `Demander le prix de ${product.name}` })).toBeTruthy();
+  });
+
+  it('can still be bought "sur commande" when out of stock', () => {
+    renderCard({ inStock: false, stockQuantity: 0, backorder: true });
+    expect(screen.getByText('Sur commande')).toBeTruthy();
+    expect(screen.queryByText('Rupture de stock')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: `Ajouter ${product.name} au panier` }));
+    expect(JSON.parse(localStorage.getItem('cart'))).toHaveLength(1);
+  });
+
   it('shows a rating only when there are reviews', () => {
     const { unmount } = renderCard();
     expect(screen.queryByLabelText(/Note/)).toBeNull();
