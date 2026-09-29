@@ -31,6 +31,10 @@ export const PAGES = {
     title: 'Contact',
     description: 'Une question, un projet de piscine ? Contactez STES.tn par téléphone, WhatsApp ou email. Réponse sous 24h.'
   },
+  '/construire': {
+    title: 'Construire ma piscine',
+    description: 'Dessinez votre piscine sur votre terrain, placez les équipements, voyez-la dans votre jardin et obtenez une estimation. Devis gratuit.'
+  },
   '/track-order': {
     title: 'Suivi de commande',
     description: 'Suivez votre commande STES.tn en temps réel avec votre code de suivi.'

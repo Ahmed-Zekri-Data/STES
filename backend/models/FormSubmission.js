@@ -34,10 +34,31 @@ const formSubmissionSchema = new mongoose.Schema({
   },
   message: {
     type: String,
+    // A quote from the pool builder may come with its plan only
     required: function() {
-      return this.type === 'contact' || this.type === 'quote';
+      return this.type === 'contact' || (this.type === 'quote' && !this.plan?.surface);
     },
     maxlength: [1000, 'Message cannot exceed 1000 characters']
+  },
+  // The pool drawn in "Construire ma piscine", priced by the server
+  plan: {
+    shape: String,
+    length: Number,
+    width: Number,
+    depth: Number,
+    surface: Number,
+    volume: Number,
+    flow: Number, // m³/h needed to filter the water in 4 hours
+    equipment: [{
+      _id: false,
+      product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+      name: String,
+      price: Number,
+      quantity: Number
+    }],
+    equipmentTotal: Number,
+    estimate: { min: Number, max: Number }, // construction, TND
+    link: String // the plan in the builder, to open it again
   },
   subject: {
     type: String,

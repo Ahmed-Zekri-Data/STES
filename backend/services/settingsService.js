@@ -41,6 +41,12 @@ const DEFAULTS = {
     packs: [],
     showMap: true,
     partnerBadge: ''
+  },
+  // Pool builder: no equipment and no construction price until the shop sets them
+  builder: {
+    equipment: [],
+    pricePerM2Min: 0,
+    pricePerM2Max: 0
   }
 };
 
@@ -62,14 +68,15 @@ const getSettings = async () => {
       hotspots: pick(saved?.showcase?.hotspots, DEFAULTS.showcase.hotspots),
       problems: pick(saved?.showcase?.problems, DEFAULTS.showcase.problems)
     },
+    builder: pick(saved?.builder, DEFAULTS.builder),
     updatedAt: saved?.updatedAt || null
   };
 };
 
 // Saves the given sections; anything not given keeps its value
-const updateSettings = async ({ contact, bank, delivery, invoice, lowStockThreshold, showcase }) => {
+const updateSettings = async ({ contact, bank, delivery, invoice, lowStockThreshold, showcase, builder }) => {
   const set = {};
-  for (const [section, values] of Object.entries({ contact, bank, delivery, invoice, showcase })) {
+  for (const [section, values] of Object.entries({ contact, bank, delivery, invoice, showcase, builder })) {
     for (const [key, value] of Object.entries(values || {})) {
       if (key in DEFAULTS[section]) set[`${section}.${key}`] = value;
     }

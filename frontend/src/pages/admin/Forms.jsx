@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import PoolPlanSummary from '../../components/admin/PoolPlanSummary';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText,
@@ -570,6 +571,8 @@ const Forms = () => {
                     </div>
                   </div>
                 )}
+
+                <PoolPlanSummary plan={selectedForm.plan} />
 
                 {/* Timestamps */}
                 <div className="bg-blue-50 rounded-xl p-6">

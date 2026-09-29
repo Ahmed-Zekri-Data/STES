@@ -152,6 +152,7 @@ const createApp = ({ frontendDir = defaultFrontendDir() } = {}) => {
   app.use('/api/payments', require('./routes/payments'));
   app.use('/api/pages', require('./routes/pages'));
   app.use('/api/showcase', require('./routes/showcase'));
+  app.use('/api/builder', require('./routes/builder'));
 
   // sitemap.xml and robots.txt, for search engines
   app.use(require('./routes/seo'));
