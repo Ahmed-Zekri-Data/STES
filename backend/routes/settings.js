@@ -4,6 +4,7 @@ const { auth, checkPermission } = require('../middleware/auth');
 const { getSettings, updateSettings, publicSettings } = require('../services/settingsService');
 const { isValidRib, formatRib } = require('../utils/rib');
 const { isValidTaxId, normalizeTaxId } = require('../utils/taxId');
+const { KINDS } = require('../services/poolPlanService');
 
 // GET /api/settings - Contact details and delivery prices for the shop pages
 const publicRouter = express.Router();
@@ -83,7 +84,14 @@ adminRouter.put('/', [
   body('showcase.packs.*.season').optional().isString().trim().isLength({ max: 30 }).withMessage('The season label is too long (up to 30 characters)'),
   productList('showcase.packs.*.includes', 8),
   body('showcase.showMap').optional().isBoolean().withMessage('Show the map: yes or no').toBoolean(),
-  body('showcase.partnerBadge').optional().isString().trim().isLength({ max: 60 }).withMessage('The partner badge is too long (up to 60 characters)')
+  body('showcase.partnerBadge').optional().isString().trim().isLength({ max: 60 }).withMessage('The partner badge is too long (up to 60 characters)'),
+  body('builder.equipment').optional().isArray({ max: 12 }).withMessage('Up to 12 products in the pool builder'),
+  body('builder.equipment.*.product').custom(value => /^[a-f\d]{24}$/i.test(String(value))).withMessage('Choose a product from the list'),
+  body('builder.equipment.*.kind').isIn(KINDS).withMessage('Choose how the product is drawn'),
+  body('builder.pricePerM2Min').optional().isFloat({ min: 0, max: 100000 }).withMessage('Prices per m² must be between 0 and 100000 TND').toFloat(),
+  body('builder.pricePerM2Max').optional().isFloat({ min: 0, max: 100000 }).withMessage('Prices per m² must be between 0 and 100000 TND').toFloat(),
+  body('builder').optional().custom(b => !(b?.pricePerM2Min > 0) || b.pricePerM2Max >= b.pricePerM2Min)
+    .withMessage('The highest price per m² must be at least the lowest')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);

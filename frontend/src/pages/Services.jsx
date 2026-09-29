@@ -3,6 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { Wrench, CheckCircle, Phone, Mail, MapPin, Clock } from 'lucide-react';
 import axios from 'axios';
 import { submitErrorMessage } from '../utils/forms';
+import { Link } from 'react-router-dom';
 import { useShopSettings, phoneLink } from '../context/shopSettings';
 import PageHero from '../components/layout/PageHero';
 import { Reveal, SpotlightCard } from '../components/fx/Motion';
@@ -93,7 +94,10 @@ const Services = () => {
         title={t('installationService')}
         subtitle={t('installationDesc')}
       >
-        <a href="#devis" className="btn-brand">Demander un devis</a>
+        <div className="flex flex-wrap gap-3">
+          <Link to="/construire" className="btn-brand">Dessiner ma piscine</Link>
+          <a href="#devis" className="btn-ghost">Demander un devis</a>
+        </div>
       </PageHero>
 
       {/* Services Grid */}

@@ -37,6 +37,8 @@ export default [
       ...reactHooks.configs.recommended.rules,
       // Counts <motion.div> and other JSX tags as uses of their variable
       'react/jsx-uses-vars': 'error',
+      // A JSX tag must be imported or defined (a forgotten import crashes the page)
+      'react/jsx-no-undef': 'error',
       // ignoreRestSiblings: `const { a, ...rest } = obj` to drop fields on purpose
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', ignoreRestSiblings: true }],
       'react-refresh/only-export-components': [

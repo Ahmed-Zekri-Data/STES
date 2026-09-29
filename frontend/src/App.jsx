@@ -39,6 +39,7 @@ const PaymentResult = lazy(() => import('./pages/PaymentResult'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const PoolBuilder = lazy(() => import('./pages/PoolBuilder'));
 
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
 const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
@@ -106,6 +107,7 @@ function App() {
                       <Route path="/shop" element={<EnhancedShop />} />
                       <Route path="/product/:id" element={<ProductDetails />} />
                       <Route path="/services" element={<Services />} />
+                      <Route path="/construire" element={<PoolBuilder />} />
                       <Route path="/about" element={<About />} />
                       <Route path="/contact" element={<Contact />} />
                       <Route path="/cart" element={<Cart />} />

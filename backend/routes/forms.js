@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult, query } = require('express-validator');
 const FormSubmission = require('../models/FormSubmission');
+const { pricePlan, describePlan } = require('../services/poolPlanService');
 const { auth, checkPermission } = require('../middleware/auth');
 const { containing } = require('../utils/text');
 const emailNotificationService = require('../services/emailNotificationService');
@@ -54,12 +55,17 @@ router.post('/contact', [
 });
 
 // POST /api/forms/quote - Submit quote request form
+// Quotes may carry a plan from "Construire ma piscine": sizes and product
+// ids only; names, prices and the estimate are worked out here
 router.post('/quote', [
+  body('plan').optional().isObject().withMessage('Invalid pool plan'),
+  body('plan.link').optional().isString().isLength({ max: 2000 }).withMessage('Invalid pool plan'),
   body('name').trim().isLength({ min: 1, max: 100 }).withMessage('Name is required'),
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
   body('phone').trim().isLength({ min: 8, max: 20 }).withMessage('Valid phone number is required'),
   body('city').trim().isLength({ min: 1, max: 50 }).withMessage('City is required'),
-  body('message').trim().isLength({ min: 1, max: 1000 }).withMessage('Message describing your needs is required')
+  body('message').if((value, { req }) => !req.body.plan).trim().isLength({ min: 1, max: 1000 }).withMessage('Message describing your needs is required'),
+  body('message').optional().trim().isLength({ max: 1000 }).withMessage('Message is too long')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -68,6 +74,14 @@ router.post('/quote', [
     }
 
     const { name, email, phone, city, message } = req.body;
+    let plan;
+    if (req.body.plan) {
+      plan = await pricePlan(req.body.plan);
+      const site = String(process.env.FRONTEND_URL || '').replace(/\/+$/, '');
+      const link = String(req.body.plan.link || '');
+      // Only links to this shop's builder
+      if (link.startsWith('/construire') || (site && link.startsWith(`${site}/construire`))) plan.link = link.slice(0, 2000);
+    }
 
     const submission = new FormSubmission({
       type: 'quote',
@@ -75,7 +89,8 @@ router.post('/quote', [
       email,
       phone,
       city,
-      message,
+      message: message || (plan && describePlan(plan)),
+      plan,
       ipAddress: req.ip,
       userAgent: req.get('User-Agent'),
       language: req.get('Accept-Language')?.split(',')[0]?.split('-')[0] || 'fr'

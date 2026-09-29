@@ -455,7 +455,10 @@ const PlongeeHome = () => {
                 <li><ShieldCheck aria-hidden="true" /> Garantie sur nos produits</li>
                 {showcase?.partnerBadge && <li className="pl-trust__partner">{showcase.partnerBadge}</li>}
               </ul>
-              <Link to="/services" className="pl-pill">Demander un devis <ArrowRight aria-hidden="true" /></Link>
+              <div className="pl-row">
+                <Link to="/construire" className="pl-pill">Dessiner ma piscine <ArrowRight aria-hidden="true" /></Link>
+                <Link to="/services" className="pl-pill pl-pill--ghost">Demander un devis</Link>
+              </div>
             </div>
           </div>
         </section>

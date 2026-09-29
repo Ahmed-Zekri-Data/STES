@@ -59,6 +59,21 @@ const STATUS_EMAILS = {
   }
 };
 
+// The pool builder plan attached to a quote, as lines of text
+const planLines = (plan) => {
+  if (!plan?.surface) return [];
+  const n = (value) => Number(value).toLocaleString('fr-FR', { maximumFractionDigits: 3 });
+  const shapes = { rectangle: 'rectangulaire', rounded: 'aux angles arrondis', oval: 'ovale' };
+  return [
+    `Bassin ${shapes[plan.shape] || plan.shape} de ${n(plan.length)} × ${n(plan.width)} m, ${n(plan.depth)} m de profondeur`,
+    `${n(plan.surface)} m² d’eau, ${n(plan.volume)} m³ (filtration conseillée : ${n(plan.flow)} m³/h)`,
+    ...(plan.equipment || []).map(line => `${line.quantity} × ${line.name} (${n(line.price)} TND)`),
+    ...(plan.equipment?.length ? [`Équipement : ${n(plan.equipmentTotal)} TND`] : []),
+    ...(plan.estimate?.max ? [`Estimation construction : ${n(plan.estimate.min)} à ${n(plan.estimate.max)} TND`] : []),
+    ...(plan.link ? [`Plan : ${plan.link}`] : [])
+  ];
+};
+
 class EmailNotificationService {
   constructor() {
     this.transporter = this.createTransporter();
@@ -200,6 +215,9 @@ class EmailNotificationService {
               </tr>`).join('')}
           </table>
           <div style="background: #f9fafb; border-radius: 6px; padding: 14px; white-space: pre-wrap;">${escapeHtml(submission.message)}</div>
+          ${planLines(submission.plan).length ? `
+          <h2 style="font-size: 16px; margin: 20px 0 8px;">Le projet dessiné par le client</h2>
+          <ul style="margin: 0; padding-left: 18px; line-height: 1.6;">${planLines(submission.plan).map(line => `<li>${escapeHtml(line)}</li>`).join('')}</ul>` : ''}
           <p style="margin: 20px 0 8px;">
             <a href="${escapeHtml(adminUrl)}" style="background: #2563eb; color: #fff; padding: 10px 18px; border-radius: 6px; text-decoration: none; display: inline-block;">Ouvrir dans l'administration</a>
           </p>
@@ -214,6 +232,7 @@ class EmailNotificationService {
       ...details.map(([label, value]) => `${label} : ${value}`),
       '',
       submission.message,
+      ...(planLines(submission.plan).length ? ['', 'Le projet dessiné par le client :', ...planLines(submission.plan).map(line => `- ${line}`)] : []),
       '',
       `Ouvrir dans l'administration : ${adminUrl}`,
       `Répondez à cet email pour écrire directement à ${submission.name}.`

@@ -66,6 +66,18 @@ const settingsSchema = new mongoose.Schema({
     }],
     showMap: Boolean, // the map of orders by governorate
     partnerBadge: String // e.g. "Partenaire agréé AstralPool"; empty hides it
+  },
+  // "Construire ma piscine" (Admin → Settings → Pool builder)
+  builder: {
+    // The products visitors can place around their pool, with how each is drawn
+    equipment: [{
+      _id: false,
+      product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+      kind: String // pump, filter, heat, light, robot, ladder, shower, cover, other
+    }],
+    // Construction price per m² of water (TND); 0 hides the estimate
+    pricePerM2Min: Number,
+    pricePerM2Max: Number
   }
 }, {
   timestamps: true
