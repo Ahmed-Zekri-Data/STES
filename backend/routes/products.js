@@ -30,11 +30,33 @@ const brandRule = () => body('brand')
   .withMessage('Choose a brand that exists in Admin → Brands')
   .customSanitizer(async (value) => (await findBrand(value))?.name || value);
 
+// What the shop shows: products in stock, and those that can still be
+// ordered (sur commande) or asked about (prix sur demande) without stock
+const AVAILABLE = { $or: [{ inStock: true }, { backorder: true }, { priceOnRequest: true }, { variants: { $elemMatch: { price: null } } }] };
+
 // Adds the category's name next to its slug, for display
 const withCategoryNames = async (products) => {
   const names = await categoryNames();
   return products.map(product => ({ ...product, categoryName: names.get(product.category) || product.category }));
 };
+
+// Versions: each has a name, and may have the maker's code, a price (none:
+// price on request) and its stock. Codes are unique within the product.
+const variantRules = () => [
+  body('variants').optional().isArray({ max: 300 }).withMessage('Up to 300 versions per product')
+    .custom(list => {
+      const codes = list.map(v => String(v?.sku || '').trim()).filter(Boolean);
+      return new Set(codes).size === codes.length;
+    }).withMessage('Each version code can only be used once'),
+  body('variants.*.label').isString().trim().isLength({ min: 1, max: 120 }).withMessage('Each version needs a name (up to 120 characters)'),
+  body('variants.*.sku').optional({ values: 'falsy' }).isString().trim().isLength({ max: 40 }).withMessage('Version codes are up to 40 characters'),
+  body('variants.*.price').optional({ values: 'null' }).customSanitizer(value => (value === '' ? null : value))
+    .custom(value => value === null || (Number.isFinite(Number(value)) && Number(value) >= 0)).withMessage('Version prices must be positive, or empty for a price on request')
+    .customSanitizer(value => (value === null ? null : Number(value))),
+  body('variants.*.stockQuantity').optional().isInt({ min: 0 }).withMessage('Version stock must be a whole number of at least 0').toInt(),
+  body('priceOnRequest').optional().isBoolean().withMessage('Price on request: yes or no').toBoolean(),
+  body('backorder').optional().isBoolean().withMessage('Sold on order: yes or no').toBoolean()
+];
 
 // GET /api/products - Get all products with filtering and pagination
 router.get('/', [
@@ -87,10 +109,10 @@ router.get('/', [
     const filter = {};
 
     // Stock filter
-    if (inStock !== undefined) {
-      filter.inStock = inStock === 'true';
+    if (inStock === 'false') {
+      filter.inStock = false;
     } else {
-      filter.inStock = true; // Default to in-stock products
+      filter.$and = [AVAILABLE]; // Default to products that can be bought or asked about
     }
 
     // A category includes the categories under it
@@ -100,8 +122,9 @@ router.get('/', [
     // The brand chosen in the shop's filter, not every brand containing it
     if (brand) filter.brand = exactly(brand);
 
-    // Price range filter
+    // Price range filter (products with a price on request have none)
     if (minPrice || maxPrice) {
+      filter.priceOnRequest = { $ne: true };
       filter.price = {};
       if (minPrice) filter.price.$gte = parseFloat(minPrice);
       if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
@@ -118,7 +141,10 @@ router.get('/', [
         { name: containing(search) },
         { description: containing(search) },
         { brand: containing(search) },
-        { tags: { $in: [containing(search)] } }
+        { tags: { $in: [containing(search)] } },
+        // The maker's code of the product or one of its versions
+        { sku: containing(search) },
+        { 'variants.sku': containing(search) }
       ];
     }
 
@@ -127,6 +153,8 @@ router.get('/', [
 
     switch (sortBy) {
       case 'price':
+        // Products with a price on request come after the priced ones
+        sort.priceOnRequest = 1;
         sort.price = sortOrder === 'asc' ? 1 : -1;
         break;
       case 'rating':
@@ -221,7 +249,7 @@ router.get('/search/suggestions', [
         { brand: containing(q) },
         { tags: { $in: [containing(q)] } }
       ],
-      inStock: true
+      $and: [AVAILABLE]
     })
     .select('name brand category')
     .limit(10);
@@ -242,7 +270,7 @@ router.get('/search/suggestions', [
     // Get brand suggestions
     const brands = await Product.distinct('brand', {
       brand: containing(q),
-      inStock: true
+      $and: [AVAILABLE]
     });
 
     const suggestions = [
@@ -292,7 +320,11 @@ router.get('/:id', async (req, res) => {
 router.post('/', auth, checkPermission('products'), [
   body('name').trim().isLength({ min: 1, max: 100 }).withMessage('Name is required and must be less than 100 characters'),
   body('description').trim().isLength({ min: 1, max: 1000 }).withMessage('Description is required and must be less than 1000 characters'),
-  body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
+  // Not needed with versions (they have the prices) or a price on request
+  body('price').if((value, { req }) => !req.body.variants?.length && !req.body.priceOnRequest)
+    .isFloat({ min: 0 }).withMessage('Price must be a positive number'),
+  body('price').optional().isFloat({ min: 0 }).withMessage('Price must be a positive number'),
+  ...variantRules(),
   body('category').isString().custom(existingCategory).withMessage('Choose a category that exists in Admin → Categories'),
   brandRule(),
   body('stockQuantity').optional().isInt({ min: 0 }).withMessage('Stock quantity must be a non-negative integer'),
@@ -305,7 +337,7 @@ router.post('/', auth, checkPermission('products'), [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const product = new Product(req.body);
+    const product = new Product({ price: 0, ...req.body });
     await product.save();
     
     res.status(201).json(product);
@@ -323,6 +355,7 @@ router.put('/:id', auth, checkPermission('products'), [
   body('name').optional().trim().isLength({ min: 1, max: 100 }),
   body('description').optional().trim().isLength({ min: 1, max: 1000 }),
   body('price').optional().isFloat({ min: 0 }),
+  ...variantRules(),
   body('category').optional().isString().custom(existingCategory).withMessage('Choose a category that exists in Admin → Categories'),
   brandRule(),
   body('stockQuantity').optional().isInt({ min: 0 }),
@@ -335,15 +368,14 @@ router.put('/:id', auth, checkPermission('products'), [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-
+    // Loaded and saved (not updated in place) so the versions' prices and
+    // stock are worked out again
+    const product = await Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
+    product.set(req.body);
+    await product.save();
 
     res.json(product);
   } catch (error) {

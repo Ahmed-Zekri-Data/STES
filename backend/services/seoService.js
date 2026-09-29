@@ -97,6 +97,21 @@ const brandName = (product) => (typeof product.brand === 'object' ? product.bran
 
 const isAvailable = (product) => product.inStock !== false && (product.stockQuantity ?? 1) > 0;
 
+// The offer: one price, a range for a product with versions, none for a
+// price on request (search engines then show no price)
+const offerOf = (product, url) => {
+  if (product.priceOnRequest) return null;
+  const availability = isAvailable(product) ? 'https://schema.org/InStock'
+    : product.backorder ? 'https://schema.org/BackOrder' : 'https://schema.org/OutOfStock';
+  const common = { url, priceCurrency: 'TND', availability, itemCondition: 'https://schema.org/NewCondition', seller: { '@type': 'Organization', name: SITE_NAME } };
+  const prices = (product.variants || []).map(v => v.price).filter(p => p !== null && p !== undefined);
+  const round = (value) => Number(Number(value).toFixed(3));
+  if (prices.length > 1) {
+    return { '@type': 'AggregateOffer', ...common, lowPrice: round(Math.min(...prices)), highPrice: round(Math.max(...prices)), offerCount: prices.length };
+  }
+  return { '@type': 'Offer', ...common, price: round(product.price) };
+};
+
 // schema.org data for a product page, with its place in the shop
 const productJsonLd = (product, site) => {
   const url = `${site}/product/${product._id}`;
@@ -115,15 +130,7 @@ const productJsonLd = (product, site) => {
         ...(product.model && { mpn: product.model }),
         ...(brand && { brand: { '@type': 'Brand', name: brand } }),
         category: categoryName,
-        offers: {
-          '@type': 'Offer',
-          url,
-          priceCurrency: 'TND',
-          price: Number(Number(product.price).toFixed(3)),
-          availability: isAvailable(product) ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-          itemCondition: 'https://schema.org/NewCondition',
-          seller: { '@type': 'Organization', name: SITE_NAME }
-        },
+        ...(offerOf(product, url) && { offers: offerOf(product, url) }),
         ...(rating.totalReviews > 0 && {
           aggregateRating: {
             '@type': 'AggregateRating',

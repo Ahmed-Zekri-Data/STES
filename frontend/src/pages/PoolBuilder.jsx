@@ -165,7 +165,7 @@ const PoolBuilder = () => {
   const whatsapp = `https://wa.me/?text=${encodeURIComponent(`Voici ma piscine sur STES.tn : ${shareLink()}`)}`;
   const shopWhatsapp = whatsappLink(contact.whatsapp);
   const addEquipment = (event) => {
-    for (const line of lines.filter(l => l.product.inStock)) addToCart(line.product, line.quantity);
+    for (const line of lines.filter(l => l.product.inStock && !l.product.choose)) addToCart(line.product, line.quantity);
     flyToCart(event.currentTarget);
   };
 
@@ -262,7 +262,7 @@ const PoolBuilder = () => {
               <ul className="mt-4 space-y-1.5 text-sm">
                 {lines.map(line => (
                   <li key={line.product._id} className="flex justify-between gap-3">
-                    <span className="text-gray-700">{line.quantity > 1 && `${line.quantity} × `}{line.product.name}{!line.product.inStock && <span className="text-red-600"> (rupture)</span>}</span>
+                    <span className="text-gray-700">{line.quantity > 1 && `${line.quantity} × `}{line.product.name}{!line.product.inStock && <span className="text-red-600"> (rupture)</span>}{line.product.choose && <> · <Link to={`/product/${line.product._id}`} className="text-blue-700 underline">choisir la version</Link></>}</span>
                     <span className="font-semibold tabular text-gray-900">{tnd(line.product.price * line.quantity)}</span>
                   </li>
                 ))}
@@ -277,7 +277,7 @@ const PoolBuilder = () => {
               </div>
             )}
             <div className="mt-4 grid gap-2">
-              {lines.some(l => l.product.inStock) && <button type="button" className="btn-ghost" onClick={addEquipment}><ShoppingBag className="h-4 w-4" aria-hidden="true" /> Ajouter l’équipement au panier</button>}
+              {lines.some(l => l.product.inStock && !l.product.choose) && <button type="button" className="btn-ghost" onClick={addEquipment}><ShoppingBag className="h-4 w-4" aria-hidden="true" /> Ajouter l’équipement au panier</button>}
               <button type="button" className="btn-brand" onClick={() => { setQuoting(true); setSent(false); }}><Send className="h-4 w-4" aria-hidden="true" /> Recevoir mon devis gratuit</button>
               <div className="grid grid-cols-2 gap-2">
                 <button type="button" className="btn-ghost !px-3 text-sm" onClick={copy}>{copied ? <><Check className="h-4 w-4" aria-hidden="true" /> Lien copié</> : <><Share2 className="h-4 w-4" aria-hidden="true" /> Copier le lien</>}</button>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Heart, ShoppingCart, Trash2 } from 'lucide-react';
 import { useWishlist } from '../../context/WishlistContext';
 import { useCart } from '../../context/CartContext';
+import { hasVariants, isOnRequest, availability } from '../../utils/productOffer';
 
 const formatTND = (amount) => `${Number(amount || 0).toLocaleString('fr-FR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} TND`;
 
@@ -58,29 +59,38 @@ const WishlistTab = () => {
 
       <div className="space-y-3">
         {items.map(({ product, addedAt }) => {
-          const available = product.inStock !== false && (product.stockQuantity ?? 1) > 0;
+          const stock = availability(product);
+          const available = stock.state !== 'out';
+          // Versions and prices on request are chosen or asked for on the product page
+          const onPage = hasVariants(product) || isOnRequest(product);
           return (
             <div key={product._id} className="bg-surface rounded-xl p-4 shadow-lg flex flex-col sm:flex-row sm:items-center gap-4">
               <Link to={`/product/${product._id}`} className="flex items-center gap-4 flex-1 min-w-0">
                 <img src={product.image || '/api/placeholder/80/80'} alt="" className="w-16 h-16 rounded-lg object-cover bg-gray-100 shrink-0" />
                 <div className="min-w-0">
                   <p className="font-medium text-gray-900 truncate">{product.name}</p>
-                  <p className="text-sm text-gray-900">{formatTND(product.price)}</p>
+                  <p className="text-sm text-gray-900">{isOnRequest(product) ? 'Prix sur demande' : formatTND(product.price)}</p>
                   <p className={`text-xs ${available ? 'text-green-600' : 'text-red-600'}`}>
-                    {available ? 'En stock' : 'Rupture de stock'}
+                    {stock.label}
                     {addedAt && <span className="text-gray-400"> · ajouté le {new Date(addedAt).toLocaleDateString('fr-FR')}</span>}
                   </p>
                 </div>
               </Link>
               <div className="flex gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => moveToCart(product)}
-                  disabled={!available}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  <ShoppingCart className="w-4 h-4" /> Ajouter au panier
-                </button>
+                {onPage ? (
+                  <Link to={`/product/${product._id}`} className="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    {isOnRequest(product) ? 'Demander le prix' : 'Choisir la version'}
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => moveToCart(product)}
+                    disabled={!available}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    <ShoppingCart className="w-4 h-4" /> Ajouter au panier
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => remove(product)}

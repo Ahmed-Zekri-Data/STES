@@ -5,15 +5,21 @@ const { DEFAULTS, getSettings } = require('./settingsService');
 const { CheckoutError, roundMillimes } = require('../utils/checkout');
 const { findUsablePromo, discountFor } = require('./promoService');
 
-// Builds order lines from the catalog. Only product IDs and quantities are
-// taken from the request; names, images and prices come from the database.
+// Builds order lines from the catalog. Only product IDs, versions and
+// quantities are taken from the request; names, images and prices come from
+// the database.
+//
+// A product with versions needs one of its versions (its code). A product or
+// version without a price ("prix sur demande") cannot be ordered. A product
+// "sur commande" can be ordered beyond its stock: `reserved` says how many
+// come out of stock, the rest is ordered from the supplier.
 const priceOrderItems = async (requestedItems) => {
   if (!Array.isArray(requestedItems) || requestedItems.length === 0) {
     throw new CheckoutError(400, 'At least one item is required');
   }
 
-  // Merge repeated lines for the same product so stock is checked on the total.
-  const quantities = new Map();
+  // Merge repeated lines for the same product and version so stock is checked on the total.
+  const lines = new Map();
   for (const item of requestedItems) {
     const productId = String(item.product || item.productId || '');
     if (!mongoose.isObjectIdOrHexString(productId)) {
@@ -25,30 +31,50 @@ const priceOrderItems = async (requestedItems) => {
       throw new CheckoutError(400, 'Quantity must be a whole number of at least 1');
     }
 
-    quantities.set(productId, (quantities.get(productId) || 0) + quantity);
+    const variant = item.variant ? String(item.variant) : '';
+    const key = `${productId}|${variant}`;
+    const line = lines.get(key) || { productId, variant, quantity: 0 };
+    line.quantity += quantity;
+    lines.set(key, line);
   }
 
-  const products = await Product.find({ _id: { $in: [...quantities.keys()] } });
+  const products = await Product.find({ _id: { $in: [...new Set([...lines.values()].map(l => l.productId))] } });
 
   let subtotal = 0;
-  const orderItems = [...quantities].map(([productId, quantity]) => {
+  const orderItems = [...lines.values()].map(({ productId, variant: sku, quantity }) => {
     const product = products.find(p => p._id.toString() === productId);
     if (!product) {
       throw new CheckoutError(400, `Product ${productId} not found`);
     }
 
-    if (!product.inStock || product.stockQuantity < quantity) {
-      throw new CheckoutError(409, `Insufficient stock for product: ${product.name}`);
+    let version = null;
+    if (product.variants?.length) {
+      version = product.variants.find(v => v.sku === sku);
+      if (!version) {
+        throw new CheckoutError(400, `Choose a version of ${product.name}`);
+      }
+    }
+    const name = version ? `${product.name} – ${version.label}` : product.name;
+    const price = version ? version.price : product.price;
+    if (price === null || price === undefined || (!version && product.priceOnRequest)) {
+      throw new CheckoutError(409, `Price on request for ${name}: ask us for a quote`);
     }
 
-    subtotal += product.price * quantity;
+    const available = version ? version.stockQuantity : (product.inStock ? product.stockQuantity : 0);
+    if (!product.backorder && available < quantity) {
+      throw new CheckoutError(409, `Insufficient stock for product: ${name}`);
+    }
+
+    subtotal += price * quantity;
 
     return {
       product: product._id,
-      name: product.name,
-      price: product.price,
+      name,
+      price,
       quantity,
-      image: product.image
+      image: product.image,
+      ...(version && { variant: { sku: version.sku, label: version.label } }),
+      reserved: Math.min(quantity, Math.max(0, available))
     };
   });
 
@@ -144,14 +170,23 @@ const stockedItems = (items) => items.filter(item => item.product);
 
 const productIds = (items) => items.map(item => item.product._id || item.product);
 
+// How many of a line were taken from stock (older orders: all of them)
+const reservedOf = (item) => item.reserved ?? item.quantity;
+const productOf = (item) => item.product._id || item.product;
+
 // Returns reserved quantities to stock.
 const releaseStock = async (items) => {
-  const lines = stockedItems(items);
+  const lines = stockedItems(items).filter(item => reservedOf(item) > 0);
   for (const item of lines) {
-    await Product.updateOne(
-      { _id: item.product._id || item.product },
-      { $inc: { stockQuantity: item.quantity } }
-    );
+    const amount = reservedOf(item);
+    if (item.variant?.sku) {
+      await Product.updateOne(
+        { _id: productOf(item), 'variants.sku': item.variant.sku },
+        { $inc: { 'variants.$.stockQuantity': amount, stockQuantity: amount } }
+      );
+    } else {
+      await Product.updateOne({ _id: productOf(item) }, { $inc: { stockQuantity: amount } });
+    }
   }
 
   await Product.updateMany(
@@ -164,19 +199,21 @@ const releaseStock = async (items) => {
 // remains, so concurrent checkouts cannot oversell; on failure, everything
 // reserved so far is put back.
 const reserveStock = async (items) => {
-  const lines = stockedItems(items);
+  const lines = stockedItems(items).filter(item => reservedOf(item) > 0);
   const reserved = [];
 
   try {
     for (const item of lines) {
-      const result = await Product.updateOne(
-        {
-          _id: item.product._id || item.product,
-          inStock: true,
-          stockQuantity: { $gte: item.quantity }
-        },
-        { $inc: { stockQuantity: -item.quantity } }
-      );
+      const amount = reservedOf(item);
+      const result = item.variant?.sku
+        ? await Product.updateOne(
+          { _id: productOf(item), variants: { $elemMatch: { sku: item.variant.sku, stockQuantity: { $gte: amount } } } },
+          { $inc: { 'variants.$.stockQuantity': -amount, stockQuantity: -amount } }
+        )
+        : await Product.updateOne(
+          { _id: productOf(item), inStock: true, stockQuantity: { $gte: amount } },
+          { $inc: { stockQuantity: -amount } }
+        );
 
       if (result.modifiedCount !== 1) {
         throw new CheckoutError(409, `Insufficient stock for product: ${item.name}`);

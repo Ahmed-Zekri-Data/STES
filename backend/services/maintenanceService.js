@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const MaintenanceSubscriber = require('../models/MaintenanceSubscriber');
 const { getSettings } = require('./settingsService');
 const emailNotificationService = require('./emailNotificationService');
+const { OFFER_FIELDS, offerOf } = require('../utils/productOffer');
 
 // Pool care reminders: who gets which reminder and when. A reminder is due
 // from its date for WINDOW_DAYS days, so people who sign up just after it,
@@ -76,14 +77,14 @@ const whatsappNumber = (phone) => {
 const productCards = async (calendar) => {
   const ids = [...new Set(calendar.flatMap(r => (r.products || []).map(String)))];
   const products = ids.length
-    ? await Product.find({ _id: { $in: ids } }).select('name price image inStock stockQuantity').lean()
+    ? await Product.find({ _id: { $in: ids } }).select(`name price image inStock stockQuantity ${OFFER_FIELDS}`).lean()
     : [];
   const byId = new Map(products.map(p => [String(p._id), {
     _id: String(p._id),
     name: p.name,
     price: p.price,
     image: p.image,
-    inStock: p.inStock !== false && (p.stockQuantity ?? 0) > 0
+    ...offerOf(p)
   }]));
   return (reminder) => (reminder.products || []).map(id => byId.get(String(id))).filter(Boolean);
 };

@@ -1,13 +1,14 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useMotionValue, useSpring, useTransform, useReducedMotion, useMotionTemplate } from 'framer-motion';
-import { Star, Plus, Check, ArrowUpRight, Award, Zap } from 'lucide-react';
+import { Star, Plus, Check, ArrowUpRight, Award, Zap, Clock, SlidersHorizontal, MessageSquare } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useLanguage } from '../../context/LanguageContext';
 import WishlistButton from '../WishlistButton';
 import ProductVisual from './ProductVisual';
 import { categoryLook } from '../../utils/categoryIcons';
 import { flyToCart } from '../../utils/flyToCart';
+import { hasVariants, isOnRequest, availability, priceRange } from '../../utils/productOffer';
 
 const formatPrice = (price) => Number(price).toLocaleString('fr-FR');
 
@@ -16,8 +17,24 @@ const brandName = (brand) => (typeof brand === 'object' ? brand?.name : brand);
 const badgesOf = (product) => [
   product.featured && { text: 'Populaire', icon: Award, tone: 'bg-amber-100 text-amber-800' },
   product.ratingStats?.averageRating >= 4.5 && product.ratingStats?.totalReviews > 0 && { text: 'Très bien noté', icon: Star, tone: 'bg-violet-100 text-violet-800' },
-  product.stockQuantity > 0 && product.stockQuantity <= 5 && { text: 'Stock limité', icon: Zap, tone: 'bg-rose-100 text-rose-800' }
+  product.stockQuantity > 0 && product.stockQuantity <= 5 && { text: 'Stock limité', icon: Zap, tone: 'bg-rose-100 text-rose-800' },
+  availability(product).state === 'order' && { text: 'Sur commande', icon: Clock, tone: 'bg-sky-100 text-sky-800' }
 ].filter(Boolean);
+
+// The price on a card: one price, "dès" the lowest of the versions, or
+// "Prix sur demande"
+const PriceTag = ({ product, currency }) => {
+  if (isOnRequest(product)) {
+    return <p className="font-display text-lg font-bold tracking-tight text-gray-900">Prix sur demande</p>;
+  }
+  const range = priceRange(product);
+  return (
+    <p className="font-display text-2xl font-bold tracking-tight text-gray-900 tabular">
+      {range && range.max > range.min && <span className="me-1 text-sm font-medium text-gray-500">dès</span>}
+      {formatPrice(product.price)} <span className="text-sm font-medium text-gray-500">{currency}</span>
+    </p>
+  );
+};
 
 const Rating = ({ stats }) => {
   if (!(stats?.totalReviews > 0)) return null;
@@ -34,6 +51,25 @@ const Rating = ({ stats }) => {
   );
 };
 
+// A product with versions, or a price on request, is chosen or asked about
+// on its page: the card links there instead of adding to the cart
+const ChooseLink = ({ product, compact }) => {
+  const onRequest = isOnRequest(product);
+  const Icon = onRequest ? MessageSquare : SlidersHorizontal;
+  const text = onRequest ? 'Devis' : 'Choisir';
+  return (
+    <Link
+      to={`/product/${product._id}`}
+      aria-label={onRequest ? `Demander le prix de ${product.name}` : `Choisir la version de ${product.name}`}
+      className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full font-display text-sm font-semibold transition-transform duration-300 hover:-translate-y-0.5 ${compact ? 'h-10 w-10' : 'h-11 px-4'}`}
+      style={{ background: 'rgb(var(--brand))', color: 'rgb(var(--on-brand))', boxShadow: 'var(--shadow-glow)' }}
+    >
+      <Icon className="h-4 w-4" aria-hidden="true" />
+      {!compact && text}
+    </Link>
+  );
+};
+
 // "Add to cart": a round button that turns into a check for a moment
 const AddButton = ({ product, compact = false }) => {
   const { addToCart } = useCart();
@@ -41,7 +77,8 @@ const AddButton = ({ product, compact = false }) => {
   const ref = useRef(null);
   const timer = useRef();
   useEffect(() => () => clearTimeout(timer.current), []);
-  const outOfStock = product.inStock === false;
+  const outOfStock = availability(product).state === 'out';
+  if (hasVariants(product) || isOnRequest(product)) return <ChooseLink product={product} compact={compact} />;
 
   const add = (event) => {
     event.preventDefault();
@@ -109,7 +146,8 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
   const { icon: CategoryIcon } = categoryLook(product.category);
   const badges = badgesOf(product);
   const brand = brandName(product.brand);
-  const outOfStock = product.inStock === false;
+  const stock = availability(product);
+  const outOfStock = stock.state === 'out';
 
   const reveal = {
     initial: { opacity: 0, y: 28 },
@@ -125,11 +163,7 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
     </span>
   );
 
-  const price = (
-    <p className="font-display text-2xl font-bold tracking-tight text-gray-900 tabular">
-      {formatPrice(product.price)} <span className="text-sm font-medium text-gray-500">{t('currency')}</span>
-    </p>
-  );
+  const price = <PriceTag product={product} currency={t('currency')} />;
 
   if (viewMode === 'list') {
     return (
@@ -153,7 +187,7 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
           <div className="mt-auto flex items-center justify-between gap-3 pt-2">
             <div>
               {price}
-              <p className={`text-xs font-medium ${outOfStock ? 'text-red-600' : 'text-green-700'}`}>{outOfStock ? 'Rupture de stock' : 'En stock'}</p>
+              <p className={`text-xs font-medium ${outOfStock ? 'text-red-600' : stock.state === 'order' ? 'text-sky-700' : 'text-green-700'}`}>{stock.label}</p>
             </div>
             <div className="flex items-center gap-2">
               <Link to={url} className="hidden rounded-full px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 sm:inline-flex">

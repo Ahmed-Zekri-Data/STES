@@ -171,7 +171,7 @@ export const Packs = ({ packs, onAdd }) => {
               {saving > 0 && <span className="pl-pack__save">Économisez {tnd(saving)}</span>}
               <div className="pl-product__row">
                 <span className="pl-price">{tnd(product.price)}{saving > 0 && <s>{tnd(worth)}</s>}</span>
-                <button type="button" className="pl-pill" disabled={!product.inStock} onClick={(event) => onAdd(product, event)}>{product.inStock ? 'Ajouter' : 'Rupture'}</button>
+                <button type="button" className="pl-pill" disabled={!product.inStock} onClick={(event) => onAdd(product, event)}>{product.choose ? 'Choisir' : product.inStock ? 'Ajouter' : 'Rupture'}</button>
               </div>
             </article>
           ))}
