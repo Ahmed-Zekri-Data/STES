@@ -29,7 +29,44 @@ const settingsSchema = new mongoose.Schema({
     address: String,
     stampDuty: Number
   },
-  lowStockThreshold: Number // products at or below this many units are "low"
+  lowStockThreshold: Number, // products at or below this many units are "low"
+  // Home page (Admin → Settings → Home page): which products appear where.
+  // Products that no longer exist are skipped when the page is shown.
+  showcase: {
+    // The 3D objects visitors can buy
+    hotspots: {
+      pump: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+      filter: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+      robot: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+      lights: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+      ring: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' }
+    },
+    // "My water has a problem": the products that solve each one
+    problems: {
+      green: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+      cloudy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+      dirty: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+      cold: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }]
+    },
+    // Configurator: pump and filter for each pool size, the LED light, options
+    sizes: [{
+      _id: false,
+      label: String,
+      pump: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+      filter: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' }
+    }],
+    lights: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+    options: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+    // Seasonal packs: a product sold as a pack, and what it contains
+    packs: [{
+      _id: false,
+      product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+      season: String,
+      includes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }]
+    }],
+    showMap: Boolean, // the map of orders by governorate
+    partnerBadge: String // e.g. "Partenaire agréé AstralPool"; empty hides it
+  }
 }, {
   timestamps: true
 });

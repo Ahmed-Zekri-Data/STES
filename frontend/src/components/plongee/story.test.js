@@ -6,7 +6,7 @@ const layout = (name) => ({ top: SECTIONS.indexOf(name) * 1000, height: 1000 });
 
 describe('the home page story', () => {
   it('places each camera key where its section is scrolled to', () => {
-    const offsets = keyOffsets(layout, 800);
+    const offsets = keyOffsets(layout, 800).map(key => key.offset);
     expect(offsets[0]).toBe(0);
     expect(offsets[1]).toBe(1000 + 0.2 * 1000); // 20 % into "goggles"
     // The last key: the contact section's bottom at the bottom of the screen
@@ -14,6 +14,13 @@ describe('the home page story', () => {
     // In story order
     expect([...offsets].sort((a, b) => a - b)).toEqual(offsets);
     expect(offsets).toHaveLength(CAMERA_KEYS.length);
+  });
+
+  it('skips the camera keys of sections that are not on the page', () => {
+    const without = (name) => (name === 'packs' ? null : layout(name));
+    const keys = keyOffsets(without, 800);
+    expect(keys).toHaveLength(CAMERA_KEYS.length - 1);
+    expect(keys.some(({ index }) => CAMERA_KEYS[index][0] === 'packs')).toBe(false);
   });
 
   it('moves the camera between the two keys around the scroll position, eased', () => {

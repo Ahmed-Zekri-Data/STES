@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PoolWorld, stoneTexture, canvasTexture } from './engine';
 import { buildGarden } from './garden';
-import { CAMERA_KEYS, keyOffsets, segmentAt, beatAt, lensLayout, smooth } from './story';
+import { CAMERA_KEYS, keyOffsets, segmentAt, beatAt, lensLayout, smooth, CLEAN_WATER, TILES } from './story';
 
 /*
  * The home page's 3D film, driven by the page's scroll position: the pool
@@ -151,7 +151,7 @@ const GOGGLES_FS = `
     gl_FragColor = vec4(col, 1.0);
   }`;
 
-export const createPlongeeScene = async ({ canvas, dom, layout, isDark, quality, audio, reduceMotion, onFirstFrame, onBeat }) => {
+export const createPlongeeScene = async ({ canvas, dom, layout, isDark, quality, audio, reduceMotion, onFirstFrame, onBeat, afterFrame = () => {} }) => {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(quality.pixelRatio);
   const scene = new THREE.Scene();
@@ -184,7 +184,7 @@ export const createPlongeeScene = async ({ canvas, dom, layout, isDark, quality,
   const c = 0.3;
   slab(-HX - deckOut, -HX - c, -HZ - deckOut, HZ + terrace, -0.8, 0.04, deck); slab(HX + c, HX + deckOut, -HZ - deckOut, HZ + terrace, -0.8, 0.04, deck);
   slab(-HX - c, HX + c, HZ + c, HZ + terrace, -0.8, 0.04, deck); slab(-HX - c, HX + c, -HZ - deckOut, -HZ - c, -0.8, 0.04, deck);
-  await buildGarden(world, scene, { hx: HX, hz: HZ, deckOut, terrace, quality: quality.grass, models: quality.models });
+  const garden = await buildGarden(world, scene, { hx: HX, hz: HZ, deckOut, terrace, quality: quality.grass, models: quality.models });
   // Edging stones on top of the walls, and the starting block
   slab(-HX - c, -HX, -HZ - c, HZ + c, 0.035, 0.07, coping); slab(HX, HX + c, -HZ - c, HZ + c, 0.035, 0.07, coping);
   slab(-HX, HX, HZ, HZ + c, 0.035, 0.07, coping); slab(-HX, HX, -HZ - c, -HZ, 0.035, 0.07, coping);
@@ -318,9 +318,13 @@ export const createPlongeeScene = async ({ canvas, dom, layout, isDark, quality,
     const m = new THREE.Matrix4().lookAt(new THREE.Vector3(...pos), new THREE.Vector3(...target_), new THREE.Vector3(...up));
     return { pos: new THREE.Vector3(...pos), quat: new THREE.Quaternion().setFromRotationMatrix(m) };
   });
-  let offsets = keys.map((_, i) => i);
+  let present = keys.map((_, index) => ({ index, offset: index }));
+  let offsets = present.map(k => k.offset);
   let lens = lensLayout(1, 1);
-  const measure = () => { offsets = keyOffsets(layout, window.innerHeight); };
+  const measure = () => {
+    present = keyOffsets(layout, window.innerHeight);
+    offsets = present.map(k => k.offset);
+  };
 
   const resize = () => {
     const w = window.innerWidth, h = window.innerHeight, pr = renderer.getPixelRatio();
@@ -369,6 +373,31 @@ export const createPlongeeScene = async ({ canvas, dom, layout, isDark, quality,
   // ---------------------------------------------------------------- the frame
   const fwd = new THREE.Vector3();
   const blue = new THREE.Vector3(0.35, 0.95, 1.0);
+  const ledColor = new THREE.Color(), tileColor = new THREE.Color();
+  let preview = null;
+  const water = { t: 1, duration: 1, from: CLEAN_WATER, to: CLEAN_WATER };
+
+  // Things the page puts labels on: equipment in the garden, and in the pool
+  const anchorOf = {
+    pump: () => garden.anchors.pump,
+    filter: () => garden.anchors.filter,
+    robot: () => robot.position.clone().add(new THREE.Vector3(0, 0.35, 0)),
+    lights: () => lamps[1].position,
+    ring: () => ring.position.clone().add(new THREE.Vector3(0, 0.15, 0))
+  };
+  const projected = new THREE.Vector3();
+  const project = (key) => {
+    const at = anchorOf[key]?.();
+    if (!at) return null;
+    projected.copy(at).project(camera);
+    return {
+      x: (projected.x * 0.5 + 0.5) * window.innerWidth,
+      y: (-projected.y * 0.5 + 0.5) * window.innerHeight,
+      inView: projected.z < 1 && Math.abs(projected.x) < 0.9 && Math.abs(projected.y) < 0.85,
+      side: projected.x,
+      distance: at.distanceTo(camera.position)
+    };
+  };
   let scrollSmooth = window.scrollY, wasUnder = false, splashT = -10, apnea = 0, fogT = -10, wasOn = false, wet = 0;
   let exhale = 2, clock = 0, robotT = 0, floatT = 0, introT = 0, introRun = false, beatKey = null;
   let last = performance.now(), first = true, frameId = 0, disposed = false;
@@ -379,8 +408,9 @@ export const createPlongeeScene = async ({ canvas, dom, layout, isDark, quality,
     scrollSmooth += (window.scrollY - scrollSmooth) * (reduceMotion ? 1 : Math.min(1, dt * 5));
     const y = scrollSmooth, vh = window.innerHeight;
     const seg = segmentAt(offsets, y);
-    camera.position.lerpVectors(keys[seg.from].pos, keys[seg.to].pos, seg.t);
-    camera.quaternion.slerpQuaternions(keys[seg.from].quat, keys[seg.to].quat, seg.t);
+    const from = keys[present[seg.from].index], to = keys[present[seg.to].index];
+    camera.position.lerpVectors(from.pos, to.pos, seg.t);
+    camera.quaternion.slerpQuaternions(from.quat, to.quat, seg.t);
     // Opening: from just above the water, spinning out to the whole garden
     if (introT < 1) {
       if (introRun) introT = Math.min(1, introT + dt / 3.8);
@@ -394,7 +424,7 @@ export const createPlongeeScene = async ({ canvas, dom, layout, isDark, quality,
     camera.getWorldDirection(fwd);
 
     // Goggles: on as you scroll into the story, off when you surface
-    const gogglesSection = layout('goggles'), surface = layout('surface');
+    const gogglesSection = layout('goggles') || { top: 0, height: 1 }, surface = layout('surface') || { top: 0, height: 1 };
     const gOn = smooth(0.12 * vh, gogglesSection.top + 0.3 * gogglesSection.height, y);
     const gOff = smooth(surface.top + 0.5 * surface.height, surface.top + 0.95 * surface.height, y);
     const on = gOn * (1 - gOff);
@@ -453,9 +483,23 @@ export const createPlongeeScene = async ({ canvas, dom, layout, isDark, quality,
     });
 
     // Night: dark mode is the night view
-    const night = isDark();
+    const night = isDark() || Boolean(preview?.night);
     world.uniforms.uNight.value += ((night ? 0.92 : 0) - world.uniforms.uNight.value) * Math.min(1, dt * 1.8);
-    world.uniforms.uLightCol.value.lerp(blue, Math.min(1, dt * 3));
+    const led = preview && preview.led !== undefined ? preview.led : [blue.x, blue.y, blue.z];
+    if (led === 'rgb') ledColor.setHSL((clock * 0.08) % 1, 0.8, 0.6);
+    else ledColor.setRGB(...(led || [0, 0, 0]));
+    world.uniforms.uLightCol.value.lerp(new THREE.Vector3(ledColor.r, ledColor.g, ledColor.b), Math.min(1, dt * 3));
+    const tile = preview?.tile || TILES[0];
+    for (const [key, uniform] of [['a', 'uTileA'], ['b', 'uTileB'], ['band', 'uBand']]) world.uniforms[uniform].value.lerp(tileColor.set(tile[key]), Math.min(1, dt * 4));
+    // The diagnostic's water
+    if (water.t < 1) {
+      water.t = Math.min(1, water.t + dt / water.duration);
+      const e = water.t * water.t * (3 - 2 * water.t);
+      const mix = (a, b) => a.map((v, i) => v + (b[i] - v) * e);
+      world.uniforms.uDeep.value.fromArray(mix(water.from.deep, water.to.deep));
+      world.uniforms.uAbsorb.value.fromArray(mix(water.from.absorb, water.to.absorb));
+      world.uniforms.uDirt.value = water.from.dirt + (water.to.dirt - water.from.dirt) * e;
+    }
     fireflyGlow.value = smooth(0.6, 0.9, world.uniforms.uNight.value) * (under ? 0 : 1);
     fireflies.update(dt, (i) => {
       fireflies.vel[i * 3] = Math.sin(clock * 0.7 + i * 1.3) * 0.25;
@@ -491,7 +535,7 @@ export const createPlongeeScene = async ({ canvas, dom, layout, isDark, quality,
 
     // The goggle display: on while wearing them, faint behind the shop's content
     const hudOn = on > 0.95 && goggles.uniforms.uFog.value < 0.35;
-    const reading = ['boutique', 'produits'].some(name => { const s = layout(name); return y > s.top - vh * 0.6 && y < s.top + s.height - vh * 0.4; });
+    const reading = ['boutique', 'produits'].some(name => { const s = layout(name); return s && y > s.top - vh * 0.6 && y < s.top + s.height - vh * 0.4; });
     dom.hudL.style.opacity = dom.hudR.style.opacity = hudOn ? (reading ? '0.25' : '1') : '0';
     const w = window.innerWidth;
     if (lens.mode === 0) {
@@ -506,6 +550,7 @@ export const createPlongeeScene = async ({ canvas, dom, layout, isDark, quality,
     dom.apnea.textContent = `00:${String(Math.min(59, Math.floor(apnea))).padStart(2, '0')}`;
     dom.air.style.width = `${Math.max(8, 100 - apnea * 2.2)}%`;
 
+    afterFrame({ project, under, goggles: on, y });
     world.uniforms.uExposure.value = THREE.MathUtils.lerp(world.uniforms.uExposure.value, under ? 0.95 : 1.35, Math.min(1, dt * 3));
     audio.update(under, night, dt);
     for (const s of shafts) { s.lookAt(camera.position.x, s.position.y, camera.position.z); s.rotateX(-0.12); }
@@ -535,6 +580,15 @@ export const createPlongeeScene = async ({ canvas, dom, layout, isDark, quality,
       audio.splash(false);
     },
     skipIntro() { introT = 1; },
+    // Diagnostic: show a water problem (or clean water, null), over `duration` s
+    setWater(look, duration = 1.2) {
+      water.from = { deep: world.uniforms.uDeep.value.toArray(), absorb: world.uniforms.uAbsorb.value.toArray(), dirt: world.uniforms.uDirt.value };
+      water.to = look || CLEAN_WATER;
+      water.t = 0;
+      water.duration = duration;
+    },
+    // Configurator: { tile, led, night } while choosing, null afterwards
+    setPreview(next) { preview = next; },
     get introDone() { return introT >= 1; },
     dispose() {
       disposed = true;

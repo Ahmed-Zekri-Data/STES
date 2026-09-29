@@ -30,7 +30,18 @@ const DEFAULTS = {
     address: '',
     stampDuty: 1
   },
-  lowStockThreshold: LOW_STOCK_THRESHOLD
+  lowStockThreshold: LOW_STOCK_THRESHOLD,
+  // Home page: nothing chosen yet, so those parts of the page stay hidden
+  showcase: {
+    hotspots: { pump: null, filter: null, robot: null, lights: null, ring: null },
+    problems: { green: [], cloudy: [], dirty: [], cold: [] },
+    sizes: [],
+    lights: null,
+    options: [],
+    packs: [],
+    showMap: true,
+    partnerBadge: ''
+  }
 };
 
 const pick = (saved, defaults) => Object.fromEntries(
@@ -46,14 +57,19 @@ const getSettings = async () => {
     delivery: pick(saved?.delivery, DEFAULTS.delivery),
     invoice: pick(saved?.invoice, DEFAULTS.invoice),
     lowStockThreshold: saved?.lowStockThreshold ?? DEFAULTS.lowStockThreshold,
+    showcase: {
+      ...pick(saved?.showcase, DEFAULTS.showcase),
+      hotspots: pick(saved?.showcase?.hotspots, DEFAULTS.showcase.hotspots),
+      problems: pick(saved?.showcase?.problems, DEFAULTS.showcase.problems)
+    },
     updatedAt: saved?.updatedAt || null
   };
 };
 
 // Saves the given sections; anything not given keeps its value
-const updateSettings = async ({ contact, bank, delivery, invoice, lowStockThreshold }) => {
+const updateSettings = async ({ contact, bank, delivery, invoice, lowStockThreshold, showcase }) => {
   const set = {};
-  for (const [section, values] of Object.entries({ contact, bank, delivery, invoice })) {
+  for (const [section, values] of Object.entries({ contact, bank, delivery, invoice, showcase })) {
     for (const [key, value] of Object.entries(values || {})) {
       if (key in DEFAULTS[section]) set[`${section}.${key}`] = value;
     }

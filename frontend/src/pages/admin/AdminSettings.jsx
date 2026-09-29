@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { User, Store, Save, CheckCircle } from 'lucide-react';
+import { User, Store, Save, CheckCircle, Waves } from 'lucide-react';
 import adminApi, { errorMessage } from '../../utils/adminApi';
 import { useAdmin } from '../../context/AdminContext';
+import HomePageSettings from './HomePageSettings';
 
 const MIN_PASSWORD_LENGTH = 8;
 const ROLE_LABELS = { super_admin: 'Super admin', admin: 'Admin' };
@@ -237,11 +238,12 @@ const AdminSettings = () => {
   const { hasPermission } = useAdmin();
   const [searchParams, setSearchParams] = useSearchParams();
   const canEditShop = hasPermission('settings');
-  const tab = canEditShop && searchParams.get('tab') === 'shop' ? 'shop' : 'account';
+  const requested = searchParams.get('tab');
+  const tab = canEditShop && ['shop', 'home'].includes(requested) ? requested : 'account';
 
   const tabs = [
     { id: 'account', label: 'My account', icon: User },
-    ...(canEditShop ? [{ id: 'shop', label: 'Shop', icon: Store }] : [])
+    ...(canEditShop ? [{ id: 'shop', label: 'Shop', icon: Store }, { id: 'home', label: 'Home page', icon: Waves }] : [])
   ];
 
   return (
@@ -262,7 +264,9 @@ const AdminSettings = () => {
           ))}
         </div>
       )}
-      {tab === 'shop' ? <ShopSettings /> : <MyAccount />}
+      {tab === 'shop' && <ShopSettings />}
+      {tab === 'home' && <HomePageSettings />}
+      {tab === 'account' && <MyAccount />}
     </div>
   );
 };
