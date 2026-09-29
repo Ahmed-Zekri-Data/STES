@@ -5,9 +5,10 @@
 @tailwind utilities;
 
 /*
- * Two themes, both built on the same scales (styles/palette.css):
- *   Lagoon (light): sunlit pool water, pearl surfaces, deep teal ink.
- *   Abyss (dark): the pool at night, bioluminescent cyan and violet glows.
+ * Two themes, both built on the same scales (styles/palette.css), in the
+ * colours of the home page's "Plongée" scene:
+ *   Day (light): sunlit pool water, white surfaces, deep sea ink.
+ *   Night (dark): the pool at night, deep sea blue lit from the water.
  * Colours here are "r g b" triplets so Tailwind can add opacity.
  */
 /* Tokens made from the scales: declared again wherever a theme is forced
@@ -29,8 +30,10 @@
   --brand: var(--aqua-600);
   --brand-2: var(--violet-600);
   --on-brand: 255 255 255;
-  --glow-a: 34 211 238;
-  --glow-b: 139 92 246;
+  --glow-a: 51 224 240;
+  --glow-b: 33 145 231;
+  --caustic: var(--aqua-400);
+  --caustic-strength: 0.13;
 
   --shadow-soft: 0 1px 2px rgb(15 40 60 / 0.05), 0 8px 24px -12px rgb(15 40 60 / 0.12);
   --shadow-medium: 0 2px 6px rgb(15 40 60 / 0.06), 0 18px 40px -18px rgb(15 40 60 / 0.22);
@@ -44,12 +47,19 @@
 .dark {
   color-scheme: dark;
   color: rgb(var(--fg));
-  --surface: 17 23 31;
-  --raised: 24 31 41;
-  --glass-edge: 255 255 255 / 0.09;
-  --brand: 45 212 238;
-  --brand-2: 167 139 250;
-  --on-brand: 3 20 27;
+  /* The night pool of the home page */
+  --page: 3 27 38;
+  --surface: 7 39 53;
+  --raised: 10 48 64;
+  --line: 24 66 84;
+  --glass-edge: 160 244 251 / 0.14;
+  --brand: 51 224 240;
+  --brand-2: 159 244 251;
+  --on-brand: 4 33 46;
+  --glow-a: 51 224 240;
+  --glow-b: 33 145 231;
+  --caustic: 51 224 240;
+  --caustic-strength: 0.1;
 
   --shadow-soft: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 8px 24px -12px rgb(0 0 0 / 0.6);
   --shadow-medium: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 18px 40px -18px rgb(0 0 0 / 0.7);
@@ -78,7 +88,7 @@
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-display;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
     text-wrap: balance;
   }
 
@@ -110,6 +120,12 @@
   [type='datetime-local'], [type='month'], [type='search'], [type='tel'], [type='time'], [type='week'],
   [multiple], textarea, select {
     background-color: rgb(var(--surface));
+  }
+
+  /* Unticked boxes and radios take the surface too (white at night otherwise) */
+  [type='checkbox']:not(:checked), [type='radio']:not(:checked) {
+    background-color: rgb(var(--surface));
+    border-color: rgb(var(--ink-400));
   }
 
   .arabic {
@@ -148,7 +164,7 @@
     box-shadow: var(--shadow-soft);
   }
 
-  /* Brand gradient text: teal to violet */
+  /* Brand gradient text: pool turquoise to deep sea blue */
   .text-gradient,
   .gradient-text {
     background-image: linear-gradient(100deg, rgb(var(--aqua-t500)) 0%, rgb(var(--aqua-t400)) 35%, rgb(var(--violet-t500)) 100%);
@@ -159,7 +175,7 @@
 
   /* The main call to action */
   .btn-brand {
-    @apply relative inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-display font-semibold
+    @apply relative inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 font-semibold
       transition-[transform,box-shadow,background-position] duration-300 ease-out;
     color: rgb(var(--on-brand));
     background-image: linear-gradient(110deg, rgb(var(--brand)) 0%, rgb(var(--brand)) 40%, rgb(var(--brand-2)) 100%);
@@ -172,7 +188,7 @@
   .btn-brand:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-display font-semibold
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 font-semibold
       transition-[transform,background-color,border-color] duration-300 ease-out;
     color: rgb(var(--fg));
     background: rgb(var(--surface) / 0.6);
@@ -206,8 +222,10 @@
 }
 
 /*
- * The ambient water light behind every page: two soft glows that drift
- * slowly. Light theme: sun through water. Dark theme: bioluminescence.
+ * The ambient water light behind every page: sunlight playing through
+ * water (the caustics of the home page's pool, public/plongee/
+ * caustics.png) over two soft glows. Two layers of light drift at
+ * different speeds so the pattern never visibly repeats.
  */
 .ambient {
   position: fixed;
@@ -219,6 +237,34 @@
     radial-gradient(35% 30% at 90% 20%, rgb(var(--glow-b) / 0.12), transparent 70%),
     radial-gradient(45% 40% at 60% 100%, rgb(var(--glow-a) / 0.1), transparent 70%);
   animation: caustics 18s ease-in-out infinite alternate;
+}
+.ambient::before,
+.ambient::after {
+  content: '';
+  position: absolute;
+  /* Wide enough that the drift never shows an edge */
+  inset: -50%;
+  background-color: rgb(var(--caustic));
+  -webkit-mask: url('/plongee/caustics.png') 0 0 / 560px 560px repeat;
+  mask: url('/plongee/caustics.png') 0 0 / 560px 560px repeat;
+  opacity: var(--caustic-strength);
+  animation: water-drift 40s linear infinite;
+}
+.ambient::after {
+  -webkit-mask-size: 820px 820px;
+  mask-size: 820px 820px;
+  opacity: calc(var(--caustic-strength) * 0.7);
+  animation-duration: 64s;
+  animation-direction: reverse;
+}
+/* Fades towards the bottom of the screen, like light fading with depth */
+.ambient {
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 45%, rgb(0 0 0 / 0.35) 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 45%, rgb(0 0 0 / 0.35) 100%);
+}
+@keyframes water-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-560px, -280px, 0); }
 }
 .dark .ambient {
   background:
@@ -426,6 +472,10 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .ambient::before, .ambient::after { animation: none; }
+}
+
 @media (prefers-reduced-transparency: reduce) {
   .glass, .btn-ghost { backdrop-filter: none; background: rgb(var(--surface)); }
 }
@@ -433,4 +483,23 @@
 @media print {
   .ambient, nav, footer { display: none !important; }
   body { background: white; color: black; }
+}
+
+/* The float ring on inner pages' headers (PageHero): coral and white
+   stripes around a hole, tilted like it lies on the water */
+.page-float { transform-style: preserve-3d; }
+.page-float__ring {
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  background: repeating-conic-gradient(#ff6b5a 0 30deg, #ffffff 30deg 60deg);
+  -webkit-mask: radial-gradient(circle, transparent 38%, #000 39%, #000 70%, transparent 71%);
+  mask: radial-gradient(circle, transparent 38%, #000 39%, #000 70%, transparent 71%);
+  transform: rotateX(62deg);
+  box-shadow: inset 0 -10px 20px rgb(0 0 0 / 0.18);
+  filter: drop-shadow(0 18px 14px rgb(4 60 80 / 0.25));
+}
+@keyframes bob {
+  0%, 100% { translate: 0 0; rotate: -4deg; }
+  50% { translate: 0 -10px; rotate: 4deg; }
 }

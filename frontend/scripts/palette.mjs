@@ -1,5 +1,6 @@
 // Generates src/styles/palette.css: every colour scale of the shop, for the
-// light theme ("Lagoon") and the dark theme ("Abyss").
+// light theme (the pool by day) and the dark theme (the pool at night),
+// the colours of the home page's "Plongée" scene.
 //
 //   node scripts/palette.mjs
 //
@@ -16,9 +17,9 @@ import { fileURLToPath } from 'node:url';
 // Hue and peak chroma of each scale. Tailwind names are mapped to these in
 // tailwind.config.js (blue → aqua, purple → violet, ...).
 export const SCALES = {
-  ink: { hue: 250, chroma: 0.03, neutral: true }, // cool grey with a hint of blue
-  aqua: { hue: 212, chroma: 0.16 }, // the brand: pool water
-  violet: { hue: 292, chroma: 0.22 }, // the "future" accent
+  ink: { hue: 238, chroma: 0.035, neutral: true }, // sea-tinted grey: the deep water ink
+  aqua: { hue: 218, chroma: 0.15 }, // the brand: pool turquoise
+  violet: { hue: 248, chroma: 0.16 }, // the second colour: deep sea blue (the name is kept for purple/indigo classes)
   coral: { hue: 12, chroma: 0.19 },
   danger: { hue: 25, chroma: 0.21 },
   success: { hue: 158, chroma: 0.16 },
