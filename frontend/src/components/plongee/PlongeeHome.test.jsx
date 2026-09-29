@@ -10,7 +10,7 @@ import { ShopSettingsContext, DEFAULT_SHOP_SETTINGS } from '../../context/shopSe
 import PlongeeHome from './PlongeeHome';
 
 // The 3D scene and the sounds need a graphics card and speakers
-const scene = { measure: vi.fn(), impact: vi.fn(), skipIntro: vi.fn(), dispose: vi.fn() };
+const scene = { measure: vi.fn(), impact: vi.fn(), skipIntro: vi.fn(), dispose: vi.fn(), setWater: vi.fn(), setPreview: vi.fn() };
 vi.mock('./PlongeeScene', () => ({
   createPlongeeScene: vi.fn(async ({ onFirstFrame }) => { onFirstFrame(); return scene; })
 }));
@@ -20,6 +20,21 @@ const products = [
   { _id: 'p1', name: 'Filtre à Sable Premium', price: 450, category: 'filtration', categoryName: 'Filtration', stockQuantity: 5, inStock: true },
   { _id: 'p2', name: 'Chlore Granulé 5kg', price: 65, category: 'chemicals', categoryName: 'Produits Chimiques', stockQuantity: 9, inStock: true }
 ];
+
+const card = (p) => ({ ...p, inStock: true });
+const pack = { _id: 'k1', name: 'Pack ouverture de saison', price: 139, inStock: true };
+const showcase = {
+  hotspots: { pump: null, filter: null, robot: null, lights: null, ring: null },
+  problems: {
+    green: { products: [card(products[1]), { _id: 'p3', name: 'Algicide 1L', price: 45, inStock: false }], total: 110 },
+    cloudy: { products: [], total: 0 }, dirty: { products: [], total: 0 }, cold: { products: [], total: 0 }
+  },
+  configurator: { sizes: [{ label: '8 × 4 m', pump: null, filter: card(products[0]) }], lights: null, options: [] },
+  packs: [{ product: pack, season: 'Avril – mai', includes: [card(products[1])], worth: 160, saving: 21 }],
+  map: { governorates: [{ governorate: 'sousse', count: 4 }, { governorate: 'gabes', count: 2 }], orders: 6 },
+  reviews: [{ _id: 'r1', rating: 5, comment: 'Pompe très silencieuse, installée en une matinée.', author: 'Leila T.', productId: 'p1', productName: 'Filtre à Sable Premium' }],
+  partnerBadge: 'Partenaire agréé AstralPool'
+};
 
 const renderHome = () => render(
   <ThemeProvider>
@@ -41,9 +56,10 @@ describe('home page (Plongée)', () => {
   beforeEach(() => {
     localStorage.clear();
     sessionStorage.clear();
-    vi.spyOn(axios, 'get').mockImplementation((url) => Promise.resolve(url === '/api/products/categories'
-      ? { data: { categories: { filtration: { name: 'Filtration', description: 'Filtres à sable et à cartouche' }, chemicals: { name: 'Produits Chimiques' } } } }
-      : { data: { products } }));
+    vi.spyOn(axios, 'get').mockImplementation((url) => Promise.resolve(
+      url === '/api/products/categories' ? { data: { categories: { filtration: { name: 'Filtration', description: 'Filtres à sable et à cartouche' }, chemicals: { name: 'Produits Chimiques' } } } }
+        : url === '/api/showcase' ? { data: showcase }
+          : { data: { products } }));
     window.scrollTo = vi.fn();
     Element.prototype.scrollIntoView = vi.fn();
   });
@@ -55,8 +71,8 @@ describe('home page (Plongée)', () => {
 
     expect(await screen.findByRole('link', { name: /Filtration/ })).toHaveProperty('href', expect.stringContaining('/shop?category=filtration'));
     expect(screen.getByText('Filtres à sable et à cartouche')).toBeTruthy();
-    expect(await screen.findByText('Filtre à Sable Premium')).toBeTruthy();
-    expect(screen.getByText('450 TND')).toBeTruthy();
+    expect(await screen.findAllByText('Filtre à Sable Premium')).toBeTruthy();
+    expect(screen.getAllByText('450 TND').length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: /WhatsApp/ }).getAttribute('href')).toBe('https://wa.me/21698765432');
     expect(screen.getByRole('link', { name: /\+216 71 234 567/ }).getAttribute('href')).toBe('tel:+21671234567');
 
@@ -70,7 +86,7 @@ describe('home page (Plongée)', () => {
     expect(screen.queryByRole('dialog', { name: 'Bienvenue chez STES' })).toBeNull();
     expect(screen.queryByRole('button', { name: /Mettre mes lunettes/ })).toBeNull();
     expect(screen.getAllByRole('link', { name: /Voir la boutique/ }).length).toBeGreaterThan(0);
-    await screen.findByText('Filtre à Sable Premium');
+    await screen.findAllByText('Filtre à Sable Premium');
   });
 
   it('plays the opening once per visit, and the skip button ends it', async () => {
@@ -100,5 +116,46 @@ describe('home page (Plongée)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Passer' }));
     expect(screen.queryByRole('dialog', { name: 'Visite guidée' })).toBeNull();
     expect(localStorage.getItem('stes-tour')).toBe('1');
+  });
+});
+
+describe('home page selling sections', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    vi.spyOn(axios, 'get').mockImplementation((url) => Promise.resolve(url === '/api/showcase' ? { data: showcase } : { data: url === '/api/products/categories' ? { categories: {} } : { products } }));
+    window.scrollTo = vi.fn();
+    withWebGL(false);
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it('offers only the water problems with products, and adds what is in stock', async () => {
+    renderHome();
+    expect(await screen.findByRole('button', { name: /Eau verte/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Eau trouble/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Eau verte/ }));
+    expect(screen.getByText('Des algues se développent')).toBeTruthy();
+    expect(screen.getByText('Rupture')).toBeTruthy();
+    expect(screen.getByText('110 TND')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Tout ajouter au panier' }));
+    await waitFor(() => expect(JSON.parse(localStorage.getItem('cart')).map(i => i._id)).toEqual(['p2']));
+  });
+
+  it('prices the configurator kit and the packs from real products', async () => {
+    renderHome();
+    expect(await screen.findByText('Composez')).toBeTruthy();
+    expect(screen.getAllByText('450 TND').length).toBeGreaterThan(0);
+    expect(screen.getByText('Économisez 21 TND')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter le kit au panier' }));
+    await waitFor(() => expect(JSON.parse(localStorage.getItem('cart'))).toEqual([expect.objectContaining({ _id: 'p1', quantity: 1 })]));
+  });
+
+  it('shows the orders map, real reviews and the partner badge', async () => {
+    renderHome();
+    expect(await screen.findByRole('img', { name: /Sousse 4, Gabès 2/ })).toBeTruthy();
+    expect(screen.getByText(/dans 2 gouvernorats/)).toBeTruthy();
+    expect(screen.getByText(/Pompe très silencieuse/)).toBeTruthy();
+    expect(screen.getByText(/Leila T./)).toBeTruthy();
+    expect(screen.getAllByText('Partenaire agréé AstralPool').length).toBeGreaterThan(0);
   });
 });

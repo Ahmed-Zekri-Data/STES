@@ -11,7 +11,9 @@ import { flyToCart } from '../../utils/flyToCart';
 import ProductVisual from '../product/ProductVisual';
 import Intro from './Intro';
 import { createSoundscape } from './audio';
-import { SECTIONS, sectionId, HINTS, MAP_STEPS, qualityFor } from './story';
+import { SECTIONS, sectionId, HINTS, MAP_STEPS, qualityFor, PROBLEMS, tnd } from './story';
+import { Diagnostic, Configurator, Packs, Proof } from './ShowcaseSections';
+import Hotspots from './Hotspots';
 import './plongee.css';
 
 // The 3D film needs WebGL 2; without it the page shows the same content flat
@@ -37,8 +39,6 @@ const TOUR = [
 ];
 
 const SPACERS = { goggles: 110, ready: 150, dive: 110, robot: 170, up: 130, surface: 120, garden: 220 };
-
-const tnd = (value) => `${Number(value).toLocaleString('fr-FR', { maximumFractionDigits: 3 })} TND`;
 
 const Beat = ({ beat }) => {
   if (!beat) return null;
@@ -70,6 +70,12 @@ const PlongeeHome = () => {
   const [tourStep, setTourStep] = useState(-1);
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState(null);
+  const [showcase, setShowcase] = useState(null);
+  const [problem, setProblem] = useState(null);
+  const [openSpot, setOpenSpot] = useState(null);
+  const spots = useRef({});
+  const openSpotRef = useRef(null);
+  openSpotRef.current = openSpot;
 
   const stage = useRef(null);
   const page = useRef(null);
@@ -79,6 +85,7 @@ const PlongeeHome = () => {
   const dark = useRef(isDark);
   dark.current = isDark;
   const layoutMap = useRef({});
+  const [present, setPresent] = useState('');
 
   // Shop content
   useEffect(() => {
@@ -86,6 +93,9 @@ const PlongeeHome = () => {
     axios.get('/api/products/categories')
       .then(response => { if (!cancelled) setCategories(Object.entries(response.data.categories || {})); })
       .catch(() => { if (!cancelled) setCategories([]); });
+    axios.get('/api/showcase')
+      .then(response => { if (!cancelled && response.data?.hotspots) setShowcase(response.data); })
+      .catch(() => { if (!cancelled) setShowcase(null); });
     pickProducts({ limit: 4 })
       .then(list => { if (!cancelled) setProducts(list); })
       .catch(() => { if (!cancelled) setProducts([]); });
@@ -103,9 +113,11 @@ const PlongeeHome = () => {
       }
     }
     layoutMap.current = map;
+    const names = Object.keys(map).join(' ');
+    setPresent(current => (current === names ? current : names));
     sceneRef.current?.measure();
   }, []);
-  const layout = useCallback((name) => layoutMap.current[name] || { top: 0, height: 1 }, []);
+  const layout = useCallback((name) => layoutMap.current[name] || null, []);
 
   useEffect(() => {
     measure();
@@ -132,6 +144,26 @@ const PlongeeHome = () => {
     return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(frame); };
   }, []);
 
+  // "+" markers on the equipment: in the garden when above water, and
+  // around the swimmer (robot, lights, ring) in the pool
+  const within = (name, y) => { const box = layoutMap.current[name]; return box ? (y - box.top) / box.height : -1; };
+  const placeSpots = useCallback(({ project, under, goggles, y }) => {
+    const garden = within('garden', y);
+    const inGarden = !under && garden > -0.05 && garden < 0.95;
+    const inPool = under && goggles > 0.9 && ['robot', 'up'].some(name => { const q = within(name, y); return q > 0.05 && q < 0.72; });
+    for (const [key, el] of Object.entries(spots.current)) {
+      if (!el) continue;
+      const at = project(key);
+      const underwater = key === 'robot' || key === 'lights';
+      const show = Boolean(at?.inView) && ((inGarden && !underwater && at.distance < 14) || (inPool && key !== 'pump' && key !== 'filter' && at.distance < 6.5));
+      el.classList.toggle('is-shown', show);
+      el.classList.toggle('is-left', Boolean(at && at.side > 0.35));
+      el.classList.toggle('is-under', under);
+      if (at) el.style.transform = `translate(${at.x}px, ${at.y}px)`;
+      if (!show && openSpotRef.current === key) setOpenSpot(null);
+    }
+  }, []);
+
   // The 3D film
   useEffect(() => {
     if (!three) return undefined;
@@ -153,7 +185,8 @@ const PlongeeHome = () => {
         audio: audio.current,
         reduceMotion: reduce,
         onFirstFrame: () => { if (alive) { canvas.classList.add('pl-canvas--ready'); setReady(true); } },
-        onBeat: (next) => { if (alive) setBeat(next); }
+        onBeat: (next) => { if (alive) setBeat(next); },
+        afterFrame: placeSpots
       }))
       .then((scene) => {
         if (!alive) { scene.dispose(); return; }
@@ -207,6 +240,20 @@ const PlongeeHome = () => {
   // The dive map is hidden on small screens, and so is its tour step
   const tour = useMemo(() => TOUR.filter(step => step.id !== 'map' || window.innerWidth >= 1000), []);
 
+  // Scrolling away from the diagnostic brings back clear water
+  const problemRef = useRef(null);
+  problemRef.current = problem;
+  useEffect(() => {
+    if (section !== 'diagnostic' && problemRef.current) { setProblem(null); sceneRef.current?.setWater(null, 1.5); }
+  }, [section]);
+  const [preview, setPreview] = useState(null);
+  useEffect(() => { sceneRef.current?.setPreview(section === 'config' ? preview : null); }, [section, preview]);
+  const pickProblem = (key) => { setProblem(key); sceneRef.current?.setWater(key ? PROBLEMS[key].water : null); };
+  const addMany = (lines, event) => {
+    for (const [product, quantity] of lines) addToCart(product, quantity);
+    if (lines.length) flyToCart(event.currentTarget);
+  };
+
   const go = (name) => document.getElementById(sectionId(name))?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
   const toggleSound = () => setSoundOn(audio.current?.toggle() ?? false);
   const add = (product, event) => {
@@ -258,12 +305,21 @@ const PlongeeHome = () => {
             <span className="pl-hud__ok">Eau parfaite</span>
           </aside>
           <div ref={dom.beat} className="pl-beat" aria-live="polite"><Beat beat={beat} /></div>
+          {showcase && (
+            <Hotspots
+              hotspots={showcase.hotspots}
+              register={(key, el) => { spots.current[key] = el; }}
+              open={openSpot}
+              onOpen={setOpenSpot}
+              onAdd={add}
+            />
+          )}
 
           {introOver && (
             <>
               <nav className="pl-map" aria-label="Étapes de la visite">
                 <ol>
-                  {MAP_STEPS.map(([name, label]) => (
+                  {MAP_STEPS.filter(([name]) => present.split(' ').includes(name)).map(([name, label]) => (
                     <li key={name}>
                       <button type="button" onClick={() => go(name)} className={name === activeStep ? 'is-on' : ''} aria-current={name === activeStep ? 'step' : undefined}>
                         <span className="pl-map__dot" /><span className="pl-map__label">{label}</span>
@@ -297,6 +353,11 @@ const PlongeeHome = () => {
             </div>
           )}
 
+          {introOver && whatsapp && (
+            <a className="pl-whatsapp" href={whatsapp} target="_blank" rel="noopener noreferrer" aria-label="Écrire à un technicien sur WhatsApp">
+              <MessageCircle aria-hidden="true" /><span>Un technicien vous répond<small>WhatsApp</small></span>
+            </a>
+          )}
           {impact && <><div className="pl-impact" aria-hidden="true" /><div className="pl-impact pl-impact--two" aria-hidden="true" /></>}
           {!introOver && (
             <Intro ready={ready} short={!introShown || reduce} onImpact={() => endIntro(true)} onSkip={() => endIntro(false)} />
@@ -367,6 +428,15 @@ const PlongeeHome = () => {
 
         {three && ['up', 'surface', 'garden'].map(name => <section key={name} id={sectionId(name)} className="pl-spacer" style={{ height: `${SPACERS[name]}vh` }} aria-hidden="true" />)}
 
+        {showcase && (
+          <>
+            <Diagnostic problems={showcase.problems} active={problem} onPick={pickProblem} onFix={() => sceneRef.current?.setWater(null, 2.4)} onAddAll={(list, event) => addMany(list.map(p => [p, 1]), event)} />
+            <Configurator configurator={showcase.configurator} onChange={setPreview} onAddKit={addMany} dark={isDark} />
+            <Packs packs={showcase.packs} onAdd={add} />
+            <Proof map={showcase.map} reviews={showcase.reviews} partnerBadge={showcase.partnerBadge} />
+          </>
+        )}
+
         <section id={sectionId('installation')} className="pl-under pl-land" aria-labelledby="pl-installation-title">
           <div className="pl-wrap">
             <div className="pl-panel pl-glass">
@@ -383,6 +453,7 @@ const PlongeeHome = () => {
                 <li><Banknote aria-hidden="true" /> Paiement à la livraison</li>
                 <li><Wrench aria-hidden="true" /> Pose par nos techniciens</li>
                 <li><ShieldCheck aria-hidden="true" /> Garantie sur nos produits</li>
+                {showcase?.partnerBadge && <li className="pl-trust__partner">{showcase.partnerBadge}</li>}
               </ul>
               <Link to="/services" className="pl-pill">Demander un devis <ArrowRight aria-hidden="true" /></Link>
             </div>

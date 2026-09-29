@@ -21,6 +21,15 @@ const adminRouter = express.Router();
 adminRouter.use(auth, checkPermission('settings'));
 
 const PHONE = /^\+?[0-9 ().-]{6,25}$/;
+const HOTSPOTS = ['pump', 'filter', 'robot', 'lights', 'ring'];
+const PROBLEMS = ['green', 'cloudy', 'dirty', 'cold'];
+// A chosen product, or empty (null / "") for none
+const productOrNone = (field) => body(field).optional({ values: 'null' })
+  .customSanitizer(value => (value === '' ? null : value))
+  .custom(value => value === null || /^[a-f\d]{24}$/i.test(String(value))).withMessage('Choose a product from the list');
+const productList = (field, max) => body(field).optional()
+  .isArray({ max }).withMessage(`Choose up to ${max} products`)
+  .custom(list => list.every(id => /^[a-f\d]{24}$/i.test(String(id)))).withMessage('Choose products from the list');
 const price = (field) => body(field).optional()
   .isFloat({ min: 0, max: 100000 }).withMessage('Amounts must be between 0 and 100000 TND').toFloat();
 
@@ -60,7 +69,21 @@ adminRouter.put('/', [
   body('invoice.tradeRegister').optional().isString().trim().isLength({ max: 60 }).withMessage('The trade register number is too long (up to 60 characters)'),
   body('invoice.address').optional().isString().trim().isLength({ max: 200 }).withMessage('The legal address is too long (up to 200 characters)'),
   body('invoice.stampDuty').optional().isFloat({ min: 0, max: 100 }).withMessage('The stamp duty must be between 0 and 100 TND').toFloat(),
-  body('lowStockThreshold').optional().isInt({ min: 0, max: 10000 }).withMessage('Low stock must be a whole number from 0').toInt()
+  body('lowStockThreshold').optional().isInt({ min: 0, max: 10000 }).withMessage('Low stock must be a whole number from 0').toInt(),
+  ...HOTSPOTS.map(key => productOrNone(`showcase.hotspots.${key}`)),
+  ...PROBLEMS.map(key => productList(`showcase.problems.${key}`, 6)),
+  body('showcase.sizes').optional().isArray({ max: 4 }).withMessage('Up to 4 pool sizes'),
+  body('showcase.sizes.*.label').isString().trim().isLength({ min: 1, max: 20 }).withMessage('Each pool size needs a name (up to 20 characters)'),
+  productOrNone('showcase.sizes.*.pump'),
+  productOrNone('showcase.sizes.*.filter'),
+  productOrNone('showcase.lights'),
+  productList('showcase.options', 4),
+  body('showcase.packs').optional().isArray({ max: 3 }).withMessage('Up to 3 packs'),
+  body('showcase.packs.*.product').custom(value => /^[a-f\d]{24}$/i.test(String(value))).withMessage('Each pack needs the product it is sold as'),
+  body('showcase.packs.*.season').optional().isString().trim().isLength({ max: 30 }).withMessage('The season label is too long (up to 30 characters)'),
+  productList('showcase.packs.*.includes', 8),
+  body('showcase.showMap').optional().isBoolean().withMessage('Show the map: yes or no').toBoolean(),
+  body('showcase.partnerBadge').optional().isString().trim().isLength({ max: 60 }).withMessage('The partner badge is too long (up to 60 characters)')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);

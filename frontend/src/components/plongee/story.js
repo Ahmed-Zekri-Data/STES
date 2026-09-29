@@ -11,7 +11,7 @@ export const smooth = (a, b, value) => {
 };
 
 // Sections of the page, in order (their ids are `pl-<name>`)
-export const SECTIONS = ['hero', 'goggles', 'ready', 'dive', 'boutique', 'robot', 'produits', 'up', 'surface', 'garden', 'installation', 'contact'];
+export const SECTIONS = ['hero', 'goggles', 'ready', 'dive', 'boutique', 'robot', 'produits', 'up', 'surface', 'garden', 'diagnostic', 'config', 'packs', 'avis', 'installation', 'contact'];
 export const sectionId = (name) => `pl-${name}`;
 
 // Camera: [section, how far into it (0–1, or 'end' for the section's
@@ -31,15 +31,21 @@ export const CAMERA_KEYS = [
   ['surface', 0.85, [5.2, 1.7, 1.8], [-6, -0.2, 0.5]],
   ['garden', 0.12, [8.6, 3.5, 9.8], [-2.5, 0, 2.6]],
   ['garden', 0.72, [-6.9, 2.3, 9.8], [-11.2, 0.4, 5.6]],
+  ['diagnostic', 0.12, [-4.2, 3.6, -6.2], [1.2, -1, 0.2]],
+  ['config', 0.06, [-10.4, 3.3, 5.4], [2.5, -0.4, 0]],
+  ['packs', 0.06, [6.5, 2.5, 3.2], [-30, -4, -5]],
+  ['avis', 0.1, [-1.5, 10, 15], [-1.5, 0, 0]],
   ['installation', 0.1, [-13.5, 6, 1.5], [3, -0.8, -0.5]],
   ['contact', 'end', [10.5, 2.7, 3.2], [-30, -3, -2]]
 ];
 
-// Scroll position (px) of each camera key, from the sections' layout:
-// `layout(name)` gives { top, height } in px
-export const keyOffsets = (layout, viewport) => CAMERA_KEYS.map(([name, at]) => {
-  const { top, height } = layout(name);
-  return at === 'end' ? top + height - viewport : top + at * height;
+// The camera keys of the sections on the page, with their scroll position
+// (px): `layout(name)` gives { top, height } in px, or null when the
+// section is not shown (nothing chosen for it in the admin)
+export const keyOffsets = (layout, viewport) => CAMERA_KEYS.flatMap(([name, at], index) => {
+  const box = layout(name);
+  if (!box) return [];
+  return [{ index, offset: at === 'end' ? box.top + box.height - viewport : box.top + at * box.height }];
 });
 
 // Which two keys the scroll position is between, and how far (eased)
@@ -61,13 +67,15 @@ export const BEATS = [
   { section: 'robot', from: 0.08, to: 0.58, kind: 'low', kicker: 'Robot nettoyeur · en action', title: 'Vous nagez,', accent: 'il nettoie.' },
   { section: 'up', from: 0.1, to: 0.85, kind: 'title', kicker: 'La fenêtre de Snell', title: 'Regardez', accent: 'vers le haut.' },
   { section: 'surface', from: 0.55, to: 1, kind: 'title', kicker: 'De retour à la surface', title: 'Bienvenue', accent: 'au jardin.' },
-  { section: 'garden', from: 0, to: 0.8, kind: 'corner', kicker: 'Installation et entretien', title: 'Votre piscine,', accent: 'votre jardin.' }
+  { section: 'garden', from: 0, to: 0.8, kind: 'corner', kicker: 'Le jardin STES', title: 'Votre piscine,', accent: 'votre jardin.' }
 ];
 
 // The beat showing at scroll position y, with its progress (0–1) and opacity
 export const beatAt = (layout, y) => {
   for (const beat of BEATS) {
-    const { top, height } = layout(beat.section);
+    const box = layout(beat.section);
+    if (!box) continue;
+    const { top, height } = box;
     const t = ((y - top) / height - beat.from) / (beat.to - beat.from);
     if (t >= 0 && t <= 1) return { beat, t, opacity: smooth(0, 0.18, t) * (1 - smooth(0.82, 1, t)) };
   }
@@ -80,7 +88,11 @@ export const HINTS = {
   boutique: 'Bougez la souris : vos mains font des bulles',
   robot: 'Touchez l’eau pour faire des bulles',
   surface: 'De retour à l’air libre',
-  garden: 'Les meilleurs équipements pour votre piscine',
+  garden: 'Cliquez sur les + : l’équipement que vous voyez est en boutique',
+  diagnostic: 'Choisissez un problème : la piscine vous le montre',
+  config: 'Chaque choix change la piscine en direct',
+  packs: 'Tout le nécessaire de la saison, en un seul produit',
+  avis: 'Des piscines STES partout en Tunisie',
   installation: 'Un projet ? Nos techniciens se déplacent',
   contact: ''
 };
@@ -88,7 +100,8 @@ export const HINTS = {
 // Steps of the dive map (clickable)
 export const MAP_STEPS = [
   ['hero', 'Accueil'], ['ready', 'Le plongeon'], ['boutique', 'Boutique'], ['produits', 'Favoris'],
-  ['garden', 'Le jardin'], ['installation', 'Installation'], ['contact', 'Contact']
+  ['garden', 'Le jardin'], ['diagnostic', 'Diagnostic'], ['config', 'Configurateur'], ['packs', 'Packs'],
+  ['avis', 'Avis'], ['installation', 'Installation'], ['contact', 'Contact']
 ];
 
 // Goggle lenses in screen-height units: two lenses on wide screens, one
@@ -112,3 +125,43 @@ export const qualityFor = ({ width, pixelRatio = 1, memory = 8 }) => {
     bubbles: small ? 450 : 900
   };
 };
+
+// Water problems the diagnostic can show: water colour and murk, dirt on
+// the floor; "cold" also shows the temperature rising once fixed
+export const PROBLEMS = {
+  green: { label: 'Eau verte', title: 'Des algues se développent', cause: 'Le chlore est trop bas et la chaleur fait le reste. Avec le bon traitement, l’eau redevient claire en 48 h.', water: { deep: [0.07, 0.3, 0.07], absorb: [0.6, 0.12, 0.55], dirt: 0.25 } },
+  cloudy: { label: 'Eau trouble', title: 'La filtration ne suit plus', cause: 'De fines particules restent en suspension. Un floculant et un média filtrant propre règlent le problème.', water: { deep: [0.36, 0.44, 0.46], absorb: [1.4, 1.2, 1.1], dirt: 0 } },
+  dirty: { label: 'Fond sale', title: 'Feuilles et dépôts au fond', cause: 'Un robot nettoie le fond et les parois tout seul, pendant que vous profitez.', water: { deep: [0.03, 0.24, 0.3], absorb: [0.42, 0.14, 0.11], dirt: 1 } },
+  cold: { label: 'Eau trop froide', title: 'Baignade trop courte', cause: 'Une pompe à chaleur gagne plusieurs degrés et des mois de baignade.', water: { deep: [0, 0.14, 0.34], absorb: [0.4, 0.12, 0.05], dirt: 0 }, temperature: [19, 28] }
+};
+export const CLEAN_WATER = { deep: [0.01, 0.26, 0.38], absorb: [0.34, 0.09, 0.07], dirt: 0 };
+
+// Configurator previews: mosaic colours and LED light colours
+export const TILES = [
+  { name: 'Lagon', a: '#8fd8ea', b: '#5dbcd8', band: '#083f55' },
+  { name: 'Sable', a: '#efe3c6', b: '#dccaa2', band: '#8a7350' },
+  { name: 'Bleu profond', a: '#4f8fc8', b: '#2f6aa6', band: '#0b2748' },
+  { name: 'Anthracite', a: '#7b898f', b: '#5f6c72', band: '#1f2629' }
+];
+export const LEDS = [
+  { name: 'Sans', color: null },
+  { name: 'Blanc', color: [1, 0.95, 0.85] },
+  { name: 'Bleu', color: [0.3, 0.8, 1] },
+  { name: 'Multicolore', color: 'rgb' }
+];
+
+// Governorate capitals (longitude, latitude), for the map of orders
+export const GOVERNORATES = [
+  ['Tunis', 10.18, 36.8], ['Ariana', 10.19, 36.86], ['Ben Arous', 10.23, 36.75], ['Manouba', 10.1, 36.81],
+  ['Nabeul', 10.73, 36.45], ['Zaghouan', 10.14, 36.4], ['Bizerte', 9.87, 37.27], ['Béja', 9.18, 36.73],
+  ['Jendouba', 8.78, 36.5], ['Le Kef', 8.71, 36.17], ['Siliana', 9.37, 36.08], ['Sousse', 10.64, 35.83],
+  ['Monastir', 10.83, 35.78], ['Mahdia', 11.06, 35.5], ['Sfax', 10.76, 34.74], ['Kairouan', 10.1, 35.68],
+  ['Kasserine', 8.84, 35.17], ['Sidi Bouzid', 9.48, 35.04], ['Gabès', 10.1, 33.88], ['Médenine', 10.5, 33.35],
+  ['Tataouine', 10.45, 32.93], ['Gafsa', 8.78, 34.43], ['Tozeur', 8.13, 33.92], ['Kébili', 8.97, 33.7]
+];
+// Spellings vary ("Gabes", "Medenine", "Kef"): compare without accents or "Le"
+const plain = (text) => String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/^le\s+/, '').trim();
+export const governorateOf = (name) => GOVERNORATES.find(([label]) => plain(label) === plain(name)) || null;
+
+// "1 290 TND"
+export const tnd = (value) => `${Number(value || 0).toLocaleString('fr-FR', { maximumFractionDigits: 3 })} TND`;
