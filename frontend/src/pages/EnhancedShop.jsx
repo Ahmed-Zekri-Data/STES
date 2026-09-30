@@ -18,12 +18,14 @@ const EMPTY_FILTERS = {
   search: '',
   brand: '',
   minRating: '',
-  sortBy: 'createdAt',
-  sortOrder: 'desc',
+  // No order chosen: the best matches for a search, otherwise the newest
+  sortBy: '',
+  sortOrder: '',
   page: 1
 };
 
 const SORTS = [
+  ['relevance_desc', 'Pertinence'],
   ['createdAt_desc', 'Plus récents'],
   ['price_asc', 'Prix croissant'],
   ['price_desc', 'Prix décroissant'],
@@ -126,6 +128,11 @@ const EnhancedShop = () => {
   const pickSuggestion = (suggestion) => handleFiltersChange(
     suggestion.type === 'category' ? { category: suggestion.value, subcategory: '', search: '' } : { brand: suggestion.value, search: '' }
   );
+
+  // "Pertinence" only means something for a search
+  const sorts = filters.search ? SORTS : SORTS.slice(1);
+  const chosenSort = filters.sortBy ? `${filters.sortBy}_${filters.sortOrder || 'desc'}` : '';
+  const sortValue = sorts.some(([value]) => value === chosenSort) ? chosenSort : sorts[0][0];
 
   // Removable chips for what is filtering the list
   const activeChips = [
@@ -239,14 +246,14 @@ const EnhancedShop = () => {
               <label className="relative">
                 <span className="sr-only">Trier par</span>
                 <select
-                  value={`${filters.sortBy}_${filters.sortOrder}`}
+                  value={sortValue}
                   onChange={(e) => {
                     const [sortBy, sortOrder] = e.target.value.split('_');
                     handleFiltersChange({ sortBy, sortOrder });
                   }}
                   className="appearance-none rounded-full border-gray-200 bg-none py-2 pe-9 ps-4 text-sm font-medium focus:border-blue-500 focus:ring-blue-500"
                 >
-                  {SORTS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                  {sorts.map(([value, label]) =><option key={value} value={value}>{label}</option>)}
                 </select>
                 <ArrowUpDown className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
               </label>

@@ -6,7 +6,11 @@ const { auth, checkPermission } = require('../middleware/auth');
 const { searchFilters } = require('../config/productCategories');
 const { categoryExists, slugsWithin, categoryNames, shopCategories } = require('../services/categoryService');
 const { findBrand, shopBrands } = require('../services/brandService');
-const { containing, exactly, isImageLocation } = require('../utils/text');
+const { containing, everyWord, plain, exactly, isImageLocation } = require('../utils/text');
+
+// Where the shop's search looks: the name, texts, brand, sub-category and
+// the maker's code of the product or one of its versions
+const SEARCHED = ['name', 'description', 'brand', 'subcategory', 'tags', 'sku', 'variants.sku'];
 
 // Products must belong to a category that exists in the admin
 const existingCategory = async (value) => {
@@ -78,7 +82,7 @@ router.get('/', [
   }),
   query('minRating').optional().isFloat({ min: 0, max: 5 }),
   query('inStock').optional().isBoolean(),
-  query('sortBy').optional().isIn(['price', 'rating', 'name', 'createdAt', 'popularity']),
+  query('sortBy').optional().isIn(['relevance', 'price', 'rating', 'name', 'createdAt', 'popularity', '']),
   query('sortOrder').optional().isIn(['asc', 'desc'])
 ], async (req, res) => {
   try {
@@ -99,9 +103,10 @@ router.get('/', [
       brand,
       minRating,
       inStock,
-      sortBy = 'createdAt',
       sortOrder = 'desc'
     } = req.query;
+    // A search lists the best matches first, unless another order is chosen
+    const sortBy = req.query.sortBy || (search ? 'relevance' : 'createdAt');
 
     // Build filter object
     const filter = {};
@@ -135,15 +140,8 @@ router.get('/', [
 
     // Search filter
     if (search) {
-      filter.$or = [
-        { name: containing(search) },
-        { description: containing(search) },
-        { brand: containing(search) },
-        { tags: { $in: [containing(search)] } },
-        // The maker's code of the product or one of its versions
-        { sku: containing(search) },
-        { 'variants.sku': containing(search) }
-      ];
+      filter.$and = [...(filter.$and || []), ...everyWord(search, SEARCHED)];
+      if (!filter.$and.length) delete filter.$and;
     }
 
     // Build sort object
@@ -173,13 +171,27 @@ router.get('/', [
     // Execute query with pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
+    // By relevance: the products with the most searched words in their name
+    // first ("pompe" lists the pumps before the heaters that mention one)
+    const inName = sortBy === 'relevance' && search
+      ? everyWord(search, ['name']).map(({ $or: [{ name }] }) => ({ $cond: [{ $regexMatch: { input: '$name', regex: name } }, 1, 0] }))
+      : [];
     const [products, total] = await Promise.all([
-      Product.find(filter)
-        .sort(sort)
-        .skip(skip)
-        .limit(parseInt(limit))
-        .select('-reviews')
-        .lean(),
+      inName.length
+        ? Product.aggregate([
+          { $match: filter },
+          { $addFields: { relevance: { $add: inName } } },
+          { $sort: { relevance: -1, createdAt: -1, _id: 1 } },
+          { $skip: skip },
+          { $limit: parseInt(limit) },
+          { $project: { reviews: 0, relevance: 0 } }
+        ])
+        : Product.find(filter)
+          .sort(sort)
+          .skip(skip)
+          .limit(parseInt(limit))
+          .select('-reviews')
+          .lean(),
       Product.countDocuments(filter)
     ]);
 
@@ -241,22 +253,16 @@ router.get('/search/suggestions', [
     const { q } = req.query;
 
     // Get product name suggestions
-    const products = await Product.find({
-      $or: [
-        { name: containing(q) },
-        { brand: containing(q) },
-        { tags: { $in: [containing(q)] } }
-      ],
-      $and: [AVAILABLE]
-    })
+    const products = await Product.find({ $and: [AVAILABLE, ...everyWord(q, ['name', 'brand', 'tags', 'sku', 'variants.sku'])] })
     .select('name brand category')
     .limit(10);
 
     // Get category suggestions
+    const typed = plain(q).toLowerCase().trim();
     const categoryMatches = Object.entries(await shopCategories())
       .filter(([, category]) =>
-        category.name.toLowerCase().includes(q.toLowerCase()) ||
-        (category.nameEn || '').toLowerCase().includes(q.toLowerCase())
+        plain(category.name).toLowerCase().includes(typed) ||
+        plain(category.nameEn).toLowerCase().includes(typed)
       )
       .map(([key, category]) => ({
         type: 'category',
