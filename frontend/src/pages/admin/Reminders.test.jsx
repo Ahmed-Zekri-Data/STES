@@ -15,6 +15,13 @@ const calendar = [
 ];
 const sami = { _id: 's1', firstName: 'Sami', email: 'sami@example.com', phone: '+21698765432', channels: { email: true, whatsapp: true }, volume: 55, source: 'builder', sent: [], createdAt: '2027-03-01T10:00:00Z' };
 
+// Types in a product search box and picks the option
+const choose = (input, text, option) => {
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: text } });
+  fireEvent.mouseDown(screen.getByRole('option', { name: option }));
+};
+
 const renderWith = (element, path) => render(<AdminProvider><MemoryRouter initialEntries={[path]}>{element}</MemoryRouter></AdminProvider>);
 
 describe('admin reminders', () => {
@@ -53,7 +60,7 @@ describe('admin reminders', () => {
 
     fireEvent.change(await screen.findByLabelText('Day', { selector: '#opening-day' }), { target: { value: '15' } });
     fireEvent.change(screen.getAllByLabelText('Month')[0], { target: { value: '3' } });
-    fireEvent.change(document.getElementById('opening-products'), { target: { value: 'p1' } });
+    choose(document.getElementById('opening-products'), 'chlore', /Chlore choc 5 kg/);
     fireEvent.click(screen.getAllByLabelText('Send this reminder')[1]);
     fireEvent.click(screen.getByRole('button', { name: /Save the reminders/ }));
 

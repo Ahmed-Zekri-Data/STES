@@ -71,7 +71,8 @@ export const sanitize = (raw) => {
     y: clamp(num(p.y, 0), 0, garden.height - width)
   };
   const items = (Array.isArray(plan.items) ? plan.items : [])
-    .filter(item => item && /^[a-f\d]{24}$/i.test(String(item.product)) && KINDS[item.kind])
+    // A product, or "<product>:<version code>" (see keyOf in PoolBuilder)
+    .filter(item => item && /^[a-f\d]{24}(:[^:]{1,40})?$/i.test(String(item.product)) && KINDS[item.kind])
     .slice(0, 40)
     .map((item, i) => ({
       id: String(item.id || `i${i}`),

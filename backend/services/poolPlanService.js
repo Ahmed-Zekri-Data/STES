@@ -1,9 +1,8 @@
-const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const { getSettings } = require('./settingsService');
 const { categoryNames } = require('./categoryService');
 const { roundMillimes } = require('../utils/checkout');
-const { OFFER_FIELDS, offerOf } = require('../utils/productOffer');
+const { OFFER_FIELDS, offerFor, isProductRef, parseProductRef, productIdsOf } = require('../utils/productOffer');
 
 // "Construire ma piscine": the pool a visitor draws, its size and water,
 // the equipment placed around it (Admin → Settings → Pool builder) and the
@@ -33,22 +32,26 @@ const TURNOVER_HOURS = 4;
 // The builder's products, with current price and stock (deleted ones skipped)
 const getBuilder = async () => {
   const { builder } = await getSettings();
-  const ids = builder.equipment.map(item => item.product).filter(Boolean);
+  const ids = productIdsOf(builder.equipment.map(item => item.product).filter(Boolean));
   const [products, names] = await Promise.all([
     Product.find({ _id: { $in: ids } }).select(`name price image category inStock stockQuantity ${OFFER_FIELDS}`).lean(),
     categoryNames()
   ]);
   const byId = new Map(products.map(p => [String(p._id), p]));
+  // Each entry is known by its reference (`key`): the same product may be
+  // offered in two versions
   const equipment = builder.equipment
     .map(({ product, kind }) => {
-      const p = byId.get(String(product));
+      const ref = parseProductRef(product);
+      const p = ref && byId.get(ref.id);
       if (!p) return null;
       return {
         kind,
+        key: String(product),
         product: {
           _id: String(p._id), name: p.name, price: p.price, image: p.image, category: p.category,
           categoryName: names.get(p.category) || p.category,
-          ...offerOf(p)
+          ...offerFor(p, ref.sku)
         }
       };
     })
@@ -69,20 +72,29 @@ const pricePlan = async (plan) => {
   const volume = round(surface * depth);
 
   const { builder } = await getSettings();
+  // Items are the equipment's references (a product, or one of its versions)
   const offered = new Set(builder.equipment.map(item => String(item.product)));
   const quantities = new Map();
   for (const item of Array.isArray(plan.items) ? plan.items.slice(0, 40) : []) {
-    const id = String(item?.product || '');
-    if (!mongoose.isValidObjectId(id) || !offered.has(id)) continue;
-    quantities.set(id, Math.min(20, (quantities.get(id) || 0) + Math.max(1, Math.floor(Number(item.quantity) || 1))));
+    const ref = String(item?.product || '');
+    if (!isProductRef(ref) || !offered.has(ref)) continue;
+    quantities.set(ref, Math.min(20, (quantities.get(ref) || 0) + Math.max(1, Math.floor(Number(item.quantity) || 1))));
   }
-  const products = await Product.find({ _id: { $in: [...quantities.keys()] } }).select('name price').lean();
-  const equipment = products.map(p => ({
-    product: p._id,
-    name: p.name,
-    price: p.price,
-    quantity: quantities.get(String(p._id))
-  }));
+  const products = await Product.find({ _id: { $in: productIdsOf([...quantities.keys()]) } }).select('name price variants priceOnRequest').lean();
+  const byId = new Map(products.map(p => [String(p._id), p]));
+  const equipment = [...quantities].map(([key, quantity]) => {
+    const ref = parseProductRef(key);
+    const p = byId.get(ref.id);
+    if (!p) return null;
+    const offer = offerFor(p, ref.sku);
+    return {
+      product: p._id,
+      ...(offer.variant && { variant: offer.variant }),
+      name: offer.name || p.name,
+      price: offer.variant ? offer.price : p.price,
+      quantity
+    };
+  }).filter(Boolean);
   const equipmentTotal = roundMillimes(equipment.reduce((sum, line) => sum + line.price * line.quantity, 0));
 
   const { pricePerM2Min: min, pricePerM2Max: max } = builder;

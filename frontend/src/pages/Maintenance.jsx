@@ -179,7 +179,7 @@ const Maintenance = () => {
                     {reminder.products.length > 0 && (
                       <ul className="mt-4 grid gap-2 sm:grid-cols-2">
                         {reminder.products.map(product => (
-                          <li key={product._id} className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-surface p-2.5">
+                          <li key={product.ref || product._id} className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-surface p-2.5">
                             {product.image && <img src={product.image} alt="" className="h-11 w-11 shrink-0 rounded-xl object-cover" loading="lazy" />}
                             <span className="min-w-0 flex-1">
                               <Link to={`/product/${product._id}`} className="block truncate text-sm font-semibold text-gray-900 hover:underline">{product.name}</Link>

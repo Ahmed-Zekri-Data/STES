@@ -9,6 +9,13 @@ import AdminSettings from './AdminSettings';
 const account = { id: 'a1', username: 'mariem', email: 'mariem@stes.tn', firstName: 'Mariem', lastName: 'Jaziri', fullName: 'Mariem Jaziri', role: 'admin', permissions: ['settings', 'products'] };
 const products = [{ _id: 'p1', name: 'Pompe Victoria Plus 1 CV', price: 690, stockQuantity: 5 }, { _id: 'p2', name: 'Échelle inox', price: 320, stockQuantity: 2 }];
 
+// Types in a product search box and picks the option
+const choose = (input, text, option) => {
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: text } });
+  fireEvent.mouseDown(screen.getByRole('option', { name: option }));
+};
+
 describe('admin pool builder settings', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -25,11 +32,11 @@ describe('admin pool builder settings', () => {
     const put = vi.spyOn(adminApi, 'put').mockImplementation((url, body) => Promise.resolve({ data: { settings: { builder: body.builder } } }));
     render(<AdminProvider><MemoryRouter initialEntries={['/admin/settings?tab=builder']}><AdminSettings /></MemoryRouter></AdminProvider>);
 
-    expect((await screen.findByLabelText('Product')).value).toBe('p1');
+    expect((await screen.findByLabelText('Product')).value).toBe('Pompe Victoria Plus 1 CV');
     fireEvent.click(screen.getByRole('button', { name: /Add a product/ }));
     // A row left empty is not saved
     fireEvent.click(screen.getByRole('button', { name: /Add a product/ }));
-    fireEvent.change(screen.getAllByLabelText('Product')[1], { target: { value: 'p2' } });
+    choose(screen.getAllByLabelText('Product')[1], 'inox', /Échelle inox/);
     fireEvent.change(screen.getAllByLabelText('Drawn as')[1], { target: { value: 'ladder' } });
     fireEvent.change(screen.getByLabelText('From (TND per m²)'), { target: { value: '900' } });
     fireEvent.change(screen.getByLabelText('To (TND per m²)'), { target: { value: '1400' } });

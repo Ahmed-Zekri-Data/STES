@@ -52,6 +52,7 @@ const formSubmissionSchema = new mongoose.Schema({
     equipment: [{
       _id: false,
       product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+      variant: String, // the version's code, when one was chosen
       name: String,
       price: Number,
       quantity: Number
