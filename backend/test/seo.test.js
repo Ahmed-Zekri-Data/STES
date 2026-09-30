@@ -179,6 +179,9 @@ describe('search engines and link previews', () => {
       assert.match(policy, new RegExp(`script-src 'self' 'sha256-${hash.replace(/[+/]/g, '\\$&')}'`));
       const scriptSrc = policy.split('; ').find(directive => directive.startsWith('script-src'));
       assert.ok(!scriptSrc.includes('unsafe-inline'));
+      // The fonts are the site's own: no other server to reach before the text shows
+      assert.ok(policy.includes("font-src 'self' data:;"), policy);
+      assert.ok(!/fonts\.g(oogleapis|static)\.com/.test(policy), policy);
       assert.equal(page.headers['cache-control'], 'no-cache');
 
       const asset = await request(app).get('/assets/index-abc123.js').expect(200);

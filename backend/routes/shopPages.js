@@ -17,7 +17,7 @@ const { pageMeta, renderPage, siteUrl } = require('../services/seoService');
 const inlineScriptHashes = (html) => [...html.matchAll(/<script(?![^>]*\bsrc=)(?![^>]*application\/ld\+json)[^>]*>([\s\S]*?)<\/script>/g)]
   .map(([, code]) => `'sha256-${crypto.createHash('sha256').update(code.replace(/\r\n?/g, '\n')).digest('base64')}'`);
 
-// helmet's default policy is for the API; pages load fonts from Google and
+// helmet's default policy is for the API; pages use the site's own fonts and
 // show product photos from any https address
 const pagePolicy = (html) => [
   "default-src 'self'",
@@ -26,8 +26,8 @@ const pagePolicy = (html) => [
   "frame-ancestors 'self'",
   "form-action 'self'",
   ["script-src 'self'", ...inlineScriptHashes(html)].join(' '),
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com data:",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self' data:",
   "img-src 'self' data: blob: https:",
   "connect-src 'self'",
   "worker-src 'self'",
