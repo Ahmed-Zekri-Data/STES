@@ -74,8 +74,19 @@ const Products = () => {
     featured: false,
     variants: [],
     priceOnRequest: false,
-    backorder: false
+    backorder: false,
+    subcategory: ''
   });
+
+  // Sub-categories already used in each category, suggested in the form
+  const [usedSubcategories, setUsedSubcategories] = useState({});
+  useEffect(() => {
+    api.get('/products/categories')
+      .then(response => setUsedSubcategories(Object.fromEntries(
+        Object.entries(response.data.categories || {}).map(([slug, c]) => [slug, Object.keys(c.subcategories || {})])
+      )))
+      .catch(() => setUsedSubcategories({}));
+  }, []);
 
   // Categories come from Admin → Categories; products store their slug
   const [categoryList, setCategoryList] = useState([]);
@@ -227,6 +238,7 @@ const Products = () => {
         name: formData.name,
         description: formData.description,
         category: formData.category,
+        subcategory: formData.subcategory.trim(),
         brand: formData.brand,
         featured: formData.featured,
         backorder: formData.backorder,
@@ -273,7 +285,8 @@ const Products = () => {
       featured: product.featured || false,
       variants: variantsToForm(product.variants),
       priceOnRequest: Boolean(product.priceOnRequest),
-      backorder: Boolean(product.backorder)
+      backorder: Boolean(product.backorder),
+      subcategory: product.subcategory || ''
     });
     setShowAddModal(true);
   };
@@ -303,7 +316,8 @@ const Products = () => {
       featured: false,
       variants: [],
       priceOnRequest: false,
-      backorder: false
+      backorder: false,
+      subcategory: ''
     });
   };
 
@@ -670,6 +684,27 @@ const Products = () => {
                         No categories yet. Create one in <Link to="/admin/categories" className="text-blue-600 underline">Categories</Link> first.
                       </p>
                     )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="product-subcategory" className="block text-sm font-medium text-gray-700 mb-2">
+                      Sub-category
+                    </label>
+                    <input
+                      id="product-subcategory"
+                      type="text"
+                      name="subcategory"
+                      list="product-subcategories"
+                      value={formData.subcategory}
+                      onChange={handleInputChange}
+                      maxLength={100}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="e.g. Pompes auto-amorçantes"
+                    />
+                    <datalist id="product-subcategories">
+                      {(usedSubcategories[formData.category] || []).map(name => <option key={name} value={name} />)}
+                    </datalist>
+                    <p className="mt-2 text-sm text-gray-500">Shown as a filter in the shop. Pick one already used in this category, or type a new one.</p>
                   </div>
 
                   <div>

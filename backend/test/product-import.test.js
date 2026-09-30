@@ -61,6 +61,7 @@ describe('product import', () => {
 
     const pump = await Product.findOne({ name: 'Victoria Plus Silent' }).lean();
     assert.equal(pump.category, 'pumps-motors');
+    assert.equal(pump.subcategory, 'Self-priming pumps');
     assert.equal(pump.brand, 'AstralPool');
     assert.equal(pump.description, 'Low-noise self-priming pump.');
     assert.deepEqual(pump.variants.map(v => [v.sku, v.label, v.price, v.stockQuantity]), [
@@ -116,7 +117,7 @@ describe('product import', () => {
     report = (await send(french, { dryRun: false, texts: true }).expect(200)).body;
     assert.deepEqual([report.created, report.updated, report.textChanges], [0, 1, 1]);
     pump = await Product.findOne({ 'variants.sku': '65557' }).lean();
-    assert.deepEqual([pump.name, pump.description, pump.tags], ['Pompe Victoria Plus Silent', 'Pompe auto-amorçante silencieuse.', ['Pompes auto-amorçantes']]);
+    assert.deepEqual([pump.name, pump.description, pump.subcategory, pump.tags], ['Pompe Victoria Plus Silent', 'Pompe auto-amorçante silencieuse.', 'Pompes auto-amorçantes', ['Pompes auto-amorçantes']]);
   });
 
   it('lists the rows it cannot read and imports the others', async () => {

@@ -113,6 +113,35 @@ const BrandList = ({ brands = [], selected, onSelect }) => {
   );
 };
 
+// The category's sub-categories, with how many products each has; a long
+// list shows its first ones (and the one chosen) until "Voir plus"
+const SHORT_LIST = 10;
+const SubcategoryFilter = ({ subcategories, counts, selected, onSelect }) => {
+  const [expanded, setExpanded] = useState(false);
+  const entries = Object.entries(subcategories);
+  const shown = expanded || entries.length <= SHORT_LIST + 2
+    ? entries
+    : entries.filter(([key], index) => index < SHORT_LIST || key === selected);
+  return (
+    <Section title="Sous-catégorie">
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => onSelect('')} aria-pressed={!selected} className={chipClass(!selected)}>Toutes</button>
+        {shown.map(([key, name]) => (
+          <button key={key} type="button" onClick={() => onSelect(key)} aria-pressed={selected === key} className={`${chipClass(selected === key)} text-start`}>
+            {name}
+            {counts[key] > 0 && <span className="ms-1.5 text-xs opacity-60 tabular">{counts[key]}</span>}
+          </button>
+        ))}
+      </div>
+      {shown.length < entries.length && (
+        <button type="button" onClick={() => setExpanded(true)} className="mt-3 text-sm font-medium text-blue-600 hover:text-blue-700">
+          Voir les {entries.length} sous-catégories
+        </button>
+      )}
+    </Section>
+  );
+};
+
 const ProductFilters = ({ filters, categories = {}, searchFilters = {}, onFiltersChange, onClearFilters, activeCount = 0 }) => {
   const subcategories = categories[filters.category]?.subcategories;
   const set = (changes) => onFiltersChange(changes);
@@ -129,16 +158,13 @@ const ProductFilters = ({ filters, categories = {}, searchFilters = {}, onFilter
       </div>
 
       {subcategories && Object.keys(subcategories).length > 0 && (
-        <Section title="Sous-catégorie">
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => set({ subcategory: '' })} aria-pressed={!filters.subcategory} className={chipClass(!filters.subcategory)}>Toutes</button>
-            {Object.entries(subcategories).map(([key, name]) => (
-              <button key={key} type="button" onClick={() => set({ subcategory: key })} aria-pressed={filters.subcategory === key} className={chipClass(filters.subcategory === key)}>
-                {name}
-              </button>
-            ))}
-          </div>
-        </Section>
+        <SubcategoryFilter
+          key={filters.category}
+          subcategories={subcategories}
+          counts={categories[filters.category]?.subcategoryCounts || {}}
+          selected={filters.subcategory}
+          onSelect={(subcategory) => set({ subcategory })}
+        />
       )}
 
       <Section title="Prix">

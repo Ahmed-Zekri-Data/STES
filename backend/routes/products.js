@@ -30,9 +30,7 @@ const brandRule = () => body('brand')
   .withMessage('Choose a brand that exists in Admin → Brands')
   .customSanitizer(async (value) => (await findBrand(value))?.name || value);
 
-// What the shop shows: products in stock, and those that can still be
-// ordered (sur commande) or asked about (prix sur demande) without stock
-const AVAILABLE = { $or: [{ inStock: true }, { backorder: true }, { priceOnRequest: true }, { variants: { $elemMatch: { price: null } } }] };
+const { SHOP_AVAILABLE: AVAILABLE } = require('../utils/productOffer');
 
 // Adds the category's name next to its slug, for display
 const withCategoryNames = async (products) => {
@@ -65,7 +63,7 @@ router.get('/', [
   query('category').optional({ values: 'falsy' }).isString().isLength({ max: 100 }),
   query('subcategory').optional().custom(value => {
     if (value === '' || value === null || value === undefined) return true;
-    return value.length >= 1 && value.length <= 50;
+    return value.length >= 1 && value.length <= 100;
   }),
   query('minPrice').optional().isFloat({ min: 0 }),
   query('maxPrice').optional().isFloat({ min: 0 }),
@@ -325,6 +323,7 @@ router.post('/', auth, checkPermission('products'), [
     .isFloat({ min: 0 }).withMessage('Price must be a positive number'),
   body('price').optional().isFloat({ min: 0 }).withMessage('Price must be a positive number'),
   ...variantRules(),
+  body('subcategory').optional({ values: 'null' }).isString().trim().isLength({ max: 100 }).withMessage('The sub-category is up to 100 characters'),
   body('category').isString().custom(existingCategory).withMessage('Choose a category that exists in Admin → Categories'),
   brandRule(),
   body('stockQuantity').optional().isInt({ min: 0 }).withMessage('Stock quantity must be a non-negative integer'),
@@ -356,6 +355,7 @@ router.put('/:id', auth, checkPermission('products'), [
   body('description').optional().trim().isLength({ min: 1, max: 1000 }),
   body('price').optional().isFloat({ min: 0 }),
   ...variantRules(),
+  body('subcategory').optional({ values: 'null' }).isString().trim().isLength({ max: 100 }).withMessage('The sub-category is up to 100 characters'),
   body('category').optional().isString().custom(existingCategory).withMessage('Choose a category that exists in Admin → Categories'),
   brandRule(),
   body('stockQuantity').optional().isInt({ min: 0 }),
