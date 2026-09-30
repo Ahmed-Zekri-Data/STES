@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PoolWorld, stoneTexture, canvasTexture } from './engine';
+import { PoolWorld, stoneTexture, canvasTexture, breathe } from './engine';
 import { buildGarden } from './garden';
 import { CAMERA_KEYS, keyOffsets, segmentAt, beatAt, lensLayout, smooth, CLEAN_WATER, TILES } from './story';
 
@@ -168,6 +168,7 @@ export const createPlongeeScene = async ({ canvas, dom, layout, isDark, quality,
   world.useSkyImage(skyTexture, SKY);
   world.uniforms.uHills.value = 1;
   scene.add(world.group, world.sky(4000));
+  await breathe();
 
   // Travertine terrace around the pool, wider on the sunbathing side
   const deckOut = 1.6, terrace = 3.4;
@@ -184,7 +185,9 @@ export const createPlongeeScene = async ({ canvas, dom, layout, isDark, quality,
   const c = 0.3;
   slab(-HX - deckOut, -HX - c, -HZ - deckOut, HZ + terrace, -0.8, 0.04, deck); slab(HX + c, HX + deckOut, -HZ - deckOut, HZ + terrace, -0.8, 0.04, deck);
   slab(-HX - c, HX + c, HZ + c, HZ + terrace, -0.8, 0.04, deck); slab(-HX - c, HX + c, -HZ - deckOut, -HZ - c, -0.8, 0.04, deck);
+  await breathe();
   const garden = await buildGarden(world, scene, { hx: HX, hz: HZ, deckOut, terrace, quality: quality.grass, models: quality.models });
+  await breathe();
   // Edging stones on top of the walls, and the starting block
   slab(-HX - c, -HX, -HZ - c, HZ + c, 0.035, 0.07, coping); slab(HX, HX + c, -HZ - c, HZ + c, 0.035, 0.07, coping);
   slab(-HX, HX, HZ, HZ + c, 0.035, 0.07, coping); slab(-HX, HX, -HZ - c, -HZ, 0.035, 0.07, coping);
@@ -564,9 +567,16 @@ export const createPlongeeScene = async ({ canvas, dom, layout, isDark, quality,
     frameId = requestAnimationFrame(frame);
   };
 
+  await breathe();
   world.update(0.016, camera, { idleDrops: false });
-  renderer.compile(scene, camera);
-  renderer.compile(postScene, postCam);
+  // The shaders compile in the background before the first frame, instead of
+  // freezing the page for seconds on a phone while that frame waits for them.
+  // The scene is compiled for `target`, where it is drawn: shaders drawing
+  // into a target differ from those drawing on the screen.
+  renderer.setRenderTarget(target);
+  const sceneCompiled = renderer.compileAsync(scene, camera);
+  renderer.setRenderTarget(null);
+  await Promise.all([sceneCompiled, renderer.compileAsync(postScene, postCam)]);
   frameId = requestAnimationFrame(frame);
 
   return {

@@ -740,6 +740,10 @@ export class PoolWorld {
 
 // ------------------------------------------------------------ helpers ---
 
+// Building the scene takes a while on a phone: pausing between its steps
+// lets the page answer taps and scrolling in between
+export const breathe = () => new Promise(resolve => setTimeout(resolve, 0));
+
 export const canvasTexture = (width, height, draw) => {
   const canvas = document.createElement('canvas');
   canvas.width = width; canvas.height = height;

@@ -72,7 +72,8 @@ const ShopLayout = () => (
     </a>
     <Navbar />
     <main id="contenu" className="flex-grow">
-      <Suspense fallback={<PageLoader />}>
+      {/* A full screen, so the footer is not shown then pushed down */}
+      <Suspense fallback={<PageLoader fullScreen />}>
         <PageTransition>
           <Outlet />
         </PageTransition>

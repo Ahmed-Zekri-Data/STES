@@ -176,6 +176,8 @@ html.pl-locked, html.pl-locked body { overflow: hidden; }
 @media (max-width: 600px) {
   .pl-hud b { font-size: 16px; }
   .pl-controls .pl-pill:not(.pl-pill--icon) { font-size: 13px; padding: 0 14px; }
+  /* Above the sound and shop buttons fixed at the bottom of the screen */
+  .pl-hero__cta { bottom: max(5vh, 80px); white-space: nowrap; }
   .pl-panel { padding: 22px; }
 }
 @media (prefers-reduced-motion: reduce) {

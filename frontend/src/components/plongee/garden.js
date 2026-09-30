@@ -2,7 +2,7 @@
 // trees, palms, hedges, a Sidi Bou Said villa, a sun terrace. Everything is
 // lit by the same sun and sky as the water (engine.js).
 import * as THREE from 'three';
-import { LIGHT_COMMON as COMMON, canvasTexture, palmTree } from './engine.js';
+import { LIGHT_COMMON as COMMON, canvasTexture, palmTree, breathe } from './engine.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
@@ -209,6 +209,7 @@ export const buildGarden = async (world, scene, { hx, hz, deckOut, terrace, qual
   const grass = new THREE.Mesh(blade, new THREE.ShaderMaterial({ uniforms: world.uniforms, vertexShader: GRASS_VS, fragmentShader: GRASS_FS, side: THREE.DoubleSide }));
   grass.frustumCulled = false;
   add(grass);
+  await breathe();
 
   // ---- hedges around the garden
   const hedgeMat = foliage(world, { a: '#123a12', b: '#2f6120', cut: 0.3, bump: 0.05, sway: 0.2, leafScale: 22 });
