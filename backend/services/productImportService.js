@@ -174,11 +174,15 @@ const updateProduct = (product, group) => {
 const updateTexts = (product, group) => {
   const [first] = group;
   const description = group.find(r => r.description)?.description;
-  const before = [product.name, product.description, (product.tags || []).join('|')].join('\n');
+  const state = () => [product.name, product.description, product.subcategory, (product.tags || []).join('|')].join('\n');
+  const before = state();
   product.name = cut(first.name, 100);
   if (description) product.description = cut(description, 1000);
-  if (first.subfamily) product.tags = [cut(first.subfamily, 60)];
-  return before !== [product.name, product.description, (product.tags || []).join('|')].join('\n');
+  if (first.subfamily) {
+    product.subcategory = cut(first.subfamily, 100);
+    product.tags = [cut(first.subfamily, 60)];
+  }
+  return before !== state();
 };
 
 const newProduct = (group, { category, brand }) => {
@@ -189,6 +193,7 @@ const newProduct = (group, { category, brand }) => {
     description: cut(description, 1000),
     category,
     brand,
+    subcategory: first.subfamily ? cut(first.subfamily, 100) : undefined,
     tags: first.subfamily ? [cut(first.subfamily, 60)] : [],
     // Stock left empty: sold on order
     backorder: group.some(r => r.stock === null)

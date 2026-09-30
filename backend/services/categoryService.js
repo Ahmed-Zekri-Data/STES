@@ -60,20 +60,44 @@ const categoryNames = async () => {
   return new Map(categories.map(c => [c.slug, c.name]));
 };
 
+// The sub-categories the shop's products use, by category, with how many
+// products each has. Older slugs (e.g. "sand-filters") show their name.
+const usedSubcategories = async () => {
+  const { SHOP_AVAILABLE } = require('../utils/productOffer');
+  const rows = await Product.aggregate([
+    { $match: { $and: [SHOP_AVAILABLE, { subcategory: { $nin: [null, ''] } }] } },
+    { $group: { _id: { category: '$category', subcategory: '$subcategory' }, count: { $sum: 1 } } }
+  ]);
+  const byCategory = new Map();
+  for (const { _id, count } of rows) {
+    if (!byCategory.has(_id.category)) byCategory.set(_id.category, []);
+    byCategory.get(_id.category).push({ value: _id.subcategory, count });
+  }
+  return byCategory;
+};
+
 // What the shop shows: active top-level categories in admin order, keyed by
-// slug, with the subcategories products can be filtered by
+// slug, with the sub-categories its products can be filtered by
 const shopCategories = async () => {
-  const categories = await Category.find({ isActive: true, parentCategory: null })
-    .sort({ sortOrder: 1, name: 1 })
-    .lean();
-  return Object.fromEntries(categories.map(category => [category.slug, {
-    name: category.name,
-    nameEn: category.nameEn,
-    nameAr: category.nameAr,
-    icon: category.icon,
-    description: category.description,
-    subcategories: productCategories[category.slug]?.subcategories || {}
-  }]));
+  const [categories, used] = await Promise.all([
+    Category.find({ isActive: true, parentCategory: null }).sort({ sortOrder: 1, name: 1 }).lean(),
+    usedSubcategories()
+  ]);
+  return Object.fromEntries(categories.map(category => {
+    const names = productCategories[category.slug]?.subcategories || {};
+    const list = (used.get(category.slug) || [])
+      .map(s => ({ ...s, name: names[s.value] || s.value }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+    return [category.slug, {
+      name: category.name,
+      nameEn: category.nameEn,
+      nameAr: category.nameAr,
+      icon: category.icon,
+      description: category.description,
+      subcategories: Object.fromEntries(list.map(s => [s.value, s.name])),
+      subcategoryCounts: Object.fromEntries(list.map(s => [s.value, s.count]))
+    }];
+  }));
 };
 
 module.exports = {

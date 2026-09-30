@@ -68,10 +68,19 @@ describe('categories managed in the admin, used by products and the shop', () =>
       assert.ok(res.body.filters.priceRanges.length > 0);
     });
 
-    it('keeps the filter subcategories of the original categories', async () => {
+    it('offers as filters the sub-categories its products use, with their count', async () => {
       await createCategory(); // slug "filters", as in the original list
-      const res = await request(app).get('/api/products/categories').expect(200);
-      assert.equal(res.body.categories.filters.subcategories['sand-filters'], 'Filtres à sable');
+      await createProduct({ name: 'Vigo Pro', subcategory: 'Filtres à sable stratifiés' });
+      await createProduct({ name: 'Vigo Pro Max', subcategory: 'Filtres à sable stratifiés' });
+      await createProduct({ name: 'Ancien filtre', subcategory: 'sand-filters' }); // an original slug: shown with its name
+      await createProduct({ name: 'Épuisé', subcategory: 'Filtres à cartouche', stockQuantity: 0 }); // not shown in the shop
+
+      const { filters } = (await request(app).get('/api/products/categories').expect(200)).body.categories;
+      assert.deepEqual(filters.subcategories, { 'sand-filters': 'Filtres à sable', 'Filtres à sable stratifiés': 'Filtres à sable stratifiés' });
+      assert.deepEqual(filters.subcategoryCounts, { 'sand-filters': 1, 'Filtres à sable stratifiés': 2 });
+
+      const found = (await request(app).get(`/api/products?category=filters&subcategory=${encodeURIComponent('Filtres à sable stratifiés')}`).expect(200)).body.products;
+      assert.deepEqual(found.map(p => p.name).sort(), ['Vigo Pro', 'Vigo Pro Max']);
     });
 
     it('filters products by category and names their category', async () => {

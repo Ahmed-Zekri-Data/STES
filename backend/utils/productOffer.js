@@ -9,4 +9,8 @@ const offerOf = (product) => ({
   priceOnRequest: Boolean(product.priceOnRequest)
 });
 
-module.exports = { OFFER_FIELDS, offerOf };
+// What the shop shows: products in stock, and those that can still be
+// ordered (sur commande) or asked about (prix sur demande) without stock
+const SHOP_AVAILABLE = { $or: [{ inStock: true }, { backorder: true }, { priceOnRequest: true }, { variants: { $elemMatch: { price: null } } }] };
+
+module.exports = { OFFER_FIELDS, offerOf, SHOP_AVAILABLE };
