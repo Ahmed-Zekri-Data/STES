@@ -7,6 +7,9 @@ describe('reading the products spreadsheet', () => {
   it('finds the columns by their titles, and never takes the UK price for the shop’s', () => {
     expect(findColumns(header)).toEqual({ code: 0, family: 1, category: 2, subfamily: 3, product: 4, model: 5, price: 7, stock: 8, sell: 9, description: 11 });
     expect(findColumns(['Référence', 'Nom', 'Prix'])).toEqual({ code: 0, product: 1, price: 2 });
+    // The translated file: French columns are used, the English ones only kept for reference
+    expect(findColumns(['Code AstralPool', 'Produit', 'Modèle / version', 'Description', 'Produit (anglais)', 'Modèle (anglais)', 'Description (anglais)']))
+      .toEqual({ code: 0, product: 1, model: 2, description: 3 });
   });
 
   it('turns rows into what the server takes, with their row numbers, skipping blank ones', () => {

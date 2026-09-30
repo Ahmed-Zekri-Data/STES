@@ -17,6 +17,7 @@ const Report = ({ report }) => (
       {report.onRequest > 0 && <li>{count(report.onRequest, 'code')} without a price: shown as “Prix sur demande”</li>}
       {report.versionsAdded > 0 && <li>{count(report.versionsAdded, 'new version')} added to existing products</li>}
       {report.priceChanges > 0 && <li>{count(report.priceChanges, 'price')} changed</li>}
+      {report.textChanges > 0 && <li>{count(report.textChanges, 'product')} with new names and texts</li>}
       {report.newCategories.length > 0 && <li>New categories: {report.newCategories.join(', ')}</li>}
     </ul>
     {report.errorCount > 0 && (
@@ -34,6 +35,7 @@ const Report = ({ report }) => (
 // maker's code. First a preview of what will change, then the import.
 const ProductImport = ({ onClose, onImported }) => {
   const [brand, setBrand] = useState('AstralPool');
+  const [texts, setTexts] = useState(false);
   const [file, setFile] = useState(null);
   const [rows, setRows] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -41,7 +43,7 @@ const ProductImport = ({ onClose, onImported }) => {
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
 
-  const check = async (chosen, brandName = brand) => {
+  const check = async (chosen, { brandName = brand, withTexts = texts } = {}) => {
     setError('');
     setPreview(null);
     setBusy('Reading the file…');
@@ -51,7 +53,7 @@ const ProductImport = ({ onClose, onImported }) => {
       setRows(sheet.rows);
       if (!sheet.rows.length) throw new Error('The file has no product rows.');
       setBusy(`Checking ${count(sheet.rows.length, 'row')}…`);
-      const response = await adminApi.post('/admin/products/import', { rows: sheet.rows, brand: brandName, dryRun: true }, { timeout: 120000 });
+      const response = await adminApi.post('/admin/products/import', { rows: sheet.rows, brand: brandName, texts: withTexts, dryRun: true }, { timeout: 120000 });
       setPreview(response.data);
     } catch (err) {
       setError(err.response ? errorMessage(err) : err.message || 'The file could not be read. Save it as an Excel file (.xlsx) and try again.');
@@ -64,7 +66,7 @@ const ProductImport = ({ onClose, onImported }) => {
     setError('');
     setBusy('Importing…');
     try {
-      const response = await adminApi.post('/admin/products/import', { rows, brand, dryRun: false }, { timeout: 300000 });
+      const response = await adminApi.post('/admin/products/import', { rows, brand, texts, dryRun: false }, { timeout: 300000 });
       setResult(response.data);
       onImported();
     } catch (err) {
@@ -93,11 +95,15 @@ const ProductImport = ({ onClose, onImported }) => {
             <>
               <div className="space-y-2 text-sm text-gray-600">
                 <p>An Excel file (.xlsx) with one row per product code, like the AstralPool catalogue file. Rows with the same <b>Produit</b> become one product with versions.</p>
-                <p><b>Prix STES</b> empty: “price on request”. <b>Stock</b> empty: new products are sold on order. Importing the file again updates prices and stock by code, and adds new versions; names, texts and photos you edited stay as they are.</p>
+                <p><b>Prix STES</b> empty: “price on request”. <b>Stock</b> empty: new products are sold on order. Importing the file again updates prices, stock and version names by code, and adds new versions; product names, texts and photos you edited stay as they are.</p>
               </div>
               <label className="block text-sm font-medium text-gray-700">
                 Brand of these products
                 <input className="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2" value={brand} maxLength={60} onChange={(event) => setBrand(event.target.value)} onBlur={() => file && check(file)} />
+              </label>
+              <label className="flex items-start gap-2 text-sm text-gray-700">
+                <input type="checkbox" className="mt-0.5 h-4 w-4 rounded" checked={texts} onChange={(event) => { setTexts(event.target.checked); if (file) check(file, { withTexts: event.target.checked }); }} />
+                <span><span className="font-medium">Also update names and texts</span> of products already in the shop, from the file (for example after translating or correcting them). Photos and categories stay as they are.</span>
               </label>
               <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-sm font-medium ${busy ? 'cursor-wait border-gray-200 text-gray-400' : 'border-gray-300 text-gray-700 hover:border-blue-400'}`}>
                 <Upload className="h-5 w-5" aria-hidden="true" />
