@@ -45,7 +45,6 @@ const wishlistSchema = new mongoose.Schema({
 });
 
 // Indexes
-wishlistSchema.index({ customer: 1 });
 wishlistSchema.index({ 'items.product': 1 });
 
 // Virtual for items count

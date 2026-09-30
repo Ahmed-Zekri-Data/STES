@@ -368,12 +368,10 @@ const orderSchema = new mongoose.Schema({
 });
 
 // Index for efficient queries
-orderSchema.index({ orderNumber: 1 });
 orderSchema.index({ customerId: 1 });
 orderSchema.index({ 'customer.email': 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ createdAt: -1 });
-orderSchema.index({ trackingCode: 1 });
 orderSchema.index({ trackingNumber: 1 });
 orderSchema.index({ estimatedDelivery: 1 });
 

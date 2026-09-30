@@ -72,10 +72,6 @@ const adminSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes
-adminSchema.index({ username: 1 });
-adminSchema.index({ email: 1 });
-
 // Virtual for full name
 adminSchema.virtual('fullName').get(function() {
   return `${this.firstName} ${this.lastName}`;

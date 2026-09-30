@@ -25,23 +25,19 @@ class NotificationService {
     this.subscription = null;
     this.isSupported = 'serviceWorker' in navigator && 'PushManager' in window;
     this.isPermissionGranted = false;
-    
-    this.init();
+
+    this.ready = this.init();
   }
 
   async init() {
-    if (!this.isSupported) {
-      console.warn('Push notifications are not supported in this browser');
-      return;
-    }
+    if (!this.isSupported) return;
 
     try {
-      // Register service worker
-      this.registration = await navigator.serviceWorker.register('/sw.js');
-      console.log('Service Worker registered successfully');
+      // Until the server has push keys (VAPID_* settings) there is nothing to
+      // subscribe to: no service worker is installed for the visitors
+      if (!(await this.getVapidPublicKey())) return;
 
-      // Get VAPID public key
-      await this.getVapidPublicKey();
+      this.registration = await navigator.serviceWorker.register('/sw.js');
 
       // Check current permission status
       this.isPermissionGranted = Notification.permission === 'granted';
@@ -57,7 +53,7 @@ class NotificationService {
   async getVapidPublicKey() {
     try {
       const response = await api.get('/notifications/vapid-public-key');
-      this.vapidPublicKey = response.data.publicKey;
+      this.vapidPublicKey = response.data.publicKey || null;
       return this.vapidPublicKey;
     } catch (error) {
       console.error('Error getting VAPID public key:', error);
@@ -153,6 +149,8 @@ class NotificationService {
   }
 
   async getSubscriptionStatus() {
+    // The account page may ask before the service has started
+    await this.ready;
     if (!this.isSupported || !this.registration) {
       return { supported: false, subscribed: false };
     }
@@ -328,6 +326,9 @@ class NotificationService {
     return permission === 'granted';
   }
 }
+
+// The class for tests; the shop uses the one instance
+export { NotificationService };
 
 // Create singleton instance
 const notificationService = new NotificationService();
