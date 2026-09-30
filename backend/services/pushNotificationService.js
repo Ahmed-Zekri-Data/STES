@@ -132,8 +132,8 @@ class PushNotificationService {
       const payload = JSON.stringify({
         title: notification.title,
         body: notification.body,
-        icon: notification.icon || '/icons/icon-192x192.png',
-        badge: notification.badge || '/icons/badge-72x72.png',
+        icon: notification.icon || '/logo.png',
+        badge: notification.badge,
         image: notification.image,
         data: notification.data || {},
         actions: notification.actions || [],
@@ -243,21 +243,18 @@ class PushNotificationService {
       confirmed: {
         title: '✅ Commande confirmée',
         body: `Votre commande ${order.orderNumber} a été confirmée`,
-        icon: '/icons/order-confirmed.png',
         tag: `order-${order.orderNumber}`,
         data: { orderId: order._id, orderNumber: order.orderNumber, action: 'view_order' }
       },
       processing: {
         title: '📦 Commande en préparation',
         body: `Votre commande ${order.orderNumber} est en cours de préparation`,
-        icon: '/icons/order-processing.png',
         tag: `order-${order.orderNumber}`,
         data: { orderId: order._id, orderNumber: order.orderNumber, action: 'track_order' }
       },
       shipped: {
         title: '🚚 Commande expédiée',
         body: `Votre commande ${order.orderNumber} a été expédiée`,
-        icon: '/icons/order-shipped.png',
         tag: `order-${order.orderNumber}`,
         requireInteraction: true,
         data: { orderId: order._id, orderNumber: order.orderNumber, trackingCode: order.trackingCode, action: 'track_order' }
@@ -265,20 +262,17 @@ class PushNotificationService {
       delivered: {
         title: '🎉 Commande livrée',
         body: `Votre commande ${order.orderNumber} a été livrée avec succès!`,
-        icon: '/icons/order-delivered.png',
         tag: `order-${order.orderNumber}`,
         requireInteraction: true,
         data: { orderId: order._id, orderNumber: order.orderNumber, action: 'rate_order' },
         actions: [
           {
             action: 'rate',
-            title: 'Évaluer',
-            icon: '/icons/star.png'
+            title: 'Évaluer'
           },
           {
             action: 'view',
-            title: 'Voir détails',
-            icon: '/icons/view.png'
+            title: 'Voir détails'
           }
         ]
       }
@@ -287,7 +281,6 @@ class PushNotificationService {
     return statusConfig[status] || {
       title: 'Mise à jour de commande',
       body: `Votre commande ${order.orderNumber} a été mise à jour`,
-      icon: '/icons/notification.png',
       tag: `order-${order.orderNumber}`,
       data: { orderId: order._id, orderNumber: order.orderNumber, action: 'view_order' }
     };
