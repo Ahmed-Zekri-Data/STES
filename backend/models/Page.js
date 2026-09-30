@@ -58,7 +58,6 @@ const pageSchema = new mongoose.Schema({
 });
 
 // Index for better performance
-pageSchema.index({ slug: 1 });
 pageSchema.index({ isActive: 1 });
 
 // Static method to get page by slug

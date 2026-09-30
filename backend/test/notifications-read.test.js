@@ -62,4 +62,17 @@ describe('marking notifications as read', () => {
     assert.deepEqual(await statuses(sami), [['Confirmée', 'read'], ['Expédiée', 'read']]);
     assert.deepEqual(await statuses(leila), [['Livrée', 'sent']]);
   });
+
+  it('gives no push key, without an error, while push notifications are not set up', async () => {
+    const push = require('../services/pushNotificationService');
+    const saved = push.vapidKeys.publicKey;
+    try {
+      push.vapidKeys.publicKey = undefined;
+      assert.deepEqual((await request(app).get('/api/notifications/vapid-public-key').expect(200)).body, { publicKey: null });
+      push.vapidKeys.publicKey = 'BPublicKey';
+      assert.deepEqual((await request(app).get('/api/notifications/vapid-public-key').expect(200)).body, { publicKey: 'BPublicKey' });
+    } finally {
+      push.vapidKeys.publicKey = saved;
+    }
+  });
 });

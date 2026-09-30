@@ -176,7 +176,6 @@ const customerSchema = new mongoose.Schema({
 });
 
 // Indexes
-customerSchema.index({ email: 1 });
 customerSchema.index({ phone: 1 });
 customerSchema.index({ 'addresses.isDefault': 1 });
 

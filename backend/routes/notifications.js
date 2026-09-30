@@ -11,14 +11,9 @@ const { NotificationPreferences, NotificationLog } = require('../models/Notifica
 // GET /api/notifications/vapid-public-key - Get VAPID public key for push notifications
 router.get('/vapid-public-key', (req, res) => {
   try {
-    const publicKey = pushNotificationService.getVapidPublicKey();
-    
-    if (!publicKey) {
-      return res.status(503).json({ 
-        message: 'Push notifications not configured' 
-      });
-    }
-
+    // No key while push notifications are not set up (VAPID_* settings): the
+    // shop then skips them, without an error in every visitor's console
+    const publicKey = pushNotificationService.getVapidPublicKey() || null;
     res.json({ publicKey });
   } catch (error) {
     console.error('Error getting VAPID public key:', error);

@@ -181,7 +181,6 @@ const notificationLogSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
-notificationPreferencesSchema.index({ customer: 1 });
 notificationLogSchema.index({ customer: 1, createdAt: -1 });
 notificationLogSchema.index({ status: 1, createdAt: -1 });
 notificationLogSchema.index({ type: 1, category: 1 });

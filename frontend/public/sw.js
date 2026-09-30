@@ -1,54 +1,10 @@
-// Service Worker for Push Notifications
-const CACHE_NAME = 'stes-notifications-v1';
-const urlsToCache = [
-  '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
-];
+// Service worker for push notifications only. It caches nothing and lets
+// every request go to the network: a cached page would keep visitors on an
+// old build after a deploy.
 
-// Install event
-self.addEventListener('install', (event) => {
-  console.log('Service Worker installing...');
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
-      .catch((error) => {
-        console.error('Cache installation failed:', error);
-      })
-  );
-});
-
-// Activate event
+// Remove the cache left by an earlier version of this worker
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker activating...');
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-  );
-});
-
-// Fetch event (basic caching strategy)
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request);
-      })
-  );
+  event.waitUntil(caches.delete('stes-notifications-v1'));
 });
 
 // Push event - Handle incoming push notifications
@@ -240,7 +196,7 @@ self.addEventListener('message', (event) => {
       self.skipWaiting();
       break;
     case 'GET_VERSION':
-      event.ports[0].postMessage({ version: CACHE_NAME });
+      event.ports[0].postMessage({ version: 'stes-push-v2' });
       break;
     case 'CACHE_NOTIFICATION':
       // Cache notification for offline display
