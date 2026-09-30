@@ -12,6 +12,9 @@ import { useShopSettings, whatsappLink } from '../context/shopSettings';
 import { flyToCart } from '../utils/flyToCart';
 
 const STORAGE = 'stes-pool-plan';
+// Each piece of equipment is known by its reference: the product, or one of
+// its versions (the same pump can be offered in two versions)
+const keyOf = (entry) => entry.key || entry.product._id;
 const tnd = (value) => `${Number(value || 0).toLocaleString('fr-FR', { maximumFractionDigits: 3 })} TND`;
 const num = (value) => Number(value).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
 
@@ -124,8 +127,8 @@ const PoolBuilder = () => {
     try { localStorage.setItem(STORAGE, JSON.stringify(plan)); } catch { /* private mode */ }
   }, [plan]);
 
-  const byId = useMemo(() => Object.fromEntries(offer.equipment.map(e => [e.product._id, e])), [offer]);
-  const names = useMemo(() => Object.fromEntries(offer.equipment.map(e => [e.product._id, e.product.name])), [offer]);
+  const byId = useMemo(() => Object.fromEntries(offer.equipment.map(e => [keyOf(e), e])), [offer]);
+  const names = useMemo(() => Object.fromEntries(offer.equipment.map(e => [keyOf(e), e.product.name])), [offer]);
   // Once the offer is known, drop equipment the shop no longer offers
   useEffect(() => {
     if (loaded) setPlan(current => ({ ...current, items: current.items.filter(item => byId[item.product]) }));
@@ -227,21 +230,23 @@ const PoolBuilder = () => {
             <h2 className="text-lg font-bold text-gray-900">Les équipements</h2>
             {loaded && !offer.equipment.length && <p className="mt-2 text-sm text-gray-600">Nos techniciens vous proposeront l’équipement adapté à votre bassin dans le devis.</p>}
             <ul className="mt-3 space-y-2">
-              {offer.equipment.map(({ kind, product }) => {
+              {offer.equipment.map((entry) => {
+                const { kind, product } = entry;
+                const ref = keyOf(entry);
                 const Icon = KIND_ICONS[kind] || KIND_ICONS.other;
                 return (
                   <li
-                    key={product._id}
+                    key={ref}
                     draggable
-                    onDragStart={(event) => { event.dataTransfer.setData('text/plain', product._id); event.dataTransfer.effectAllowed = 'copy'; }}
+                    onDragStart={(event) => { event.dataTransfer.setData('text/plain', ref); event.dataTransfer.effectAllowed = 'copy'; }}
                     className="flex cursor-grab items-center gap-3 rounded-2xl border border-gray-200 bg-surface p-2.5"
                   >
                     <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700"><Icon className="h-5 w-5" aria-hidden="true" /></span>
                     <span className="min-w-0 flex-1">
-                      <Link to={`/product/${product._id}`} className="block truncate text-sm font-semibold text-gray-900 hover:underline">{product.name}</Link>
-                      <span className="text-xs text-gray-500">{KINDS[kind]?.label} · {tnd(product.price)}</span>
+                      <Link to={`/product/${product._id}`} className="line-clamp-2 text-sm font-semibold text-gray-900 hover:underline" title={product.name}>{product.name}</Link>
+                      <span className="text-xs text-gray-500">{KINDS[kind]?.label} · {product.priceOnRequest ? 'prix sur demande' : tnd(product.price)}</span>
                     </span>
-                    <button type="button" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 text-white hover:bg-blue-700" onClick={() => addItem(product._id)} aria-label={`Placer ${product.name} sur le plan`}>
+                    <button type="button" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 text-white hover:bg-blue-700" onClick={() => addItem(ref)} aria-label={`Placer ${product.name} sur le plan`}>
                       <Plus className="h-4 w-4" aria-hidden="true" />
                     </button>
                   </li>
@@ -261,9 +266,9 @@ const PoolBuilder = () => {
             {lines.length > 0 && (
               <ul className="mt-4 space-y-1.5 text-sm">
                 {lines.map(line => (
-                  <li key={line.product._id} className="flex justify-between gap-3">
-                    <span className="text-gray-700">{line.quantity > 1 && `${line.quantity} × `}{line.product.name}{!line.product.inStock && <span className="text-red-600"> (rupture)</span>}{line.product.choose && <> · <Link to={`/product/${line.product._id}`} className="text-blue-700 underline">choisir la version</Link></>}</span>
-                    <span className="font-semibold tabular text-gray-900">{tnd(line.product.price * line.quantity)}</span>
+                  <li key={keyOf(line)} className="flex justify-between gap-3">
+                    <span className="text-gray-700">{line.quantity > 1 && `${line.quantity} × `}{line.product.name}{!line.product.inStock && <span className="text-red-600"> (rupture)</span>}{line.product.choose && <> · <Link to={`/product/${line.product._id}`} className="text-blue-700 underline">{line.product.priceOnRequest ? 'demander le prix' : 'choisir la version'}</Link></>}</span>
+                    <span className="shrink-0 whitespace-nowrap font-semibold tabular text-gray-900">{line.product.priceOnRequest ? 'sur devis' : tnd(line.product.price * line.quantity)}</span>
                   </li>
                 ))}
                 <li className="flex justify-between border-t border-gray-200 pt-2 font-bold text-gray-900"><span>Équipement</span><span className="tabular">{tnd(equipmentTotal)}</span></li>

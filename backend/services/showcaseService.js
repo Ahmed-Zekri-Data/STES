@@ -9,7 +9,7 @@ const { roundMillimes } = require('../utils/checkout');
 // they save, the orders by governorate and the best reviews. Products that
 // were deleted since they were chosen are left out.
 
-const { OFFER_FIELDS, offerOf } = require('../utils/productOffer');
+const { OFFER_FIELDS, offerFor, parseProductRef, productIdsOf } = require('../utils/productOffer');
 
 const CARD_FIELDS = `name price image category inStock stockQuantity ratingStats ${OFFER_FIELDS}`;
 
@@ -20,7 +20,6 @@ const card = (product, names) => ({
   image: product.image,
   category: product.category,
   categoryName: names.get(product.category) || product.category,
-  ...offerOf(product),
   stockQuantity: product.stockQuantity,
   ratingStats: product.ratingStats
 });
@@ -33,6 +32,7 @@ const idsIn = (showcase) => [
   ...showcase.options,
   ...showcase.packs.flatMap(pack => [pack.product, ...(pack.includes || [])])
 ].filter(Boolean).map(String);
+const productIds = (showcase) => productIdsOf(idsIn(showcase));
 
 const sum = (cards) => roundMillimes(cards.reduce((total, c) => total + c.price, 0));
 
@@ -79,13 +79,18 @@ const bestReviews = async (limit = 3) => {
 const getShowcase = async () => {
   const { showcase } = await getSettings();
   const [products, names, governorates, reviews] = await Promise.all([
-    Product.find({ _id: { $in: idsIn(showcase) } }).select(CARD_FIELDS).lean(),
+    Product.find({ _id: { $in: productIds(showcase) } }).select(CARD_FIELDS).lean(),
     categoryNames(),
     showcase.showMap ? ordersByGovernorate() : null,
     bestReviews()
   ]);
-  const byId = new Map(products.map(p => [String(p._id), card(p, names)]));
-  const one = (id) => (id ? byId.get(String(id)) || null : null);
+  const byId = new Map(products.map(p => [String(p._id), p]));
+  // A product, or the version chosen, as a card
+  const one = (value) => {
+    const ref = parseProductRef(value);
+    const product = ref && byId.get(ref.id);
+    return product ? { ...card(product, names), ...offerFor(product, ref.sku), ref: String(value) } : null;
+  };
   const many = (ids = []) => ids.map(one).filter(Boolean);
 
   const problems = Object.fromEntries(Object.entries(showcase.problems).map(([key, ids]) => {

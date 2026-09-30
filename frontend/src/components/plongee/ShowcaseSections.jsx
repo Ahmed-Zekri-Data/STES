@@ -11,7 +11,7 @@ const PROBLEM_ICONS = { green: Leaf, cloudy: Waves, dirty: Sprout, cold: Thermom
 const ProductLine = ({ product, quantity = 1 }) => (
   <li>
     <Link to={`/product/${product._id}`}>{quantity > 1 ? `${quantity} × ` : ''}{product.name}</Link>
-    <b>{product.inStock ? tnd(product.price * quantity) : 'Rupture'}</b>
+    <b>{product.priceOnRequest ? 'Sur devis' : product.inStock ? tnd(product.price * quantity) : 'Rupture'}</b>
   </li>
 );
 
@@ -62,7 +62,7 @@ export const Diagnostic = ({ problems, active, onPick, onFix, onAddAll }) => {
             <div className="pl-solution" aria-live="polite">
               <h3>{problem.title}</h3>
               <p>{problem.cause}</p>
-              <ul className="pl-lines">{solution.products.map(product => <ProductLine key={product._id} product={product} />)}</ul>
+              <ul className="pl-lines">{solution.products.map(product => <ProductLine key={product.ref || product._id} product={product} />)}</ul>
               <div className="pl-total"><span>Le nécessaire</span><b>{tnd(solution.total)}</b></div>
               <div className="pl-row">
                 <button type="button" className="pl-pill pl-pill--ghost" onClick={fix} disabled={fixed}>{fixed ? <><Check aria-hidden="true" /> Eau parfaite</> : 'Voir le résultat'}</button>
@@ -95,7 +95,7 @@ export const Configurator = ({ configurator, onChange, onAddKit, dark }) => {
     current.pump && [current.pump, 1],
     current.filter && [current.filter, 1],
     lights && led > 0 && [lights, 2],
-    ...options.filter(o => chosen.includes(o._id)).map(o => [o, 1])
+    ...options.filter(o => chosen.includes(o.ref || o._id)).map(o => [o, 1])
   ].filter(Boolean);
   const total = lines.reduce((sum, [product, quantity]) => sum + product.price * quantity, 0);
 
@@ -132,15 +132,15 @@ export const Configurator = ({ configurator, onChange, onAddKit, dark }) => {
             <fieldset className="pl-group">
               <legend className="pl-mono">Options</legend>
               {options.map(option => (
-                <label key={option._id} className="pl-check">
-                  <input type="checkbox" checked={chosen.includes(option._id)} onChange={(event) => setChosen(event.target.checked ? [...chosen, option._id] : chosen.filter(id => id !== option._id))} />
-                  {option.name} <small>{tnd(option.price)}</small>
+                <label key={option.ref || option._id} className="pl-check">
+                  <input type="checkbox" checked={chosen.includes(option.ref || option._id)} onChange={(event) => setChosen(event.target.checked ? [...chosen, option.ref || option._id] : chosen.filter(id => id !== (option.ref || option._id)))} />
+                  {option.name} <small>{option.priceOnRequest ? 'sur devis' : tnd(option.price)}</small>
                 </label>
               ))}
             </fieldset>
           )}
           <ul className="pl-lines">
-            {lines.map(([product, quantity]) => <ProductLine key={product._id} product={product} quantity={quantity} />)}
+            {lines.map(([product, quantity]) => <ProductLine key={product.ref || product._id} product={product} quantity={quantity} />)}
             <li className="pl-lines__muted"><span>Mosaïque {TILES[tile].name} et pose</span><b>sur devis</b></li>
           </ul>
           <div className="pl-total"><span>Votre kit</span><b>{tnd(total)}</b></div>
@@ -164,13 +164,13 @@ export const Packs = ({ packs, onAdd }) => {
         <h2 id="pl-packs-title" className="pl-title">Tout ce qu’il faut, <em>au bon moment.</em></h2>
         <div className="pl-packs">
           {packs.map(({ product, season, includes, worth, saving }) => (
-            <article key={product._id} className="pl-card pl-glass pl-pack">
+            <article key={product.ref || product._id} className="pl-card pl-glass pl-pack">
               {season && <span className="pl-card__tag">{season}</span>}
               <h3><Link to={`/product/${product._id}`}>{product.name}</Link></h3>
-              {includes.length > 0 && <ul>{includes.map(item => <li key={item._id}>{item.name}</li>)}</ul>}
+              {includes.length > 0 && <ul>{includes.map(item => <li key={item.ref || item._id}>{item.name}</li>)}</ul>}
               {saving > 0 && <span className="pl-pack__save">Économisez {tnd(saving)}</span>}
               <div className="pl-product__row">
-                <span className="pl-price">{tnd(product.price)}{saving > 0 && <s>{tnd(worth)}</s>}</span>
+                <span className="pl-price">{product.priceOnRequest ? 'Sur devis' : tnd(product.price)}{saving > 0 && <s>{tnd(worth)}</s>}</span>
                 <button type="button" className="pl-pill" disabled={!product.inStock} onClick={(event) => onAdd(product, event)}>{product.choose ? 'Choisir' : product.inStock ? 'Ajouter' : 'Rupture'}</button>
               </div>
             </article>

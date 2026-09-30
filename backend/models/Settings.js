@@ -1,5 +1,9 @@
 const mongoose = require('mongoose');
 
+// A product chosen in these settings: its id, or "<id>:<version code>" for
+// one of its versions (see utils/productOffer.js). Older ones are ObjectIds.
+const ProductRef = { type: String };
+
 // Shop settings changed in Admin → Settings. There is one document (key
 // "shop"); missing values fall back to the defaults in settingsService.
 const settingsSchema = new mongoose.Schema({
@@ -35,34 +39,34 @@ const settingsSchema = new mongoose.Schema({
   showcase: {
     // The 3D objects visitors can buy
     hotspots: {
-      pump: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
-      filter: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
-      robot: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
-      lights: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
-      ring: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' }
+      pump: ProductRef,
+      filter: ProductRef,
+      robot: ProductRef,
+      lights: ProductRef,
+      ring: ProductRef
     },
     // "My water has a problem": the products that solve each one
     problems: {
-      green: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
-      cloudy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
-      dirty: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
-      cold: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }]
+      green: [ProductRef],
+      cloudy: [ProductRef],
+      dirty: [ProductRef],
+      cold: [ProductRef]
     },
     // Configurator: pump and filter for each pool size, the LED light, options
     sizes: [{
       _id: false,
       label: String,
-      pump: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
-      filter: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' }
+      pump: ProductRef,
+      filter: ProductRef
     }],
-    lights: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
-    options: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+    lights: ProductRef,
+    options: [ProductRef],
     // Seasonal packs: a product sold as a pack, and what it contains
     packs: [{
       _id: false,
-      product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+      product: ProductRef,
       season: String,
-      includes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }]
+      includes: [ProductRef]
     }],
     showMap: Boolean, // the map of orders by governorate
     partnerBadge: String // e.g. "Partenaire agréé AstralPool"; empty hides it
@@ -72,7 +76,7 @@ const settingsSchema = new mongoose.Schema({
     // The products visitors can place around their pool, with how each is drawn
     equipment: [{
       _id: false,
-      product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+      product: ProductRef,
       kind: String // pump, filter, heat, light, robot, ladder, shower, cover, other
     }],
     // Construction price per m² of water (TND); 0 hides the estimate
@@ -89,7 +93,7 @@ const settingsSchema = new mongoose.Schema({
       day: Number, // 1–28
       title: String,
       message: String,
-      products: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+      products: [ProductRef],
       active: Boolean
     }]
   }

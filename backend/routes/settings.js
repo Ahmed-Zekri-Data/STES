@@ -6,6 +6,7 @@ const { isValidRib, formatRib } = require('../utils/rib');
 const { isValidTaxId, normalizeTaxId } = require('../utils/taxId');
 const { KINDS } = require('../services/poolPlanService');
 const { REMINDER_KEYS } = require('../config/maintenanceCalendar');
+const { isProductRef } = require('../utils/productOffer');
 
 // GET /api/settings - Contact details and delivery prices for the shop pages
 const publicRouter = express.Router();
@@ -28,10 +29,10 @@ const PROBLEMS = ['green', 'cloudy', 'dirty', 'cold'];
 // A chosen product, or empty (null / "") for none
 const productOrNone = (field) => body(field).optional({ values: 'null' })
   .customSanitizer(value => (value === '' ? null : value))
-  .custom(value => value === null || /^[a-f\d]{24}$/i.test(String(value))).withMessage('Choose a product from the list');
+  .custom(value => value === null || isProductRef(value)).withMessage('Choose a product from the list');
 const productList = (field, max) => body(field).optional()
   .isArray({ max }).withMessage(`Choose up to ${max} products`)
-  .custom(list => list.every(id => /^[a-f\d]{24}$/i.test(String(id)))).withMessage('Choose products from the list');
+  .custom(list => list.every(isProductRef)).withMessage('Choose products from the list');
 const price = (field) => body(field).optional()
   .isFloat({ min: 0, max: 100000 }).withMessage('Amounts must be between 0 and 100000 TND').toFloat();
 
@@ -81,13 +82,13 @@ adminRouter.put('/', [
   productOrNone('showcase.lights'),
   productList('showcase.options', 4),
   body('showcase.packs').optional().isArray({ max: 3 }).withMessage('Up to 3 packs'),
-  body('showcase.packs.*.product').custom(value => /^[a-f\d]{24}$/i.test(String(value))).withMessage('Each pack needs the product it is sold as'),
+  body('showcase.packs.*.product').custom(isProductRef).withMessage('Each pack needs the product it is sold as'),
   body('showcase.packs.*.season').optional().isString().trim().isLength({ max: 30 }).withMessage('The season label is too long (up to 30 characters)'),
   productList('showcase.packs.*.includes', 8),
   body('showcase.showMap').optional().isBoolean().withMessage('Show the map: yes or no').toBoolean(),
   body('showcase.partnerBadge').optional().isString().trim().isLength({ max: 60 }).withMessage('The partner badge is too long (up to 60 characters)'),
   body('builder.equipment').optional().isArray({ max: 12 }).withMessage('Up to 12 products in the pool builder'),
-  body('builder.equipment.*.product').custom(value => /^[a-f\d]{24}$/i.test(String(value))).withMessage('Choose a product from the list'),
+  body('builder.equipment.*.product').custom(isProductRef).withMessage('Choose a product from the list'),
   body('builder.equipment.*.kind').isIn(KINDS).withMessage('Choose how the product is drawn'),
   body('builder.pricePerM2Min').optional().isFloat({ min: 0, max: 100000 }).withMessage('Prices per m² must be between 0 and 100000 TND').toFloat(),
   body('builder.pricePerM2Max').optional().isFloat({ min: 0, max: 100000 }).withMessage('Prices per m² must be between 0 and 100000 TND').toFloat(),

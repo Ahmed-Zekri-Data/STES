@@ -3,7 +3,7 @@ const Product = require('../models/Product');
 const MaintenanceSubscriber = require('../models/MaintenanceSubscriber');
 const { getSettings } = require('./settingsService');
 const emailNotificationService = require('./emailNotificationService');
-const { OFFER_FIELDS, offerOf } = require('../utils/productOffer');
+const { OFFER_FIELDS, offerFor, parseProductRef, productIdsOf } = require('../utils/productOffer');
 
 // Pool care reminders: who gets which reminder and when. A reminder is due
 // from its date for WINDOW_DAYS days, so people who sign up just after it,
@@ -75,18 +75,19 @@ const whatsappNumber = (phone) => {
 
 // The products of each reminder, with their current price; deleted ones are left out
 const productCards = async (calendar) => {
-  const ids = [...new Set(calendar.flatMap(r => (r.products || []).map(String)))];
+  const ids = productIdsOf(calendar.flatMap(r => (r.products || []).map(String)));
   const products = ids.length
     ? await Product.find({ _id: { $in: ids } }).select(`name price image inStock stockQuantity ${OFFER_FIELDS}`).lean()
     : [];
-  const byId = new Map(products.map(p => [String(p._id), {
-    _id: String(p._id),
-    name: p.name,
-    price: p.price,
-    image: p.image,
-    ...offerOf(p)
-  }]));
-  return (reminder) => (reminder.products || []).map(id => byId.get(String(id))).filter(Boolean);
+  const byId = new Map(products.map(p => [String(p._id), p]));
+  // A product, or the version chosen
+  const cardOf = (value) => {
+    const ref = parseProductRef(value);
+    const p = ref && byId.get(ref.id);
+    if (!p) return null;
+    return { _id: String(p._id), name: p.name, price: p.price, image: p.image, ...offerFor(p, ref.sku), ref: String(value) };
+  };
+  return (reminder) => (reminder.products || []).map(cardOf).filter(Boolean);
 };
 
 // The year's reminders shown on /entretien

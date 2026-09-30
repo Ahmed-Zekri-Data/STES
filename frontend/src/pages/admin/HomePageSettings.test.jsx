@@ -21,6 +21,13 @@ const saved = {
   sizes: [], lights: null, options: [], packs: [], showMap: true, partnerBadge: ''
 };
 
+// Types in a product search box and picks the option
+const choose = (input, text, option) => {
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: text } });
+  fireEvent.mouseDown(screen.getByRole('option', { name: option }));
+};
+
 const renderPage = () => render(
   <AdminProvider>
     <MemoryRouter initialEntries={['/admin/settings?tab=home']}>
@@ -45,16 +52,16 @@ describe('admin home page settings', () => {
     const put = vi.spyOn(adminApi, 'put').mockImplementation((url, body) => Promise.resolve({ data: { settings: { showcase: body.showcase } } }));
     renderPage();
 
-    expect((await screen.findByLabelText('Pump')).value).toBe('p1');
+    expect((await screen.findByLabelText('Pump')).value).toBe('Pompe Victoria Plus 1 CV');
     const green = screen.getByText('Green water').closest('div');
-    expect(within(green).getByText('Chlore choc 5 kg · 65 TND (out of stock)')).toBeTruthy();
+    expect(within(green).getByText('65 TND · out of stock')).toBeTruthy();
 
-    fireEvent.change(screen.getByLabelText('Pump'), { target: { value: '' } });
-    fireEvent.change(screen.getByLabelText('Cloudy water'), { target: { value: 'p2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Pompe Victoria Plus 1 CV' }));
+    choose(screen.getByLabelText('Cloudy water'), 'chlore', /Chlore choc 5 kg/);
     fireEvent.click(within(green).getByRole('button', { name: 'Remove Chlore choc 5 kg' }));
     fireEvent.click(screen.getByRole('button', { name: /Add a pack/ }));
-    fireEvent.change(screen.getByLabelText('Pack (the product sold)'), { target: { value: 'p3' } });
-    fireEvent.change(screen.getByLabelText('What it contains (up to 8)'), { target: { value: 'p2' } });
+    choose(screen.getByLabelText('Pack (the product sold)'), 'ouverture', /Pack ouverture de saison/);
+    choose(screen.getByLabelText('What it contains (up to 8)'), 'choc', /Chlore choc 5 kg/);
     fireEvent.change(screen.getByLabelText('Partner badge'), { target: { value: 'Partenaire agréé AstralPool' } });
     fireEvent.click(screen.getByRole('button', { name: /Save the home page/ }));
 
