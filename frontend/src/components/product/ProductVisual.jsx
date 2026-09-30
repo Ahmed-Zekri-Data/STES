@@ -18,7 +18,8 @@ const ProductVisual = ({ product, className = '', iconClassName = 'h-1/3 w-1/3',
         loading={eager ? 'eager' : 'lazy'}
         decoding="async"
         onError={() => setBroken(true)}
-        className={`h-full w-full object-cover ${className}`}
+        // Equipment photos are shown whole, on white, as in the makers' catalogues
+        className={`h-full w-full bg-white object-contain p-[8%] ${className}`}
       />
     );
   }

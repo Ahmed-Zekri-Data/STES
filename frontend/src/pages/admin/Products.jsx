@@ -15,7 +15,8 @@ import {
   Save,
   X,
   Upload,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ImagePlus
 } from 'lucide-react';
 import api from '../../utils/adminApi';
 import AnimatedButton from '../../components/AnimatedButton';
@@ -23,6 +24,7 @@ import { showPlaceholderOnError } from '../../utils/images';
 import VariantsEditor from '../../components/admin/VariantsEditor';
 import { variantsToForm, variantsFromForm } from '../../components/admin/variantRows';
 import ProductImport from '../../components/admin/ProductImport';
+import ProductPhotosImport from '../../components/admin/ProductPhotosImport';
 
 const PAGE_SIZE = 24;
 
@@ -59,6 +61,7 @@ const Products = () => {
   const [lowStockThreshold, setLowStockThreshold] = useState(5);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showPhotos, setShowPhotos] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -359,6 +362,14 @@ const Products = () => {
             <FileSpreadsheet className="w-5 h-5 text-green-600" />
             Import from Excel
           </button>
+          <button
+            type="button"
+            onClick={() => setShowPhotos(true)}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-surface px-4 py-3 font-medium text-gray-700 hover:bg-gray-50"
+          >
+            <ImagePlus className="w-5 h-5 text-blue-600" />
+            Import photos
+          </button>
           <AnimatedButton
             onClick={() => setShowAddModal(true)}
             className="flex items-center space-x-2"
@@ -370,6 +381,7 @@ const Products = () => {
       </motion.div>
 
       {showImport && <ProductImport onClose={() => setShowImport(false)} onImported={fetchProducts} />}
+      {showPhotos && <ProductPhotosImport onClose={() => setShowPhotos(false)} onImported={fetchProducts} />}
 
       {/* Filters */}
       <motion.div

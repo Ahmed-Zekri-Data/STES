@@ -20,3 +20,8 @@ logs/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Maker catalogues (PDF) and files made from them (tools/catalogue)
+*.pdf
+tools/catalogue/*.json
+tools/catalogue/photos/
