@@ -693,6 +693,67 @@ router.put('/:id/status', ordersAdmin, [
   }
 });
 
+// PUT /api/orders/:id/payment - Record that the money of a cash on delivery
+// or bank transfer order came in, or undo it after a mistake. Online
+// payments are confirmed by their gateway. Each change is kept in the
+// order's internal notes, with the admin who made it.
+const MANUAL_PAYMENTS = ['cash_on_delivery', 'bank_transfer'];
+router.put('/:id/payment', ordersAdmin, [
+  body('received').isBoolean().withMessage('Say whether the payment was received').toBoolean(),
+  body('note').optional().trim().isLength({ max: 200 }).withMessage('The note is up to 200 characters')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: errors.array()[0].msg, errors: errors.array() });
+    }
+    const { received, note } = req.body;
+
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    if (!MANUAL_PAYMENTS.includes(order.paymentMethod)) {
+      return res.status(400).json({ message: 'Online payments are confirmed by the payment gateway' });
+    }
+    if (received && order.status === 'cancelled') {
+      return res.status(400).json({ message: 'This order is cancelled' });
+    }
+
+    const paid = order.paymentStatus === 'paid';
+    if (received === paid) {
+      await order.populate('items.product', '-reviews');
+      return res.json({ order, message: paid ? 'Already recorded as paid' : 'Not recorded as paid' });
+    }
+
+    order.paymentStatus = received ? 'paid' : 'pending';
+    order.paidAt = received ? new Date() : undefined;
+    order.internalNotes.push({
+      note: [received ? 'Payment received' : 'Payment record undone', note].filter(Boolean).join(': '),
+      addedBy: req.admin?.username || 'admin',
+      isPrivate: true,
+      timestamp: new Date()
+    });
+    await order.save();
+
+    // A bank transfer customer is told their money arrived (in the
+    // background: the admin does not wait for the email)
+    if (received && order.paymentMethod === 'bank_transfer') {
+      require('../services/emailNotificationService').sendPaymentReceived(order)
+        .catch(error => console.error(`Payment email failed for order ${order.orderNumber}:`, error));
+    }
+
+    await order.populate('items.product', '-reviews');
+    res.json({ order, message: received ? 'Payment recorded' : 'Payment record undone' });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid order ID' });
+    }
+    console.error('Error recording a payment:', error);
+    res.status(500).json({ message: 'Error recording the payment' });
+  }
+});
+
 // POST /api/orders/:id/notes - Add internal note to order (Admin only)
 router.post('/:id/notes', ordersAdmin, [
   body('note').trim().isLength({ min: 1, max: 500 }).withMessage('Note is required and cannot exceed 500 characters'),

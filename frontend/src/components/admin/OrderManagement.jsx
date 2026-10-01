@@ -49,6 +49,7 @@ const InvoiceDownload = ({ order }) => {
   );
 };
 import LoadingSpinner from '../LoadingSpinner';
+import OrderPayment, { PaymentBadge } from './OrderPayment';
 
 // Status display helpers, shared by the order list and the order details modal
 const getStatusIcon = (status) => {
@@ -161,6 +162,12 @@ const OrderManagement = () => {
 
     setShowStatusModal(false);
     setSelectedOrder(null);
+  };
+
+  // A payment recorded in the details: the list and the open order follow
+  const handlePaymentChange = (updated) => {
+    setOrders(prev => prev.map(order => (order._id === updated._id ? updated : order)));
+    setSelectedOrder(updated);
   };
 
   const filteredOrders = orders.filter(order => {
@@ -311,7 +318,8 @@ const OrderManagement = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {order.totalAmount} TND
+                    <div>{order.totalAmount} TND</div>
+                    <div className="mt-1"><PaymentBadge order={order} /></div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                     <button
@@ -371,6 +379,7 @@ const OrderManagement = () => {
             order={selectedOrder} 
             onClose={() => setSelectedOrder(null)}
             onEditStatus={() => setShowStatusModal(true)}
+            onPaymentChange={handlePaymentChange}
           />
         )}
       </AnimatePresence>
@@ -407,7 +416,7 @@ const OrderManagement = () => {
 };
 
 // Order Details Modal Component
-const OrderDetailsModal = ({ order, onClose, onEditStatus }) => {
+const OrderDetailsModal = ({ order, onClose, onEditStatus, onPaymentChange }) => {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -509,6 +518,8 @@ const OrderDetailsModal = ({ order, onClose, onEditStatus }) => {
               </div>
             </div>
           </div>
+
+          <OrderPayment order={order} onChange={onPaymentChange} />
 
           {/* Items */}
           <div className="mb-6">

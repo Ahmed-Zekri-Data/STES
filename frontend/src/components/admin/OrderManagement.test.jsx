@@ -63,3 +63,57 @@ describe('admin order status dialog', () => {
     expect(screen.getByLabelText('Nouveau statut')).toBeTruthy();
   });
 });
+
+describe('admin order payment', () => {
+  const transfer = { ...order, paymentMethod: 'bank_transfer' };
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(adminApi, 'get').mockResolvedValue({
+      data: { orders: [transfer], pagination: { currentPage: 1, totalPages: 1, totalOrders: 1 } }
+    });
+  });
+
+  const openOrder = async () => {
+    fireEvent.click(await screen.findByRole('button', { name: 'Voir la commande ORD-1' }));
+  };
+
+  it('records a bank transfer as received, with a note, and shows it in the list', async () => {
+    const put = vi.spyOn(adminApi, 'put')
+      .mockResolvedValueOnce({ data: { order: { ...transfer, paymentStatus: 'paid', paidAt: '2026-10-01T09:00:00Z' } } })
+      .mockResolvedValueOnce({ data: { order: { ...transfer, paymentStatus: 'pending', paidAt: undefined } } });
+    renderPage();
+    expect((await screen.findAllByText('Non payé')).length).toBe(1);
+    await openOrder();
+    expect(screen.getByText('Virement bancaire')).toBeTruthy();
+    expect(screen.getByText(/Le client reçoit un email de confirmation/)).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText(/Remarque/), { target: { value: 'Réf. 4471' } });
+    fireEvent.click(screen.getByRole('button', { name: /Marquer comme payé/ }));
+    await waitFor(() => expect(put).toHaveBeenCalledWith('/orders/o1/payment', { received: true, note: 'Réf. 4471' }));
+    expect(await screen.findByText('Payé le 1 octobre 2026')).toBeTruthy();
+    expect(screen.getAllByText('Payé').length).toBe(1);
+
+    // Undoing asks first
+    fireEvent.click(screen.getByRole('button', { name: /Annuler l’enregistrement du paiement/ }));
+    expect(put).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Oui, annuler' }));
+    await waitFor(() => expect(put).toHaveBeenLastCalledWith('/orders/o1/payment', { received: false }));
+    expect(await screen.findByRole('button', { name: /Marquer comme payé/ })).toBeTruthy();
+  });
+
+  it('says why when recording fails', async () => {
+    vi.spyOn(adminApi, 'put').mockRejectedValue({ response: { data: { message: 'This order is cancelled' } } });
+    renderPage();
+    await openOrder();
+    fireEvent.click(screen.getByRole('button', { name: /Marquer comme payé/ }));
+    expect((await screen.findByRole('alert')).textContent).toMatch('This order is cancelled');
+  });
+
+  it('has no button for an online payment', async () => {
+    adminApi.get.mockResolvedValue({ data: { orders: [{ ...order, paymentMethod: 'konnect' }], pagination: { currentPage: 1, totalPages: 1, totalOrders: 1 } } });
+    renderPage();
+    await openOrder();
+    expect(screen.getByText(/confirmé automatiquement par la passerelle/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Marquer comme payé/ })).toBeNull();
+  });
+});

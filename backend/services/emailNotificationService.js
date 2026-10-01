@@ -516,6 +516,79 @@ class EmailNotificationService {
     }
   }
 
+  // A bank transfer has arrived (recorded by an admin). Never throws.
+  async sendPaymentReceived(order) {
+    const flags = order.emailNotifications || {};
+    if (flags.enabled === false || flags.statusUpdates === false) {
+      return { success: false, reason: 'notifications_disabled' };
+    }
+    if (!this.isConfigured()) {
+      console.log(`Email not configured (EMAIL_USER / EMAIL_PASS): no payment email sent for order ${order.orderNumber}`);
+      return { success: false, reason: 'email_not_configured' };
+    }
+    try {
+      const content = this.generatePaymentReceivedEmail(order);
+      const result = await this.transporter.sendMail({
+        from: `"STES Piscines" <${process.env.EMAIL_USER}>`,
+        to: order.customer.email,
+        subject: content.subject,
+        html: content.html,
+        text: content.text
+      });
+      console.log(`Payment email sent for order ${order.orderNumber} to ${order.customer.email}`);
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error(`Error sending the payment email for order ${order.orderNumber}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  generatePaymentReceivedEmail(order) {
+    const siteUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const trackingUrl = `${siteUrl}/track-order?code=${encodeURIComponent(order.trackingCode)}`;
+    const subject = `Paiement reçu pour votre commande ${order.orderNumber}`;
+    const message = 'Nous avons bien reçu votre virement. Merci ! Nous préparons votre commande et vous prévenons dès son expédition.';
+    const details = [
+      ['Numéro de commande', order.orderNumber],
+      ['Montant reçu', formatTND(order.totalAmount)]
+    ];
+    const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#1f2937;line-height:1.5">
+  <div style="max-width:600px;margin:0 auto;padding:20px">
+    <div style="background:#059669;color:#ffffff;padding:24px;border-radius:10px 10px 0 0;text-align:center">
+      <h1 style="margin:0;font-size:22px">STES Piscines</h1>
+      <p style="margin:4px 0 0">Paiement reçu</p>
+    </div>
+    <div style="background:#ffffff;padding:24px;border:1px solid #e5e7eb">
+      <p>Bonjour ${escapeHtml(order.customer.name)},</p>
+      <p>${escapeHtml(message)}</p>
+      <p style="background:#f0f9ff;padding:12px;border-radius:8px">
+        ${details.map(([label, value]) => `${label} : <strong>${escapeHtml(value)}</strong>`).join('<br>')}
+      </p>
+      <p style="text-align:center;margin:24px 0">
+        <a href="${escapeHtml(trackingUrl)}" style="display:inline-block;padding:12px 24px;background:#059669;color:#ffffff;text-decoration:none;border-radius:6px">Suivre ma commande</a>
+      </p>
+    </div>
+    <div style="background:#f9fafb;padding:16px;text-align:center;font-size:13px;color:#6b7280;border-radius:0 0 10px 10px">
+      Une question ? Répondez à cet email en indiquant votre numéro de commande.
+    </div>
+  </div>
+</body>
+</html>`;
+    const text = [
+      `Bonjour ${order.customer.name},`,
+      '',
+      message,
+      '',
+      ...details.map(([label, value]) => `${label} : ${value}`),
+      '',
+      `Suivre ma commande : ${trackingUrl}`
+    ].join('\n');
+    return { subject, html, text };
+  }
+
   generateStatusUpdateEmail(order, { note } = {}) {
     const content = STATUS_EMAILS[order.status];
     const siteUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
