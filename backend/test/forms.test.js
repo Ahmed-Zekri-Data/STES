@@ -78,6 +78,16 @@ describe('contact and quote forms', () => {
       assert.equal(res.body.submissions[1].subject, 'Problème avec pompe');
     });
 
+    it('takes a message whatever language the browser asks for', async () => {
+      const FormSubmission = require('../models/FormSubmission');
+      for (const header of ['*', 'de-DE,de;q=0.9', 'ar-TN,ar;q=0.9,fr;q=0.8', 'en-GB']) {
+        await contact().set('Accept-Language', header).expect(201);
+      }
+      await quote().set('Accept-Language', 'it').expect(201);
+      const languages = (await FormSubmission.find().sort({ createdAt: 1 }).lean()).map(s => s.language);
+      assert.deepEqual(languages, ['fr', 'fr', 'ar', 'en', 'fr']);
+    });
+
     it('accepts addresses with longer domain endings', async () => {
       await contact({ email: 'info@piscines.info' }).expect(201);
       await contact({ email: 'sami@mail.company.store' }).expect(201);

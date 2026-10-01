@@ -32,6 +32,7 @@ const signCustomerToken = (customer) => jwt.sign(
 const verifyCustomerToken = (token) => jwt.verify(token, customerSecret());
 
 module.exports = {
+  adminSecret,
   signAdminToken,
   verifyAdminToken,
   signCustomerToken,

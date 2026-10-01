@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { adminSecret } = require('../config/jwt');
 const Product = require('../models/Product');
 const MaintenanceSubscriber = require('../models/MaintenanceSubscriber');
 const { getSettings } = require('./settingsService');
@@ -52,7 +53,7 @@ const nextReminder = (calendar, now = new Date()) => {
 
 // The link in every reminder to change or stop them. Signed, so nothing
 // needs storing: the subscriber id and an HMAC of it.
-const signature = (id) => crypto.createHmac('sha256', process.env.JWT_SECRET || 'stes')
+const signature = (id) => crypto.createHmac('sha256', adminSecret())
   .update(`maintenance:${id}`).digest('hex').slice(0, 32);
 const manageToken = (id) => `${id}.${signature(String(id))}`;
 const manageUrl = (subscriber) => `${siteUrl()}/entretien/mes-rappels?token=${manageToken(subscriber._id)}`;
