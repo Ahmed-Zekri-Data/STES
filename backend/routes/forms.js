@@ -7,6 +7,10 @@ const { auth, checkPermission } = require('../middleware/auth');
 const { containing } = require('../utils/text');
 const emailNotificationService = require('../services/emailNotificationService');
 
+// The visitor's language among the shop's, from their browser (French when
+// it is another one, or "*"): a submission is never refused for it
+const visitorLanguage = (req) => req.acceptsLanguages('fr', 'ar', 'en') || 'fr';
+
 // Reading and managing submissions needs the forms permission
 const formsAdmin = [auth, checkPermission('forms')];
 
@@ -35,7 +39,7 @@ router.post('/contact', [
       subject,
       ipAddress: req.ip,
       userAgent: req.get('User-Agent'),
-      language: req.get('Accept-Language')?.split(',')[0]?.split('-')[0] || 'fr'
+      language: visitorLanguage(req)
     });
 
     await submission.save();
@@ -93,7 +97,7 @@ router.post('/quote', [
       plan,
       ipAddress: req.ip,
       userAgent: req.get('User-Agent'),
-      language: req.get('Accept-Language')?.split(',')[0]?.split('-')[0] || 'fr'
+      language: visitorLanguage(req)
     });
 
     await submission.save();
@@ -140,7 +144,7 @@ router.post('/newsletter', [
       email,
       ipAddress: req.ip,
       userAgent: req.get('User-Agent'),
-      language: req.get('Accept-Language')?.split(',')[0]?.split('-')[0] || 'fr'
+      language: visitorLanguage(req)
     });
 
     await submission.save();

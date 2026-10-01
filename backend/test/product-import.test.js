@@ -141,4 +141,16 @@ describe('product import', () => {
     await request(app).post('/api/admin/products/import').send({ rows: catalogue }).expect(401);
     assert.equal((await send([]).expect(400)).body.message, 'The file must have between 1 and 10000 rows');
   });
+
+  it('takes a large file, while other requests stay small', async () => {
+    // About 2.5 MB: 5 000 rows with a long description
+    const big = Array.from({ length: 5000 }, (_, i) => row(i + 2, `C${i}`, `Produit ${i}`, 'Modèle', 100, 1, { description: 'x'.repeat(400) }));
+    const report = (await send(big, { dryRun: true }).expect(200)).body;
+    assert.equal(report.errors.length, 0);
+    // A public form sent the same amount of data is refused before being read
+    const refused = await request(app).post('/api/forms/contact').send({ name: 'Sami', message: 'x'.repeat(2 * 1024 * 1024) }).expect(413);
+    assert.equal(refused.body.message, 'Les données envoyées sont trop volumineuses.');
+    // Malformed JSON is the sender's mistake, not a server error
+    await request(app).post('/api/forms/contact').set('Content-Type', 'application/json').send('{"name": ').expect(400);
+  });
 });

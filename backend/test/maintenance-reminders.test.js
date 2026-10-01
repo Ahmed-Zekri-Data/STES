@@ -130,6 +130,10 @@ describe('pool care reminders', () => {
 
     const forged = link.replace(/.$/, c => (c === '0' ? '1' : '0'));
     await request(app).get(forged).expect(404);
+    // Signed with another key (such as a default one): refused
+    const id = tokenFrom(sent[0]).split('.')[0];
+    const otherKey = require('crypto').createHmac('sha256', 'stes').update(`maintenance:${id}`).digest('hex').slice(0, 32);
+    await request(app).get(`/api/maintenance/subscription/${id}.${otherKey}`).expect(404);
 
     await request(app).put(link).send({ channels: { email: false } }).expect(400);
     const updated = (await request(app).put(link).send({ volume: 42, phone: '98765432', channels: { whatsapp: true } }).expect(200)).body.subscription;

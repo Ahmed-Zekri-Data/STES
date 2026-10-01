@@ -121,9 +121,12 @@ const createApp = ({ frontendDir = defaultFrontendDir() } = {}) => {
     credentials: true
   }));
 
-  // Body parsing middleware
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  // Body parsing middleware. Requests are small, except the spreadsheet
+  // import (up to 10 000 rows, read in the admin's browser): a large limit
+  // everywhere would let anyone make the server parse 10 MB per request.
+  app.use('/api/admin/products/import', express.json({ limit: '10mb' }));
+  app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
   // Routes
   app.use('/api/products/:id/reviews', require('./routes/productReviews'));
@@ -175,6 +178,14 @@ const createApp = ({ frontendDir = defaultFrontendDir() } = {}) => {
   // Error handling middleware
   // eslint-disable-next-line no-unused-vars -- Express needs the 4-argument signature
   app.use((err, req, res, next) => {
+    // The request's own fault (too large, malformed JSON…): say so, without
+    // logging it as a server error
+    if (err.type === 'entity.too.large') {
+      return res.status(413).json({ message: 'Les données envoyées sont trop volumineuses.' });
+    }
+    if (err.expose && err.status >= 400 && err.status < 500) {
+      return res.status(err.status).json({ message: 'Requête invalide.' });
+    }
     console.error(err.stack);
     res.status(500).json({
       message: 'Something went wrong!',
