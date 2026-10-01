@@ -591,7 +591,11 @@ class EmailNotificationService {
     return { subject, html, text };
   }
 
-  // Pool care reminders (see maintenanceService). Both never throw.
+  // Pool care reminders (see maintenanceService). None of them throws.
+  async sendMaintenanceConfirmation(subscriber, options) {
+    return this.sendMaintenanceEmail(subscriber, this.generateMaintenanceConfirmationEmail(subscriber, options), options.manageUrl);
+  }
+
   async sendMaintenanceWelcome(subscriber, options) {
     return this.sendMaintenanceEmail(subscriber, this.generateMaintenanceWelcomeEmail(subscriber, options), options.manageUrl);
   }
@@ -624,7 +628,8 @@ class EmailNotificationService {
 
   // The frame shared by the pool care emails: header, body, and the link to
   // change or stop the reminders
-  maintenanceLayout(title, bodyHtml, manageUrl) {
+  maintenanceLayout(title, bodyHtml, manageUrl, footerHtml = `Vous recevez cet email car vous avez demandé les rappels d'entretien de STES Piscines.
+            <a href="${escapeHtml(manageUrl)}" style="color: #0e7490;">Modifier ou arrêter mes rappels</a>`) {
     return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
         <div style="background: #0e7490; color: #fff; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -634,11 +639,32 @@ class EmailNotificationService {
         <div style="border: 1px solid #e5e7eb; border-top: 0; padding: 20px; border-radius: 0 0 8px 8px;">
           ${bodyHtml}
           <p style="color: #6b7280; font-size: 12px; margin: 24px 0 0; border-top: 1px solid #e5e7eb; padding-top: 12px;">
-            Vous recevez cet email car vous avez demandé les rappels d'entretien de STES Piscines.
-            <a href="${escapeHtml(manageUrl)}" style="color: #0e7490;">Modifier ou arrêter mes rappels</a>
+            ${footerHtml}
           </p>
         </div>
       </div>`;
+  }
+
+  // The first email: the reminders start only once the address is confirmed
+  generateMaintenanceConfirmationEmail(subscriber, { manageUrl, days }) {
+    const subject = 'Confirmez vos rappels d’entretien';
+    const intro = 'Vous avez demandé les rappels d’entretien de votre piscine. Pour les recevoir, confirmez votre adresse email.';
+    const ignore = `Vous n’avez rien demandé ? Ignorez simplement cet email : sans confirmation, votre adresse est effacée sous ${days} jours.`;
+    const html = this.maintenanceLayout('Confirmez vos rappels', `
+          <p style="margin: 0 0 12px;">Bonjour ${escapeHtml(subscriber.firstName)},</p>
+          <p style="margin: 0 0 12px; line-height: 1.5;">${escapeHtml(intro)}</p>
+          <p style="margin: 20px 0 0;">
+            <a href="${escapeHtml(manageUrl)}" style="background: #0e7490; color: #fff; padding: 10px 18px; border-radius: 6px; text-decoration: none; display: inline-block;">Confirmer mes rappels</a>
+          </p>`, manageUrl, escapeHtml(ignore));
+    const text = [
+      `Bonjour ${subscriber.firstName},`,
+      '',
+      intro,
+      `Confirmer mes rappels : ${manageUrl}`,
+      '',
+      ignore
+    ].join('\n');
+    return { subject, html, text };
   }
 
   generateMaintenanceWelcomeEmail(subscriber, { next, manageUrl, already }) {

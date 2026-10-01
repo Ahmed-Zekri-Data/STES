@@ -120,6 +120,7 @@ const Reminders = () => {
       <section className="rounded-xl border border-gray-200 bg-surface shadow-sm" aria-labelledby="subscribers-title">
         <div className="p-6 pb-3">
           <h2 id="subscribers-title" className="text-lg font-semibold text-gray-900">Subscribers ({data.total})</h2>
+          <p className="mt-1 text-sm text-gray-600">Reminders start once people confirm with the link of their first email. Sign-ups not confirmed within 7 days are deleted.</p>
         </div>
         {data.subscribers.length === 0 ? (
           <p className="px-6 pb-6 text-sm text-gray-500">Nobody yet. Share the care calendar, and it is offered after drawing a pool in the pool builder.</p>
@@ -132,7 +133,11 @@ const Reminders = () => {
               <tbody className="divide-y divide-gray-100">
                 {data.subscribers.map(s => (
                   <tr key={s._id}>
-                    <td className="px-6 py-3"><span className="font-medium text-gray-900">{s.firstName}</span><br /><span className="text-gray-500">{s.email}</span></td>
+                    <td className="px-6 py-3">
+                      <span className="font-medium text-gray-900">{s.firstName}</span>
+                      {!s.confirmedAt && <span className="ms-2 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-800">awaiting confirmation</span>}
+                      <br /><span className="text-gray-500">{s.email}</span>
+                    </td>
                     <td className="px-6 py-3 text-gray-700">
                       <span className="flex items-center gap-2">
                         {s.channels?.email && <Mail className="h-4 w-4" aria-label="Email" />}

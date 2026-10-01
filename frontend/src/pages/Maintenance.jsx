@@ -73,10 +73,10 @@ const SignUp = ({ volume, onVolume }) => {
   if (done) {
     return (
       <div className="text-center" role="status">
-        <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-green-100 text-green-700"><Check className="h-7 w-7" aria-hidden="true" /></span>
-        <h2 className="mt-3 text-xl font-bold text-gray-900">Vos rappels sont activés</h2>
+        <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-green-100 text-green-700"><Mail className="h-7 w-7" aria-hidden="true" /></span>
+        <h2 className="mt-3 text-xl font-bold text-gray-900">Vérifiez votre boîte mail</h2>
         <p className="mt-2 text-gray-600">{done}</p>
-        <p className="mt-2 text-sm text-gray-500">Chaque message contient un lien pour les modifier ou les arrêter.</p>
+        <p className="mt-2 text-sm text-gray-500">Pas d’email ? Regardez dans les courriers indésirables. Sans confirmation, nous n’envoyons rien et effaçons votre adresse sous 7 jours.</p>
       </div>
     );
   }

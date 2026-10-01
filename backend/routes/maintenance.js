@@ -3,7 +3,7 @@ const { body, param, validationResult } = require('express-validator');
 const { auth, checkPermission } = require('../middleware/auth');
 const MaintenanceSubscriber = require('../models/MaintenanceSubscriber');
 const {
-  publicCalendar, subscribe, findByToken, whatsappNumber, whatsappQueue, markWhatsappSent, sendDueEmails
+  publicCalendar, subscribe, confirm, findByToken, whatsappNumber, whatsappQueue, markWhatsappSent, sendDueEmails
 } = require('../services/maintenanceService');
 const { REMINDER_KEYS } = require('../config/maintenanceCalendar');
 
@@ -48,7 +48,7 @@ publicRouter.post('/subscribe', [
     const { firstName, email, phone, whatsapp, volume: m3, source } = req.body;
     await subscribe({ firstName, email, phone, whatsapp, volume: m3, source, ipAddress: req.ip });
     // The same answer whether or not the address was already signed up
-    res.status(201).json({ message: 'C’est noté ! Un email de confirmation vous attend.' });
+    res.status(201).json({ message: 'Plus qu’une étape : cliquez sur « Confirmer mes rappels » dans l’email que nous venons de vous envoyer.' });
   } catch (error) {
     console.error('Error signing up for pool care reminders:', error);
     res.status(500).json({ message: 'L’inscription n’a pas abouti. Réessayez plus tard.' });
@@ -67,7 +67,8 @@ const view = (subscriber) => ({
   email: subscriber.email,
   phone: subscriber.phone || '',
   volume: subscriber.volume ?? null,
-  channels: { email: subscriber.channels.email, whatsapp: subscriber.channels.whatsapp }
+  channels: { email: subscriber.channels.email, whatsapp: subscriber.channels.whatsapp },
+  confirmed: Boolean(subscriber.confirmedAt)
 });
 
 publicRouter.get('/subscription/:token', async (req, res) => {
@@ -109,6 +110,20 @@ publicRouter.put('/subscription/:token', [
   }
 });
 
+// The button on the page the first email opens: a click, not the link
+// itself, since mail scanners open links on their own
+publicRouter.post('/subscription/:token/confirm', async (req, res) => {
+  try {
+    const subscriber = await bySubscription(req, res);
+    if (!subscriber) return;
+    await confirm(subscriber);
+    res.json({ message: 'Vos rappels sont activés. Un email vous indique la date du prochain.', subscription: view(subscriber) });
+  } catch (error) {
+    console.error('Error confirming a reminders subscription:', error);
+    res.status(500).json({ message: 'La confirmation n’a pas abouti. Réessayez plus tard.' });
+  }
+});
+
 // Stopping the reminders deletes everything we kept
 publicRouter.delete('/subscription/:token', async (req, res) => {
   try {
@@ -131,7 +146,7 @@ adminRouter.get('/', async (req, res) => {
   try {
     const [subscribers, total, queue] = await Promise.all([
       MaintenanceSubscriber.find().sort({ createdAt: -1 }).limit(500)
-        .select('firstName email phone channels volume source sent createdAt').lean(),
+        .select('firstName email phone channels volume source sent confirmedAt createdAt').lean(),
       MaintenanceSubscriber.countDocuments(),
       whatsappQueue()
     ]);

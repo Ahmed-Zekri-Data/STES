@@ -102,6 +102,22 @@ const publicCalendar = async () => {
 // A new subscriber gets a welcome email with their link. Someone already
 // signed up is told again by email, and nothing is changed: only the link
 // in their emails can change their reminders.
+// Reminders only go to people who confirmed their address
+const CONFIRMED = { confirmedAt: { $ne: null } };
+// How long a sign-up waits for its confirmation before being deleted
+const CONFIRM_DAYS = 7;
+
+const sendWelcome = (subscriber, already) => getSettings()
+  .then(({ reminders }) => emailNotificationService.sendMaintenanceWelcome(subscriber, {
+    next: nextReminder(reminders.calendar),
+    manageUrl: manageUrl(subscriber),
+    already
+  }))
+  .catch(error => console.error('Could not send the reminders welcome email:', error.message));
+
+// A new address first gets an email asking to confirm. Signing up again
+// never changes what was saved: an unconfirmed address gets the request
+// again, a confirmed one is reminded that it is already signed up.
 const subscribe = async ({ firstName, email, phone, whatsapp, volume, source, ipAddress }) => {
   const existing = await MaintenanceSubscriber.findOne({ email: String(email).toLowerCase() });
   const subscriber = existing || await MaintenanceSubscriber.create({
@@ -113,14 +129,30 @@ const subscribe = async ({ firstName, email, phone, whatsapp, volume, source, ip
     source,
     ipAddress
   });
-  getSettings()
-    .then(({ reminders }) => emailNotificationService.sendMaintenanceWelcome(subscriber, {
-      next: nextReminder(reminders.calendar),
-      manageUrl: manageUrl(subscriber),
-      already: Boolean(existing)
-    }))
-    .catch(error => console.error('Could not send the reminders welcome email:', error.message));
+  if (subscriber.confirmedAt) {
+    sendWelcome(subscriber, true);
+  } else {
+    emailNotificationService.sendMaintenanceConfirmation(subscriber, { manageUrl: manageUrl(subscriber), days: CONFIRM_DAYS })
+      .catch(error => console.error('Could not send the reminders confirmation email:', error.message));
+  }
   return { subscriber, created: !existing };
+};
+
+// The "Confirmer" button of the first email's page: the reminders start,
+// and a welcome email says when the next one comes. True the first time.
+const confirm = async (subscriber) => {
+  if (subscriber.confirmedAt) return false;
+  subscriber.confirmedAt = new Date();
+  await subscriber.save();
+  sendWelcome(subscriber, false);
+  return true;
+};
+
+// Sign-ups never confirmed are deleted after CONFIRM_DAYS
+const forgetUnconfirmed = async (now = new Date()) => {
+  const before = new Date(now.getTime() - CONFIRM_DAYS * 24 * 3600 * 1000);
+  const { deletedCount } = await MaintenanceSubscriber.deleteMany({ confirmedAt: null, createdAt: { $lt: before } });
+  return deletedCount;
 };
 
 // Emails the reminders due today to everyone who hasn't had them. Each
@@ -135,7 +167,7 @@ const sendDueEmails = async (now = new Date()) => {
   let failed = 0;
   for (const reminder of due) {
     const mark = { key: reminder.key, year: reminder.year, channel: 'email' };
-    const pending = MaintenanceSubscriber.find({ 'channels.email': true, sent: { $not: { $elemMatch: mark } } }).cursor();
+    const pending = MaintenanceSubscriber.find({ ...CONFIRMED, 'channels.email': true, sent: { $not: { $elemMatch: mark } } }).cursor();
     for await (const subscriber of pending) {
       const claimed = await MaintenanceSubscriber.updateOne(
         { _id: subscriber._id, sent: { $not: { $elemMatch: mark } } },
@@ -181,6 +213,7 @@ const whatsappQueue = async (now = new Date()) => {
   for (const reminder of due) {
     const mark = { key: reminder.key, year: reminder.year, channel: 'whatsapp' };
     const subscribers = await MaintenanceSubscriber.find({
+      ...CONFIRMED,
       'channels.whatsapp': true,
       phone: { $nin: [null, ''] },
       sent: { $not: { $elemMatch: mark } }
@@ -214,6 +247,7 @@ const markWhatsappSent = async (id, { key, year }) => {
 const startReminderSchedule = () => {
   const cron = require('node-cron');
   return cron.schedule('0 9 * * *', () => {
+    forgetUnconfirmed().catch(error => console.error('Removing unconfirmed reminder sign-ups failed:', error.message));
     sendDueEmails().catch(error => console.error('Pool care reminders failed:', error.message));
   }, { timezone: TIME_ZONE });
 };
@@ -229,6 +263,9 @@ module.exports = {
   whatsappNumber,
   publicCalendar,
   subscribe,
+  confirm,
+  forgetUnconfirmed,
+  CONFIRM_DAYS,
   sendDueEmails,
   whatsappText,
   whatsappQueue,

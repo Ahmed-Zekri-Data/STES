@@ -13,7 +13,8 @@ const calendar = [
   { key: 'opening', month: 4, day: 1, title: 'Remise en route de votre piscine', message: 'Retirez la bâche.', products: [], active: true },
   { key: 'winter', month: 11, day: 1, title: 'Préparez l’hivernage', message: 'Couvrez la piscine.', products: [], active: true }
 ];
-const sami = { _id: 's1', firstName: 'Sami', email: 'sami@example.com', phone: '+21698765432', channels: { email: true, whatsapp: true }, volume: 55, source: 'builder', sent: [], createdAt: '2027-03-01T10:00:00Z' };
+const sami = { _id: 's1', firstName: 'Sami', email: 'sami@example.com', phone: '+21698765432', channels: { email: true, whatsapp: true }, volume: 55, source: 'builder', sent: [], confirmedAt: '2027-03-01T10:05:00Z', createdAt: '2027-03-01T10:00:00Z' };
+const nour = { _id: 's2', firstName: 'Nour', email: 'nour@example.com', channels: { email: true, whatsapp: false }, source: 'page', sent: [], createdAt: '2027-03-02T10:00:00Z' };
 
 // Types in a product search box and picks the option
 const choose = (input, text, option) => {
@@ -34,7 +35,7 @@ describe('admin reminders', () => {
     vi.spyOn(adminApi, 'get').mockImplementation((url) => Promise.resolve(
       url === '/admin/settings' ? { data: { reminders: { calendar } } }
         : url === '/admin/products' ? { data: { products, pagination: { totalPages: 1 } } }
-          : url === '/admin/maintenance' ? { data: { total: 1, subscribers: [sami], whatsapp: queue, emailConfigured: false } }
+          : url === '/admin/maintenance' ? { data: { total: 2, subscribers: [nour, sami], whatsapp: queue, emailConfigured: false } }
             : { data: { admin: account } }
     ));
   });
@@ -47,7 +48,10 @@ describe('admin reminders', () => {
     const open = await screen.findByRole('link', { name: /Open WhatsApp/ });
     expect(open.getAttribute('href')).toBe('https://wa.me/21698765432?text=Bonjour');
     expect(screen.getByText(/Emails are not set up yet/)).toBeTruthy();
-    expect(screen.getByText('Subscribers (1)')).toBeTruthy();
+    expect(screen.getByText('Subscribers (2)')).toBeTruthy();
+    // Only the sign-up not confirmed yet says so
+    expect(screen.getAllByText('awaiting confirmation')).toHaveLength(1);
+    expect(screen.getByText('awaiting confirmation').closest('td').textContent).toMatch('Nour');
 
     fireEvent.click(screen.getByRole('button', { name: /Mark as sent/ }));
     await waitFor(() => expect(screen.getByText('Nothing to send today.')).toBeTruthy());

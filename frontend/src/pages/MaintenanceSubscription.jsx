@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Check, BellOff, Save } from 'lucide-react';
+import { Check, BellOff, BellRing, Save } from 'lucide-react';
 
 const field = 'mt-1 w-full rounded-2xl border border-gray-200 bg-surface px-4 py-3 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15';
 
 // /entretien/mes-rappels?token=… : the link in every reminder, to change
-// the pool's volume and how to be told, or to stop the reminders
+// the pool's volume and how to be told, or to stop the reminders. The first
+// email opens it too: nothing is sent before "Confirmer mes rappels".
 const MaintenanceSubscription = () => {
   const [params] = useSearchParams();
   const token = params.get('token') || '';
@@ -16,6 +17,8 @@ const MaintenanceSubscription = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [confirmStop, setConfirmStop] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmation, setConfirmation] = useState(null);
 
   useEffect(() => {
     if (!token) { setState('missing'); return; }
@@ -38,6 +41,20 @@ const MaintenanceSubscription = () => {
       setMessage({ ok: false, text: err.response?.data?.message || 'L’enregistrement n’a pas abouti.' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const confirmReminders = async () => {
+    setConfirming(true);
+    setConfirmation(null);
+    try {
+      const response = await axios.post(`${url}/confirm`);
+      setForm(current => ({ ...current, confirmed: true }));
+      setConfirmation({ ok: true, text: response.data.message });
+    } catch (err) {
+      setConfirmation({ ok: false, text: err.response?.data?.message || 'La confirmation n’a pas abouti. Réessayez dans un instant.' });
+    } finally {
+      setConfirming(false);
     }
   };
 
@@ -75,6 +92,22 @@ const MaintenanceSubscription = () => {
 
       {state === 'ready' && form && (
         <>
+          {!form.confirmed && (
+            <div className="panel mt-6 p-6">
+              <h2 className="text-xl font-bold text-gray-900">Confirmez vos rappels</h2>
+              <p className="mt-1 text-gray-600">Un clic, et nous vous préviendrons aux bons moments de l’année à l’adresse <strong>{form.email}</strong>.</p>
+              {confirmation && !confirmation.ok && <p role="alert" className="mt-3 text-sm text-red-600">{confirmation.text}</p>}
+              <button type="button" className="btn-brand mt-4 w-full" onClick={confirmReminders} disabled={confirming}>
+                <BellRing className="h-4 w-4" aria-hidden="true" /> {confirming ? 'Confirmation…' : 'Confirmer mes rappels'}
+              </button>
+            </div>
+          )}
+          {confirmation?.ok && (
+            <div className="panel mt-6 flex items-start gap-3 p-6" role="status">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-green-100 text-green-700"><Check className="h-5 w-5" aria-hidden="true" /></span>
+              <p className="text-gray-700"><strong className="block text-gray-900">C’est confirmé</strong>{confirmation.text}</p>
+            </div>
+          )}
           <form onSubmit={save} className="panel mt-6 space-y-4 p-6">
             <p className="text-gray-700">Bonjour {form.firstName}, voici vos rappels d’entretien pour <strong>{form.email}</strong>.</p>
             <label className="block text-sm font-medium text-gray-700">Volume de la piscine (m³)

@@ -44,6 +44,12 @@ describe('pool care reminders', () => {
   });
   const saveCalendar = (calendar) => request(app).put('/api/admin/settings').set('Authorization', `Bearer ${token}`).send({ reminders: { calendar } });
   const tokenFrom = (message) => message.text.match(/token=([\w.]+)/)[1];
+  // Everyone signed up so far confirms, as with the button of the first email
+  const confirmAll = async () => {
+    for (const subscriber of await MaintenanceSubscriber.find({ confirmedAt: null })) {
+      await request(app).post(`/api/maintenance/subscription/${maintenance.manageToken(subscriber._id)}/confirm`).expect(200);
+    }
+  };
   // Noon in Tunis on the given day
   const on = (date) => new Date(`${date}T11:00:00Z`);
 
@@ -105,19 +111,54 @@ describe('pool care reminders', () => {
     assert.deepEqual(subscriber.channels, { email: true, whatsapp: true });
     assert.equal(subscriber.volume, 55);
 
+    // First, an email asking to confirm the address
     await waitForEmails(1);
     assert.equal(sent[0].to, 'sami@example.com');
-    assert.equal(sent[0].subject, 'Vos rappels d’entretien sont activés');
-    assert.match(sent[0].text, /Votre piscine : 55 m³/);
+    assert.equal(sent[0].subject, 'Confirmez vos rappels d’entretien');
+    assert.match(sent[0].text, /Confirmer mes rappels : .*\/entretien\/mes-rappels\?token=/);
+    assert.match(sent[0].text, /effacée sous 7 jours/);
     assert.match(sent[0].headers['List-Unsubscribe'], /\/entretien\/mes-rappels\?token=/);
+    assert.equal(subscriber.confirmedAt, undefined);
 
-    // Signing up again changes nothing, and says so by email only
+    // Signing up again before confirming changes nothing, and asks again
     await signUp({ whatsapp: true, phone: '22 111 333', volume: 10 }).expect(201);
     await waitForEmails(2);
-    assert.equal(sent[1].subject, 'Vos rappels d’entretien STES Piscines');
+    assert.equal(sent[1].subject, 'Confirmez vos rappels d’entretien');
+
+    // The button of the page the email opens starts the reminders, once
+    const link = `/api/maintenance/subscription/${tokenFrom(sent[0])}`;
+    assert.equal((await request(app).get(link).expect(200)).body.confirmed, false);
+    const confirmed = (await request(app).post(`${link}/confirm`).expect(200)).body;
+    assert.equal(confirmed.subscription.confirmed, true);
+    await waitForEmails(3);
+    assert.equal(sent[2].subject, 'Vos rappels d’entretien sont activés');
+    assert.match(sent[2].text, /Votre piscine : 55 m³/);
+    await request(app).post(`${link}/confirm`).expect(200);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    assert.equal(sent.length, 3);
+
+    // Signing up again once confirmed changes nothing, and says so by email only
+    await signUp({ whatsapp: true, phone: '22 111 333', volume: 10 }).expect(201);
+    await waitForEmails(4);
+    assert.equal(sent[3].subject, 'Vos rappels d’entretien STES Piscines');
     const again = await MaintenanceSubscriber.findOne({ email: 'sami@example.com' }).lean();
     assert.equal(again.phone, '+21698765432');
     assert.equal(again.volume, 55);
+    assert.ok(again.confirmedAt);
+
+    // A link signed for nobody confirms nothing
+    await request(app).post('/api/maintenance/subscription/nope/confirm').expect(404);
+  });
+
+  it('forgets sign-ups not confirmed within a week', async () => {
+    await signUp().expect(201);
+    await signUp({ firstName: 'Nour', email: 'nour@example.com' }).expect(201);
+    await waitForEmails(2);
+    await request(app).post(`/api/maintenance/subscription/${tokenFrom(sent.find(m => m.to === 'nour@example.com'))}/confirm`).expect(200);
+    const inDays = (days) => new Date(Date.now() + days * 24 * 3600 * 1000);
+    assert.equal(await maintenance.forgetUnconfirmed(inDays(6)), 0);
+    assert.equal(await maintenance.forgetUnconfirmed(inDays(8)), 1);
+    assert.deepEqual((await MaintenanceSubscriber.find().lean()).map(s => s.email), ['nour@example.com']);
   });
 
   it('lets the link in the emails change or stop the reminders, and nothing else', async () => {
@@ -126,7 +167,7 @@ describe('pool care reminders', () => {
     const link = `/api/maintenance/subscription/${tokenFrom(sent[0])}`;
 
     const mine = (await request(app).get(link).expect(200)).body;
-    assert.deepEqual(mine, { firstName: 'Sami', email: 'sami@example.com', phone: '', volume: 55, channels: { email: true, whatsapp: false } });
+    assert.deepEqual(mine, { firstName: 'Sami', email: 'sami@example.com', phone: '', volume: 55, channels: { email: true, whatsapp: false }, confirmed: false });
 
     const forged = link.replace(/.$/, c => (c === '0' ? '1' : '0'));
     await request(app).get(forged).expect(404);
@@ -150,6 +191,10 @@ describe('pool care reminders', () => {
     await signUp().expect(201);
     await signUp({ firstName: 'Nour', email: 'nour@example.com', volume: undefined }).expect(201);
     await waitForEmails(2);
+    // Nothing goes to an address that was not confirmed
+    assert.deepEqual(await maintenance.sendDueEmails(on('2027-04-02')), { sent: 0, failed: 0 });
+    await confirmAll();
+    await waitForEmails(4);
     sent = [];
 
     assert.deepEqual(await maintenance.sendDueEmails(on('2027-03-25')), { sent: 0, failed: 0 });
@@ -180,6 +225,9 @@ describe('pool care reminders', () => {
     await signUp({ whatsapp: true, phone: '98765432' }).expect(201);
     await signUp({ firstName: 'Nour', email: 'nour@example.com' }).expect(201);
     const now = on('2027-07-05');
+    // Not confirmed yet: no WhatsApp message to send either
+    assert.deepEqual(await maintenance.whatsappQueue(now), []);
+    await confirmAll();
 
     const queue = await maintenance.whatsappQueue(now);
     assert.deepEqual(queue.map(q => [q.key, q.year, q.people.map(p => p.firstName)]), [['summer', 2027, ['Sami']]]);
