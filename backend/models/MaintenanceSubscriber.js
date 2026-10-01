@@ -2,8 +2,9 @@ const mongoose = require('mongoose');
 
 // Someone who asked for pool care reminders on /entretien. Reminders go by
 // email (sent by the shop each morning) and, when they gave a number, by
-// WhatsApp (sent by an admin from Admin → Reminders). Unsubscribing deletes
-// the record.
+// WhatsApp (sent by an admin from Admin → Reminders), once they confirmed
+// with the link in the first email. Unsubscribing deletes the record, and
+// so does not confirming within a week.
 const maintenanceSubscriberSchema = new mongoose.Schema({
   firstName: { type: String, required: true, trim: true, maxlength: 50 },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
@@ -23,6 +24,9 @@ const maintenanceSubscriberSchema = new mongoose.Schema({
     at: { type: Date, default: Date.now }
   }],
   consentAt: { type: Date, default: Date.now },
+  // Set when they click "Confirmer" from the first email: nothing is sent
+  // before, so nobody gets reminders for an address someone else typed
+  confirmedAt: Date,
   ipAddress: String
 }, {
   timestamps: true

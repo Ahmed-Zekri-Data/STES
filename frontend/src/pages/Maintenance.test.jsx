@@ -44,7 +44,7 @@ describe('pool care calendar page', () => {
 
   it('signs up with the volume of the pool drawn in the builder, and WhatsApp when asked', async () => {
     localStorage.setItem('stes-pool-plan', JSON.stringify({ pool: { shape: 'rectangle', length: 8, width: 4, depth: 1.4, x: 1, y: 1 } }));
-    const post = vi.spyOn(axios, 'post').mockResolvedValue({ data: { message: 'C’est noté ! Un email de confirmation vous attend.' } });
+    const post = vi.spyOn(axios, 'post').mockResolvedValue({ data: { message: 'Plus qu’une étape : cliquez sur « Confirmer mes rappels » dans l’email que nous venons de vous envoyer.' } });
     renderPage();
     expect(screen.getByLabelText('Volume de votre piscine').value).toBe('44.8');
 
@@ -56,7 +56,8 @@ describe('pool care calendar page', () => {
     fireEvent.click(screen.getByLabelText(/J’accepte de recevoir/));
     fireEvent.click(screen.getByRole('button', { name: /Activer mes rappels/ }));
 
-    expect(await screen.findByText('Vos rappels sont activés')).toBeTruthy();
+    expect(await screen.findByText('Vérifiez votre boîte mail')).toBeTruthy();
+    expect(screen.getByText(/Plus qu’une étape/)).toBeTruthy();
     expect(post).toHaveBeenCalledWith('/api/maintenance/subscribe', {
       firstName: 'Sami', email: 'sami@example.com', phone: '98 765 432', whatsapp: true, consent: true, volume: 44.8, source: 'page'
     });
@@ -77,7 +78,7 @@ describe('my reminders page', () => {
       <Routes><Route path="/entretien/mes-rappels" element={<MaintenanceSubscription />} /></Routes>
     </MemoryRouter>
   );
-  const mine = { firstName: 'Sami', email: 'sami@example.com', phone: '', volume: 55, channels: { email: true, whatsapp: false } };
+  const mine = { firstName: 'Sami', email: 'sami@example.com', phone: '', volume: 55, channels: { email: true, whatsapp: false }, confirmed: true };
   afterEach(() => vi.restoreAllMocks());
 
   it('changes the volume and adds WhatsApp', async () => {
@@ -91,6 +92,24 @@ describe('my reminders page', () => {
     fireEvent.click(screen.getByRole('button', { name: /Enregistrer/ }));
     expect((await screen.findByRole('status')).textContent).toMatch('Vos rappels sont à jour');
     expect(put).toHaveBeenCalledWith('/api/maintenance/subscription/abc.def', { volume: 60, phone: '98765432', channels: { email: true, whatsapp: true } });
+  });
+
+  it('confirms the reminders with a click, from the first email', async () => {
+    vi.spyOn(axios, 'get').mockResolvedValue({ data: { ...mine, confirmed: false } });
+    const post = vi.spyOn(axios, 'post')
+      .mockRejectedValueOnce({ response: { data: { message: 'La confirmation n’a pas abouti. Réessayez plus tard.' } } })
+      .mockResolvedValueOnce({ data: { message: 'Vos rappels sont activés. Un email vous indique la date du prochain.' } });
+    renderManage();
+    expect(await screen.findByText('Confirmez vos rappels')).toBeTruthy();
+    // Opening the page confirms nothing: mail scanners open links on their own
+    expect(post).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /Confirmer mes rappels/ }));
+    expect((await screen.findByRole('alert')).textContent).toMatch('La confirmation n’a pas abouti');
+    fireEvent.click(screen.getByRole('button', { name: /Confirmer mes rappels/ }));
+    expect((await screen.findByRole('status')).textContent).toMatch('Vos rappels sont activés');
+    expect(post).toHaveBeenCalledWith('/api/maintenance/subscription/abc.def/confirm');
+    expect(screen.queryByRole('button', { name: /Confirmer mes rappels/ })).toBeNull();
   });
 
   it('stops the reminders after a confirmation', async () => {
