@@ -24,9 +24,11 @@ A complete e-commerce website for swimming pool supplies and installation servic
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js (v16 or higher)
-- MongoDB (local or cloud instance)
-- npm or yarn package manager
+- Node.js 20 or newer
+- MongoDB 7 (local or cloud instance)
+- npm
+
+To put the site online, see [docs/deployment.md](docs/deployment.md).
 
 ### Installation
 

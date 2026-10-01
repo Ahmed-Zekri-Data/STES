@@ -163,10 +163,13 @@ const createApp = ({ frontendDir = defaultFrontendDir() } = {}) => {
   app.use(require('./routes/seo'));
 
   // Health check endpoint
+  // For uptime monitors and hosting health checks: 503 while the database
+  // cannot be reached, as the shop cannot work without it
   app.get('/api/health', (req, res) => {
-    res.json({
-      status: 'OK',
-      database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    const connected = mongoose.connection.readyState === 1;
+    res.status(connected ? 200 : 503).json({
+      status: connected ? 'OK' : 'UNAVAILABLE',
+      database: connected ? 'connected' : 'disconnected',
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development'
     });
