@@ -30,6 +30,8 @@ describe('placeholder images', () => {
     for (let i = 0; i < 110; i++) {
       await request(app).get('/api/placeholder/80/80').expect(200);
     }
-    await request(app).get('/api/health').expect(200);
+    // Still under the limit (no database here, so the health check says 503)
+    const res = await request(app).get('/api/health');
+    assert.notEqual(res.status, 429);
   });
 });

@@ -13,11 +13,14 @@ const { startReminderSchedule } = require('./services/maintenanceService');
 
 const app = createApp();
 
-// MongoDB connection
-console.log('🔄 Attempting to connect to MongoDB...');
+// MongoDB connection. When the database cannot be reached at start (it
+// starts after this server, or the network is down), try again every few
+// seconds instead of running without it: /api/health answers 503 until
+// then. Once connected, the driver reconnects on its own.
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/stes-ecommerce';
+const RETRY_SECONDS = 5;
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/stes-ecommerce')
-.then(() => {
+const onConnected = () => {
   console.log('✅ Successfully connected to MongoDB');
   console.log('📊 Database:', mongoose.connection.name);
 
@@ -38,16 +41,18 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/stes-ecom
       if (created.length) console.log(`🏷️  Created brands used by products: ${created.join(', ')}`);
     })
     .catch(error => console.error('Could not check product brands:', error.message));
-})
-.catch((error) => {
-  console.error('❌ MongoDB connection error:', error.message);
-  console.log('\n🔧 Troubleshooting steps:');
-  console.log('1. Check if MongoDB service is running: net start MongoDB');
-  console.log('2. Verify MongoDB is installed and accessible');
-  console.log('3. Check if port 27017 is available');
-  console.log('4. Try connecting with: mongosh');
-  console.log('\n⚠️  Server will continue without database functionality');
-});
+};
+
+const connect = () => {
+  console.log('🔄 Attempting to connect to MongoDB...');
+  mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: RETRY_SECONDS * 1000 })
+    .then(onConnected)
+    .catch((error) => {
+      console.error(`❌ MongoDB connection error: ${error.message}. Trying again in ${RETRY_SECONDS} s.`);
+      setTimeout(connect, RETRY_SECONDS * 1000);
+    });
+};
+connect();
 
 const PORT = process.env.PORT || 9000;
 
