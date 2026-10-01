@@ -62,6 +62,18 @@ describe('pool care reminders', () => {
     assert.equal(maintenance.nextReminder(calendar, on('2027-12-01')).date.toISOString().slice(0, 10), '2028-02-15');
   });
 
+  it('sends the reminders every morning at 9:00, Tunis time', () => {
+    const task = maintenance.startReminderSchedule();
+    try {
+      const next = task.getNextRun();
+      const tunis = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Africa/Tunis', hour: '2-digit', minute: '2-digit' }).format(next);
+      assert.equal(tunis, '09:00');
+      assert.ok(next - Date.now() <= 24 * 3600 * 1000);
+    } finally {
+      task.destroy();
+    }
+  });
+
   it('shows the calendar, with the products and dates the shop chooses', async () => {
     let body = (await request(app).get('/api/maintenance/calendar').expect(200)).body;
     assert.deepEqual(body.reminders.map(r => r.key), ['check', 'opening', 'season', 'summer', 'heat', 'autumn', 'winter']);
