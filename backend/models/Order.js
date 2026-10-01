@@ -119,6 +119,9 @@ const orderSchema = new mongoose.Schema({
     enum: ['pending', 'processing', 'paid', 'failed', 'cancelled', 'refunded', 'partially_refunded'],
     default: 'pending'
   },
+  // When the money came in: set by the gateway for online payments, by an
+  // admin for cash on delivery and bank transfer (PUT /api/orders/:id/payment)
+  paidAt: Date,
   // True while this order's items are taken out of product stock
   stockReserved: {
     type: Boolean,

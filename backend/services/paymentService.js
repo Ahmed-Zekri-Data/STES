@@ -423,6 +423,7 @@ class PaymentService {
     const order = await Order.findById(payment.orderId);
     if (order) {
       order.paymentStatus = 'paid';
+      order.paidAt = new Date();
       if (order.status === 'pending') {
         order.status = 'confirmed';
       }
