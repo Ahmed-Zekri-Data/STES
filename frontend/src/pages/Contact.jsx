@@ -7,6 +7,7 @@ import { useShopSettings, whatsappLink, phoneLink } from '../context/shopSetting
 import PageHero from '../components/layout/PageHero';
 import PageLoader from '../components/PageLoader';
 import { Reveal, SpotlightCard } from '../components/fx/Motion';
+import { track } from '../utils/analytics';
 
 const Contact = () => {
   const { t, language } = useLanguage();
@@ -94,6 +95,7 @@ const Contact = () => {
     try {
       await axios.post('/api/forms/contact', formData);
       setSubmitted(true);
+      track('generate_lead', { form: 'contact' });
       setFormData({
         name: '',
         email: '',

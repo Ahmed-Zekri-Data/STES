@@ -19,6 +19,7 @@ import PageLoader from './components/PageLoader';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Ambient, PageTransition, ScrollProgress } from './components/layout/PageFrame';
 import RouteMeta from './components/layout/RouteMeta';
+import CookieConsent from './components/CookieConsent';
 
 // Browsing pages are in the main bundle, so the shop opens without waiting
 import Home from './pages/Home';
@@ -81,6 +82,8 @@ const ShopLayout = () => (
     </main>
     <Footer />
     <CartSidebar />
+    {/* Audience measurement on shop pages only, never in the admin */}
+    <CookieConsent />
   </div>
 );
 

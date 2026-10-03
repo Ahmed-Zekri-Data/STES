@@ -37,7 +37,9 @@ describe('shop settings', () => {
       bank: null,
       delivery: { freeDeliveryOver: 200, baseCost: 7, cashOnDeliveryFee: 5 },
       // Timbre fiscal added to each order
-      stampDuty: 1
+      stampDuty: 1,
+      // Nothing measured and no social pages until Admin → Settings → Marketing
+      marketing: { gaMeasurementId: '', metaPixelId: '', facebookUrl: '', instagramUrl: '', tiktokUrl: '', googleReviewUrl: '' }
     });
   });
 
