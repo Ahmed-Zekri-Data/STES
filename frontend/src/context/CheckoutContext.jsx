@@ -4,6 +4,7 @@ import { useCart } from './CartContext';
 import { useCustomer } from './CustomerContext';
 import { TUNISIAN_GOVERNORATES } from '../utils/governorates';
 import { isValidTaxId } from '../utils/taxId';
+import { track } from '../utils/analytics';
 
 // A saved address (Account → Adresses) as checkout's shipping fields
 export const toShipping = (address) => ({
@@ -361,6 +362,11 @@ export const CheckoutProvider = ({ children }) => {
 
       // The order exists and its stock is reserved: the cart is done
       clearCart();
+      track('purchase', {
+        orderNumber: createdOrder.orderNumber,
+        value: createdOrder.totalAmount,
+        items: items.map(item => ({ id: item._id, name: item.name, price: item.price, quantity: item.quantity, variant: item.variant }))
+      });
 
       let paymentResult;
       try {

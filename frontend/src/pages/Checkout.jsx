@@ -11,6 +11,7 @@ import PaymentMethodStep from '../components/checkout/PaymentMethodStep';
 import OrderReviewStep from '../components/checkout/OrderReviewStep';
 import OrderConfirmationStep from '../components/checkout/OrderConfirmationStep';
 import OrderSummary from '../components/checkout/OrderSummary';
+import { track } from '../utils/analytics';
 
 const STEPS = {
   1: CustomerInfoStep,
@@ -32,6 +33,14 @@ const CheckoutSteps = () => {
   const previous = useRef(currentStep);
   const direction = currentStep >= previous.current ? 1 : -1;
   useEffect(() => { previous.current = currentStep; }, [currentStep]);
+
+  // Counted once, when the customer arrives with a cart
+  const counted = useRef(false);
+  useEffect(() => {
+    if (counted.current || cartItems.length === 0) return;
+    counted.current = true;
+    track('begin_checkout', { items: cartItems.map(item => ({ id: item._id, name: item.name, price: item.price, quantity: item.quantity, variant: item.variant })) });
+  }, [cartItems]);
 
   if (orderConfirmation) {
     return (

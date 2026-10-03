@@ -18,6 +18,7 @@ import { pickProducts } from '../utils/productPicks';
 import { flyToCart } from '../utils/flyToCart';
 import { EASE } from '../utils/motion';
 import { productMeta, usePageMeta } from '../utils/pageMeta';
+import { track } from '../utils/analytics';
 
 // The product on a lit stage that turns towards the pointer
 const Stage = ({ product, reference }) => {
@@ -133,6 +134,7 @@ const PriceRequest = ({ product, variant }) => {
     try {
       await axios.post('/api/forms/quote', { ...form, message: `Demande de prix : ${what}` });
       setState('sent');
+      track('generate_lead', { form: 'price_request' });
     } catch (err) {
       setError(err.response?.data?.errors?.[0]?.msg || err.response?.data?.message || 'L’envoi n’a pas abouti. Réessayez ou écrivez-nous sur WhatsApp.');
       setState('idle');
@@ -215,6 +217,7 @@ const ProductDetails = () => {
       .then(response => {
         if (cancelled) return;
         setProduct(response.data);
+        track('view_item', { items: [{ id: response.data._id, name: response.data.name, price: response.data.price }] });
         // The first version that can be bought is chosen for the visitor; when
         // none can (all on request, or out of stock), the first one
         const list = response.data.variants || [];

@@ -83,6 +83,17 @@ const settingsSchema = new mongoose.Schema({
     pricePerM2Min: Number,
     pricePerM2Max: Number
   },
+  // Admin → Settings → Marketing: audience measurement (loaded only for
+  // visitors who accept cookies), the shop's social pages, and where
+  // customers leave a Google review
+  marketing: {
+    gaMeasurementId: String, // Google Analytics 4, "G-XXXXXXXXXX"
+    metaPixelId: String, // Facebook / Instagram ads
+    facebookUrl: String,
+    instagramUrl: String,
+    tiktokUrl: String,
+    googleReviewUrl: String
+  },
   // Pool care reminders (Admin → Settings → Reminders). Each one is kept by
   // its key (see config/maintenanceCalendar.js)
   reminders: {

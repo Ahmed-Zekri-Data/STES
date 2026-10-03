@@ -18,7 +18,16 @@ export const DEFAULT_SHOP_SETTINGS = {
     cashOnDeliveryFee: 5
   },
   // Timbre fiscal added to every order (TND)
-  stampDuty: 1
+  stampDuty: 1,
+  // Admin → Settings → Marketing: measurement ids and social pages
+  marketing: {
+    gaMeasurementId: '',
+    metaPixelId: '',
+    facebookUrl: '',
+    instagramUrl: '',
+    tiktokUrl: '',
+    googleReviewUrl: ''
+  }
 };
 
 export const ShopSettingsContext = createContext(DEFAULT_SHOP_SETTINGS);
