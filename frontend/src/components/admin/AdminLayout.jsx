@@ -16,6 +16,7 @@ import {
   Package,
   ShoppingCart,
   FileText,
+  BookOpen,
   Users,
   Settings,
   LogOut,
@@ -75,7 +76,8 @@ const AdminLayout = () => {
     { label: 'Content', items: [
       { name: 'Forms', href: '/admin/forms', icon: Inbox },
       { name: 'Reminders', href: '/admin/reminders', icon: Bell },
-      { name: 'Pages', href: '/admin/pages', icon: FileText }
+      { name: 'Pages', href: '/admin/pages', icon: FileText },
+      { name: 'Guides', href: '/admin/guides', icon: BookOpen }
     ] },
     { label: 'System', items: [
       // Only super admins manage admin accounts

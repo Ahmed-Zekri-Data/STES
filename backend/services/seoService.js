@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
+const Guide = require('../models/Guide');
 const { getSettings } = require('./settingsService');
+const { plainText } = require('../utils/reading');
 
 // What search engines and link previews (WhatsApp, Facebook...) see for
 // each page: its title, description, picture and structured data. The shop
@@ -46,6 +48,10 @@ const PAGES = {
   '/track-order': {
     title: 'Suivi de commande',
     description: 'Suivez votre commande STES.tn en temps réel avec votre code de suivi.'
+  },
+  '/conseils': {
+    title: 'Conseils piscine',
+    description: 'Eau verte, hivernage, choix de la pompe, remise en route : les conseils pratiques des techniciens STES pour votre piscine en Tunisie.'
   }
 };
 
@@ -187,8 +193,49 @@ const productMeta = (product, site) => ({
   jsonLd: productJsonLd(product, site)
 });
 
+// A guide (/conseils/<slug>): an article for search engines, with its text
+const guideMeta = (guide, site) => ({
+  title: guide.title,
+  description: guide.summary,
+  path: `/conseils/${guide.slug}`,
+  image: guide.image ? absoluteImage(guide.image, site) : undefined,
+  type: 'article',
+  jsonLd: {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Article',
+        headline: guide.title,
+        description: guide.summary,
+        ...(guide.image && { image: absoluteImage(guide.image, site) }),
+        datePublished: guide.publishedAt,
+        dateModified: guide.updatedAt,
+        inLanguage: 'fr-TN',
+        author: { '@type': 'Organization', name: SITE_NAME, url: site },
+        publisher: { '@type': 'Organization', name: SITE_NAME, url: site },
+        mainEntityOfPage: `${site}/conseils/${guide.slug}`,
+        articleBody: plainText(guide.body)
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Conseils', item: `${site}/conseils` },
+          { '@type': 'ListItem', position: 2, name: guide.title, item: `${site}/conseils/${guide.slug}` }
+        ]
+      }
+    ]
+  }
+});
+
 // Everything above for one address of the shop
 const pageMeta = async (pathname, query, site) => {
+  const guideMatch = pathname.match(/^\/conseils\/([^/]+)\/?$/);
+  if (guideMatch) {
+    const slug = guideMatch[1].toLowerCase();
+    const guide = /^[a-z0-9-]{1,80}$/.test(slug) && await Guide.findOne({ slug, published: true }).lean();
+    return guide ? guideMeta(guide, site) : { ...NOT_FOUND, title: 'Conseil introuvable' };
+  }
+
   const productMatch = pathname.match(/^\/product\/([^/]+)\/?$/);
   if (productMatch) {
     if (!mongoose.isValidObjectId(productMatch[1])) return { ...NOT_FOUND, title: 'Produit introuvable' };
@@ -278,14 +325,16 @@ const day = (date) => (date ? new Date(date).toISOString().slice(0, 10) : null);
 
 // sitemap.xml: every page search engines should know about, with product photos
 const buildSitemap = async (site) => {
-  const [products, categories] = await Promise.all([
+  const [products, categories, guides] = await Promise.all([
     Product.find({}).select('image updatedAt').sort({ updatedAt: -1 }).lean(),
-    Category.find({ isActive: true }).select('slug updatedAt').sort({ sortOrder: 1, name: 1 }).lean()
+    Category.find({ isActive: true }).select('slug updatedAt').sort({ sortOrder: 1, name: 1 }).lean(),
+    Guide.find({ published: true }).select('slug image updatedAt').sort({ publishedAt: -1 }).lean()
   ]);
   const newest = day(products[0]?.updatedAt);
   const entries = [
     ...Object.keys(PAGES).map(path => ({ loc: `${site}${path}`, lastmod: path === '/' || path === '/shop' ? newest : null })),
     ...categories.map(category => ({ loc: `${site}/shop?category=${encodeURIComponent(category.slug)}`, lastmod: day(category.updatedAt) })),
+    ...guides.map(guide => ({ loc: `${site}/conseils/${guide.slug}`, lastmod: day(guide.updatedAt), image: guide.image ? absoluteImage(guide.image, site) : null })),
     ...products.map(product => ({
       loc: `${site}/product/${product._id}`,
       lastmod: day(product.updatedAt),
