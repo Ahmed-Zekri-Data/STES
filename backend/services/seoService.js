@@ -59,6 +59,7 @@ const PRIVATE_PAGES = [
   ['/reset-password', 'Nouveau mot de passe'],
   ['/verify-email', 'Confirmation de l’email'],
   ['/entretien/mes-rappels', 'Mes rappels d’entretien'],
+  ['/emails/desinscription', 'Désinscription des emails'],
   ['/payment/', 'Paiement'],
   ['/admin', 'Administration']
 ];

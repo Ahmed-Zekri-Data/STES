@@ -5,6 +5,7 @@ import { useCustomer } from './CustomerContext';
 import { TUNISIAN_GOVERNORATES } from '../utils/governorates';
 import { isValidTaxId } from '../utils/taxId';
 import { track } from '../utils/analytics';
+import { saveCheckoutDraft, forgetCheckoutDraft } from '../utils/checkoutDraft';
 
 // A saved address (Account → Adresses) as checkout's shipping fields
 export const toShipping = (address) => ({
@@ -53,7 +54,8 @@ export const CheckoutProvider = ({ children }) => {
       phone: '',
       company: '', // Optional for B2B customers
       customerType: 'individual', // or 'business'
-      taxId: '' // Businesses: matricule fiscal, printed on the invoice
+      taxId: '', // Businesses: matricule fiscal, printed on the invoice
+      cartReminders: true // one email if the order is not finished
     },
     
     // Shipping Address
@@ -231,6 +233,8 @@ export const CheckoutProvider = ({ children }) => {
   // Move to next step
   const nextStep = () => {
     if (validateStep(currentStep) && currentStep < 4) {
+      // From the first step on, the shop knows where to send a reminder
+      saveCheckoutDraft(checkoutData.customer, cartItems);
       setCurrentStep(prev => prev + 1);
     }
   };
@@ -362,6 +366,7 @@ export const CheckoutProvider = ({ children }) => {
 
       // The order exists and its stock is reserved: the cart is done
       clearCart();
+      forgetCheckoutDraft();
       track('purchase', {
         orderNumber: createdOrder.orderNumber,
         value: createdOrder.totalAmount,

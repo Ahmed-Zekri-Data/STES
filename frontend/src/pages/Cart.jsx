@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Minus, Trash2, ShoppingBag, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -44,9 +45,54 @@ const CartSuggestions = ({ cartItems }) => {
   );
 };
 
+// The "Reprendre ma commande" and "Commander à nouveau" links of the shop's
+// emails (/cart?reprendre=…): their products go back into the cart, once;
+// products already in it are left as they are
+const useRestoredCart = () => {
+  const [params, setParams] = useSearchParams();
+  const token = params.get('reprendre');
+  const { cartItems, addToCart } = useCart();
+  const handled = useRef(null);
+  const [notice, setNotice] = useState(null);
+
+  useEffect(() => {
+    if (!token || handled.current === token) return;
+    handled.current = token;
+    axios.get(`/api/checkout/draft/${encodeURIComponent(token)}`)
+      .then(({ data }) => {
+        const present = new Set(cartItems.map(lineKey));
+        let added = 0;
+        for (const { product, variant, quantity } of data.items || []) {
+          const version = variant ? (product.variants || []).find(v => v.sku === variant) : null;
+          if (variant && !version) continue;
+          if (present.has(lineKey({ _id: product._id, variant: version?.sku }))) continue;
+          addToCart(product, quantity, version);
+          added++;
+        }
+        setNotice({ ok: true, text: added ? 'Votre panier est prêt : vérifiez-le, puis passez commande.' : 'Ces produits sont déjà dans votre panier.' });
+      })
+      .catch(err => setNotice({ ok: false, text: err.response?.data?.message || 'Ce lien ne fonctionne plus. Retrouvez nos produits dans la boutique.' }))
+      .finally(() => {
+        const next = new URLSearchParams(params);
+        next.delete('reprendre');
+        setParams(next, { replace: true });
+      });
+  // Once per link: the cart it fills must not start it again
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return notice;
+};
+
+const RestoreNotice = ({ notice }) => (notice ? (
+  <p role={notice.ok ? 'status' : 'alert'} className={`mb-6 rounded-2xl px-4 py-3 text-sm ${notice.ok ? 'bg-green-50 text-green-800' : 'bg-amber-50 text-amber-900'}`}>
+    {notice.text}
+  </p>
+) : null);
+
 const Cart = () => {
   const { delivery, stampDuty = 0 } = useShopSettings();
   const { cartItems, updateQuantity, removeFromCart, getCartTotal, clearCart } = useCart();
+  const restored = useRestoredCart();
   const { t } = useLanguage();
   const subtotal = getCartTotal();
   const shipping = deliveryEstimate(subtotal, delivery);
@@ -54,6 +100,7 @@ const Cart = () => {
   if (cartItems.length === 0) {
     return (
       <div className="mx-auto grid max-w-xl place-items-center px-4 py-32 text-center">
+        <RestoreNotice notice={restored} />
         <motion.span
           initial={{ scale: 0.6, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -74,6 +121,7 @@ const Cart = () => {
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-8 pt-10 sm:px-6 sm:pt-14 lg:px-8">
+      <RestoreNotice notice={restored} />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">Étape 1 sur 2 · Panier</p>

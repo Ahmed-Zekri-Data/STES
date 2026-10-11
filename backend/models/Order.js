@@ -346,6 +346,12 @@ const orderSchema = new mongoose.Schema({
       type: Date
     }
   },
+  // Automatic emails after delivery (see automationService): the review
+  // request, and the products the customer was reminded to order again
+  automation: {
+    reviewRequestAt: Date,
+    replenished: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }]
+  },
   // Internal notes for admin
   internalNotes: [{
     note: {

@@ -75,7 +75,8 @@ const Products = () => {
     variants: [],
     priceOnRequest: false,
     backorder: false,
-    subcategory: ''
+    subcategory: '',
+    replenishAfterDays: ''
   });
 
   // Sub-categories already used in each category, suggested in the form
@@ -242,6 +243,7 @@ const Products = () => {
         brand: formData.brand,
         featured: formData.featured,
         backorder: formData.backorder,
+        replenishAfterDays: formData.replenishAfterDays === '' ? null : Number(formData.replenishAfterDays),
         image: formData.image || '/api/placeholder/300/200',
         variants: variantsFromForm(formData.variants),
         ...(!withVersions && {
@@ -286,7 +288,8 @@ const Products = () => {
       variants: variantsToForm(product.variants),
       priceOnRequest: Boolean(product.priceOnRequest),
       backorder: Boolean(product.backorder),
-      subcategory: product.subcategory || ''
+      subcategory: product.subcategory || '',
+      replenishAfterDays: product.replenishAfterDays ? String(product.replenishAfterDays) : ''
     });
     setShowAddModal(true);
   };
@@ -317,7 +320,8 @@ const Products = () => {
       variants: [],
       priceOnRequest: false,
       backorder: false,
-      subcategory: ''
+      subcategory: '',
+      replenishAfterDays: ''
     });
   };
 
@@ -544,6 +548,7 @@ const Products = () => {
                   <div className="flex space-x-2">
                     <motion.button
                       onClick={() => handleEdit(product)}
+                      aria-label={`Edit ${product.name}`}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-300"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
@@ -552,6 +557,7 @@ const Products = () => {
                     </motion.button>
                     <motion.button
                       onClick={() => handleDelete(product._id)}
+                      aria-label={`Delete ${product.name}`}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-300"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
@@ -783,6 +789,22 @@ const Products = () => {
                   <input type="checkbox" name="backorder" checked={formData.backorder} onChange={handleInputChange} className="mt-0.5 w-4 h-4 rounded" />
                   <span><span className="font-medium">Sold on order</span> (“Sur commande”): customers can order it when it is out of stock, and you order it from the supplier.</span>
                 </label>
+
+                <div>
+                  <label htmlFor="product-replenish" className="block text-sm font-medium text-gray-700 mb-2">Reorder reminder (days after delivery)</label>
+                  <input
+                    id="product-replenish"
+                    type="number"
+                    name="replenishAfterDays"
+                    min="7"
+                    max="365"
+                    value={formData.replenishAfterDays}
+                    onChange={handleInputChange}
+                    placeholder="e.g. 45 for chlorine"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">For consumables: customers are emailed a reminder to order again. Empty: no reminder.</p>
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

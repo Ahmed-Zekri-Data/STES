@@ -10,6 +10,7 @@ const createApp = require('./app');
 const { ensureProductCategoriesExist } = require('./services/categoryService');
 const { ensureProductBrandsExist } = require('./services/brandService');
 const { startReminderSchedule } = require('./services/maintenanceService');
+const { startAutomationSchedule } = require('./services/automationService');
 
 const app = createApp();
 
@@ -26,6 +27,8 @@ const onConnected = () => {
 
   // Pool care reminders go out by email every morning
   startReminderSchedule();
+  // Cart reminders, review requests and the other automatic emails
+  startAutomationSchedule();
 
   // Shops upgrading from the fixed category list get a category for each
   // one their products use, so the admin and the shop can show them

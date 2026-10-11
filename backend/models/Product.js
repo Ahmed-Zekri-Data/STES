@@ -172,6 +172,13 @@ const productSchema = new mongoose.Schema({
   backorder: {
     type: Boolean,
     default: false
+  },
+  // Consumables (chlore, pH…): this many days after delivery, the customer
+  // is emailed a reminder to order again. Empty: no reminder.
+  replenishAfterDays: {
+    type: Number,
+    min: 7,
+    max: 365
   }
 }, {
   timestamps: true

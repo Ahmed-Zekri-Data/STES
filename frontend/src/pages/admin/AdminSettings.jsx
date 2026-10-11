@@ -7,6 +7,7 @@ import HomePageSettings from './HomePageSettings';
 import PoolBuilderSettings from './PoolBuilderSettings';
 import RemindersSettings from './RemindersSettings';
 import MarketingSettings from './MarketingSettings';
+import AutomationSettings from './AutomationSettings';
 
 const MIN_PASSWORD_LENGTH = 8;
 const ROLE_LABELS = { super_admin: 'Super admin', admin: 'Admin' };
@@ -271,7 +272,7 @@ const AdminSettings = () => {
       {tab === 'home' && <HomePageSettings />}
       {tab === 'builder' && <PoolBuilderSettings />}
       {tab === 'reminders' && <RemindersSettings />}
-      {tab === 'marketing' && <MarketingSettings />}
+      {tab === 'marketing' && <><MarketingSettings /><AutomationSettings /></>}
       {tab === 'account' && <MyAccount />}
     </div>
   );

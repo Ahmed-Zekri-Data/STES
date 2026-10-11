@@ -124,7 +124,13 @@ adminRouter.put('/', [
   onSite('marketing.facebookUrl', ['facebook.com', 'fb.com'], 'Enter the address of the Facebook page (https://www.facebook.com/…), or leave it empty'),
   onSite('marketing.instagramUrl', ['instagram.com'], 'Enter the address of the Instagram account (https://www.instagram.com/…), or leave it empty'),
   onSite('marketing.tiktokUrl', ['tiktok.com'], 'Enter the address of the TikTok account (https://www.tiktok.com/@…), or leave it empty'),
-  onSite('marketing.googleReviewUrl', ['google.com', 'g.page', 'goo.gl'], 'Enter the review link given by Google Business Profile (https://g.page/r/…), or leave it empty')
+  onSite('marketing.googleReviewUrl', ['google.com', 'g.page', 'goo.gl'], 'Enter the review link given by Google Business Profile (https://g.page/r/…), or leave it empty'),
+  ...['abandonedCartEnabled', 'quoteAlertEnabled', 'quoteFollowUpEnabled', 'reviewRequestEnabled', 'replenishmentEnabled']
+    .map(key => body(`automations.${key}`).optional().isBoolean().withMessage('Turn each automatic email on or off').toBoolean()),
+  body('automations.abandonedCartHours').optional().isInt({ min: 1, max: 72 }).withMessage('The cart reminder goes 1 to 72 hours after the checkout was left').toInt(),
+  body('automations.quoteAlertHours').optional().isInt({ min: 1, max: 168 }).withMessage('Unanswered requests are flagged after 1 to 168 hours').toInt(),
+  body('automations.quoteFollowUpDays').optional().isInt({ min: 1, max: 30 }).withMessage('The quote follow-up goes 1 to 30 days after your answer').toInt(),
+  body('automations.reviewRequestDays').optional().isInt({ min: 1, max: 60 }).withMessage('The review request goes 1 to 60 days after delivery').toInt()
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
