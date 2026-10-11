@@ -99,6 +99,12 @@ const formSubmissionSchema = new mongoose.Schema({
   repliedBy: {
     type: String,
     trim: true
+  },
+  // Automatic emails about this request (see automationService): the
+  // admins told it is still waiting, the customer asked if they have questions
+  followUp: {
+    adminAlertAt: Date,
+    customerAt: Date
   }
 }, {
   timestamps: true

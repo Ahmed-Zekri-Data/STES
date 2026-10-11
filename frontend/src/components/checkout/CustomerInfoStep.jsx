@@ -12,6 +12,7 @@ const CustomerInfoStep = () => {
     const { name, value } = e.target;
     updateCheckoutData('customer', { [name]: value });
   };
+  const noReminder = customer.cartReminders === false;
 
   const handleNext = () => {
     if (validateStep(1)) {
@@ -102,6 +103,18 @@ const CustomerInfoStep = () => {
             variants={inputVariants}
             whileFocus="focus"
           />
+          <p className="mt-2 text-sm text-gray-500">
+            Si vous n’allez pas au bout, nous vous enverrons un seul email pour retrouver votre panier.
+          </p>
+          <label className="mt-1 flex items-center gap-2 text-sm text-gray-600">
+            <input
+              type="checkbox"
+              checked={noReminder}
+              onChange={(e) => updateCheckoutData('customer', { cartReminders: !e.target.checked })}
+              className="h-4 w-4 rounded"
+            />
+            Ne pas m’envoyer ce rappel
+          </label>
         </motion.div>
 
         {/* Phone */}

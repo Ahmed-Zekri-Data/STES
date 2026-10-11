@@ -516,6 +516,29 @@ class EmailNotificationService {
     }
   }
 
+  // An automatic email (see automationService; content from
+  // automationEmails). Customer emails carry their "stop these emails"
+  // link as List-Unsubscribe too. Never throws.
+  async sendAutomatedEmail(to, { subject, html, text }, { unsubscribeUrl } = {}) {
+    if (!this.isConfigured()) {
+      return { success: false, reason: 'email_not_configured' };
+    }
+    try {
+      const result = await this.transporter.sendMail({
+        from: `"STES Piscines" <${process.env.EMAIL_USER}>`,
+        to,
+        subject,
+        html,
+        text,
+        ...(unsubscribeUrl && { headers: { 'List-Unsubscribe': `<${unsubscribeUrl}>` } })
+      });
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error(`Error sending an automatic email to ${to}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
   // A bank transfer has arrived (recorded by an admin). Never throws.
   async sendPaymentReceived(order) {
     const flags = order.emailNotifications || {};

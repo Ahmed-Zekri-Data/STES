@@ -13,6 +13,8 @@ const { CheckoutError, priceOrderItems, quoteOrder, includedTax, TAX_RATE, reser
 const { claimPromoUse, unclaimPromoUse, releaseOrderPromo, reclaimOrderPromo } = require('../services/promoService');
 const { issueInvoice, sendInvoice } = require('../services/invoiceService');
 const { isValidTaxId, normalizeTaxId } = require('../utils/taxId');
+const { exactly } = require('../utils/text');
+const CheckoutDraft = require('../models/CheckoutDraft');
 
 // Delivery is priced by governorate when the address has one, else by city
 const deliveryPlace = (address) => address?.governorate || address?.city || 'tunis';
@@ -157,6 +159,10 @@ router.post('/', optionalCustomerAuth, [
     // In the background: a slow or unreachable mail server must not hold up
     // checkout. Failures are logged by the service.
     emailNotificationService.sendOrderConfirmation(order);
+
+    // The checkout this order finishes gets no cart reminder
+    CheckoutDraft.updateMany({ email: exactly(order.customer.email), kind: 'checkout', convertedAt: null }, { convertedAt: new Date() })
+      .catch(error => console.error('Could not close the checkout draft:', error.message));
 
     await order.populate('items.product', '-reviews');
 

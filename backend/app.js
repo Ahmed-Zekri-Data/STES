@@ -115,6 +115,13 @@ const createApp = ({ frontendDir = defaultFrontendDir() } = {}) => {
     app.post(path, formLimiter);
   }
 
+  // The checkout is saved at each step; more than this is not a customer
+  app.post('/api/checkout/draft', rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 60,
+    message: limitMessage('Trop de requêtes. Veuillez réessayer plus tard.')
+  }));
+
   // CORS configuration
   app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -158,6 +165,9 @@ const createApp = ({ frontendDir = defaultFrontendDir() } = {}) => {
   app.use('/api/builder', require('./routes/builder'));
   app.use('/api/maintenance', require('./routes/maintenance').publicRouter);
   app.use('/api/admin/maintenance', require('./routes/maintenance').adminRouter);
+  // Automatic emails: checkout drafts, cart links, unsubscribe; admin stats
+  app.use('/api', require('./routes/automations').publicRouter);
+  app.use('/api/admin/automations', require('./routes/automations').adminRouter);
 
   // sitemap.xml and robots.txt, for search engines
   app.use(require('./routes/seo'));

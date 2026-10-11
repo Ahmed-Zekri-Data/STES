@@ -45,3 +45,19 @@ describe('customer information step', () => {
     }
   });
 });
+
+describe('cart reminder choice', () => {
+  beforeEach(() => {
+    checkout.checkoutData = { customer: { firstName: '', lastName: '', email: '', phone: '', company: '', customerType: 'individual', taxId: '', cartReminders: true } };
+    checkout.updateCheckoutData.mockClear();
+  });
+
+  it('says one reminder may follow, and lets the customer refuse it', () => {
+    render(<CustomerInfoStep />);
+    expect(screen.getByText(/nous vous enverrons un seul email pour retrouver votre panier/)).toBeTruthy();
+    const refuse = screen.getByLabelText('Ne pas m’envoyer ce rappel');
+    expect(refuse.checked).toBe(false);
+    fireEvent.click(refuse);
+    expect(checkout.updateCheckoutData).toHaveBeenCalledWith('customer', { cartReminders: false });
+  });
+});

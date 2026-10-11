@@ -57,7 +57,12 @@ const variantRules = () => [
     .customSanitizer(value => (value === null ? null : Number(value))),
   body('variants.*.stockQuantity').optional().isInt({ min: 0 }).withMessage('Version stock must be a whole number of at least 0').toInt(),
   body('priceOnRequest').optional().isBoolean().withMessage('Price on request: yes or no').toBoolean(),
-  body('backorder').optional().isBoolean().withMessage('Sold on order: yes or no').toBoolean()
+  body('backorder').optional().isBoolean().withMessage('Sold on order: yes or no').toBoolean(),
+  // Empty (or null) for no reminder
+  body('replenishAfterDays').optional({ values: 'null' }).customSanitizer(value => (value === '' ? null : value))
+    .custom(value => value === null || (Number.isInteger(Number(value)) && Number(value) >= 7 && Number(value) <= 365))
+    .withMessage('The reorder reminder is a number of days from 7 to 365, or empty')
+    .customSanitizer(value => (value === null ? null : Number(value)))
 ];
 
 // GET /api/products - Get all products with filtering and pagination

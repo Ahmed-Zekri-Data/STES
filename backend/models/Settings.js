@@ -94,6 +94,18 @@ const settingsSchema = new mongoose.Schema({
     tiktokUrl: String,
     googleReviewUrl: String
   },
+  // Automatic emails (Admin → Settings → Marketing), see automationService
+  automations: {
+    abandonedCartEnabled: Boolean,
+    abandonedCartHours: Number, // after the checkout was left
+    quoteAlertEnabled: Boolean,
+    quoteAlertHours: Number, // a request still unanswered: the admins are told
+    quoteFollowUpEnabled: Boolean,
+    quoteFollowUpDays: Number, // after the shop answered, without an order
+    reviewRequestEnabled: Boolean,
+    reviewRequestDays: Number, // after delivery
+    replenishmentEnabled: Boolean // days set on each product
+  },
   // Pool care reminders (Admin → Settings → Reminders). Each one is kept by
   // its key (see config/maintenanceCalendar.js)
   reminders: {

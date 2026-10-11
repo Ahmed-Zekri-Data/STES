@@ -53,6 +53,18 @@ const DEFAULTS = {
   reminders: {
     calendar: DEFAULT_CALENDAR
   },
+  // Automatic emails: all on, with these delays (sent only once emails are set up)
+  automations: {
+    abandonedCartEnabled: true,
+    abandonedCartHours: 2,
+    quoteAlertEnabled: true,
+    quoteAlertHours: 24,
+    quoteFollowUpEnabled: true,
+    quoteFollowUpDays: 3,
+    reviewRequestEnabled: true,
+    reviewRequestDays: 5,
+    replenishmentEnabled: true
+  },
   // Nothing measured and no social links until the shop enters them
   marketing: {
     gaMeasurementId: '',
@@ -90,14 +102,15 @@ const getSettings = async () => {
     builder: pick(saved?.builder, DEFAULTS.builder),
     reminders: { calendar: calendarOf(saved?.reminders?.calendar) },
     marketing: pick(saved?.marketing, DEFAULTS.marketing),
+    automations: pick(saved?.automations, DEFAULTS.automations),
     updatedAt: saved?.updatedAt || null
   };
 };
 
 // Saves the given sections; anything not given keeps its value
-const updateSettings = async ({ contact, bank, delivery, invoice, lowStockThreshold, showcase, builder, reminders, marketing }) => {
+const updateSettings = async ({ contact, bank, delivery, invoice, lowStockThreshold, showcase, builder, reminders, marketing, automations }) => {
   const set = {};
-  for (const [section, values] of Object.entries({ contact, bank, delivery, invoice, showcase, builder, reminders, marketing })) {
+  for (const [section, values] of Object.entries({ contact, bank, delivery, invoice, showcase, builder, reminders, marketing, automations })) {
     for (const [key, value] of Object.entries(values || {})) {
       if (key in DEFAULTS[section]) set[`${section}.${key}`] = value;
     }

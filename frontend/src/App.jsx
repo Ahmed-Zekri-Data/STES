@@ -43,6 +43,7 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 const PoolBuilder = lazy(() => import('./pages/PoolBuilder'));
 const Maintenance = lazy(() => import('./pages/Maintenance'));
 const MaintenanceSubscription = lazy(() => import('./pages/MaintenanceSubscription'));
+const EmailUnsubscribe = lazy(() => import('./pages/EmailUnsubscribe'));
 
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
 const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
@@ -117,6 +118,7 @@ function App() {
                       <Route path="/construire" element={<PoolBuilder />} />
                       <Route path="/entretien" element={<Maintenance />} />
                       <Route path="/entretien/mes-rappels" element={<MaintenanceSubscription />} />
+                      <Route path="/emails/desinscription" element={<EmailUnsubscribe />} />
                       <Route path="/about" element={<About />} />
                       <Route path="/contact" element={<Contact />} />
                       <Route path="/cart" element={<Cart />} />
