@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { cartKey } from '../utils/productOffer';
+import { track } from '../utils/analytics';
 
 const CartContext = createContext();
 
@@ -44,6 +45,7 @@ export const CartProvider = ({ children }) => {
     const line = variant
       ? { ...fields, variant: variant.sku, name: `${product.name} – ${variant.label}`, price: variant.price, stockQuantity: variant.stockQuantity }
       : fields;
+    track('add_to_cart', { items: [{ id: product._id, name: line.name, price: line.price, quantity, variant: variant?.sku }] });
     setCartItems(prevItems => {
       const key = cartKey(line);
       const existingItem = prevItems.find(item => cartKey(item) === key);

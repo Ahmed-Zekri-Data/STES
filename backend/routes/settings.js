@@ -24,6 +24,18 @@ const adminRouter = express.Router();
 adminRouter.use(auth, checkPermission('settings'));
 
 const PHONE = /^\+?[0-9 ().-]{6,25}$/;
+// An https address on one of these sites (or their subdomains), or empty
+const onSite = (field, hosts, message) => body(field).optional().isString().trim()
+  .custom(value => {
+    if (value === '') return true;
+    try {
+      const url = new URL(value);
+      return url.protocol === 'https:' && value.length <= 300
+        && hosts.some(host => url.hostname === host || url.hostname.endsWith(`.${host}`));
+    } catch {
+      return false;
+    }
+  }).withMessage(message);
 const HOTSPOTS = ['pump', 'filter', 'robot', 'lights', 'ring'];
 const PROBLEMS = ['green', 'cloudy', 'dirty', 'cold'];
 // A chosen product, or empty (null / "") for none
@@ -102,7 +114,17 @@ adminRouter.put('/', [
   body('reminders.calendar.*.title').isString().trim().isLength({ min: 1, max: 80 }).withMessage('Each reminder needs a title (up to 80 characters)'),
   body('reminders.calendar.*.message').isString().trim().isLength({ min: 1, max: 600 }).withMessage('Each reminder needs a text (up to 600 characters)'),
   productList('reminders.calendar.*.products', 3),
-  body('reminders.calendar.*.active').optional().isBoolean().withMessage('Send the reminder: yes or no').toBoolean()
+  body('reminders.calendar.*.active').optional().isBoolean().withMessage('Send the reminder: yes or no').toBoolean(),
+  body('marketing.gaMeasurementId').optional().isString().trim().toUpperCase()
+    .custom(value => value === '' || /^G-[A-Z0-9]{4,15}$/.test(value))
+    .withMessage('Enter the Google Analytics measurement ID, for example G-AB12CD34EF, or leave it empty'),
+  body('marketing.metaPixelId').optional().isString().trim()
+    .custom(value => value === '' || /^\d{10,20}$/.test(value))
+    .withMessage('Enter the Meta pixel ID (digits only, for example 123456789012345), or leave it empty'),
+  onSite('marketing.facebookUrl', ['facebook.com', 'fb.com'], 'Enter the address of the Facebook page (https://www.facebook.com/…), or leave it empty'),
+  onSite('marketing.instagramUrl', ['instagram.com'], 'Enter the address of the Instagram account (https://www.instagram.com/…), or leave it empty'),
+  onSite('marketing.tiktokUrl', ['tiktok.com'], 'Enter the address of the TikTok account (https://www.tiktok.com/@…), or leave it empty'),
+  onSite('marketing.googleReviewUrl', ['google.com', 'g.page', 'goo.gl'], 'Enter the review link given by Google Business Profile (https://g.page/r/…), or leave it empty')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);

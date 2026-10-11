@@ -7,6 +7,7 @@ import { useCart } from '../context/CartContext';
 import { useCustomer } from '../context/CustomerContext';
 import { flyToCart } from '../utils/flyToCart';
 import { MONTHS, dateLabel, whereWeAre, initialVolume, volumeOf } from '../components/maintenance/calendar';
+import { track } from '../utils/analytics';
 
 const ICONS = { check: Wrench, opening: Sunrise, season: FlaskConical, summer: Sun, heat: ThermometerSun, autumn: Leaf, winter: Snowflake };
 const tnd = (value) => `${Number(value || 0).toLocaleString('fr-FR', { maximumFractionDigits: 3 })} TND`;
@@ -63,6 +64,7 @@ const SignUp = ({ volume, onVolume }) => {
         ...form, phone: form.whatsapp ? form.phone : undefined, volume: volume || null, source
       });
       setDone(response.data?.message || 'C’est noté !');
+      track('generate_lead', { form: 'pool_care_reminders' });
     } catch (err) {
       setError(err.response?.data?.message || 'L’inscription n’a pas abouti. Réessayez dans un instant.');
     } finally {

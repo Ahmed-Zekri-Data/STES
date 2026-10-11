@@ -10,6 +10,7 @@ import { useCart } from '../context/CartContext';
 import { useCustomer } from '../context/CustomerContext';
 import { useShopSettings, whatsappLink } from '../context/shopSettings';
 import { flyToCart } from '../utils/flyToCart';
+import { track } from '../utils/analytics';
 
 const STORAGE = 'stes-pool-plan';
 // Each piece of equipment is known by its reference: the product, or one of
@@ -81,6 +82,7 @@ const QuoteForm = ({ plan, onSent }) => {
         }
       });
       onSent();
+      track('generate_lead', { form: 'pool_builder' });
     } catch (err) {
       setError(err.response?.data?.errors?.[0]?.msg || err.response?.data?.message || 'L’envoi n’a pas abouti. Réessayez ou écrivez-nous sur WhatsApp.');
     } finally {

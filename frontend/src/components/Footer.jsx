@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
 import { useShopSettings, whatsappLink, phoneLink } from '../context/shopSettings';
-import { Phone, Mail, MapPin, MessageCircle, ArrowRight, Check, Loader2 } from 'lucide-react';
+import { Phone, Mail, MapPin, MessageCircle, ArrowRight, Check, Loader2, Facebook, Instagram, Music2 } from 'lucide-react';
 import { LogoMark } from './brand/Logo';
+import { track } from '../utils/analytics';
+import { openCookieChoice } from '../utils/cookieChoice';
 
 // Waves at the top of the footer, where the page meets the deep water
 const Waves = () => (
@@ -46,6 +48,7 @@ const Newsletter = () => {
       const response = await axios.post('/api/forms/newsletter', { email });
       setState({ status: 'done', message: response.data.message || 'Inscription réussie !' });
       setEmail('');
+      track('generate_lead', { form: 'newsletter' });
     } catch (error) {
       setState({
         status: 'error',
@@ -87,8 +90,15 @@ const Newsletter = () => {
 const Footer = () => {
   const { t, language } = useLanguage();
   const [shopCategories, setShopCategories] = useState({});
-  const { contact } = useShopSettings();
+  const { contact, marketing = {} } = useShopSettings();
   const whatsapp = whatsappLink(contact.whatsapp);
+  // The shop's pages on social networks, from Admin → Settings → Marketing
+  const socials = [
+    { href: marketing.facebookUrl, label: 'Facebook', icon: Facebook },
+    { href: marketing.instagramUrl, label: 'Instagram', icon: Instagram },
+    { href: marketing.tiktokUrl, label: 'TikTok', icon: Music2 }
+  ].filter(social => social.href);
+  const measuring = Boolean(marketing.gaMeasurementId || marketing.metaPixelId);
 
   // The first categories of the shop, as ordered in Admin → Categories
   useEffect(() => {
@@ -135,6 +145,17 @@ const Footer = () => {
               <span className="font-display text-2xl font-bold">STES<span className="text-cyan-300">.tn</span></span>
             </div>
             <p className="mt-4 text-sm leading-relaxed text-white/60">{t('aboutDesc')}</p>
+            {socials.length > 0 && (
+              <ul className="mt-5 flex gap-3" aria-label="STES sur les réseaux sociaux">
+                {socials.map(({ href, label, icon: Icon }) => (
+                  <li key={label}>
+                    <a href={href} target="_blank" rel="noopener noreferrer" aria-label={`STES sur ${label}`} className="grid h-11 w-11 place-items-center rounded-full border border-white/15 text-white/70 transition-colors hover:border-cyan-400/60 hover:text-white">
+                      <Icon className="h-5 w-5" aria-hidden="true" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <Newsletter />
         </div>
@@ -205,7 +226,10 @@ const Footer = () => {
         </div>
 
         <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-xs text-white/40 sm:flex-row">
-          <p>© {new Date().getFullYear()} STES.tn. Tous droits réservés.</p>
+          <p>
+            © {new Date().getFullYear()} STES.tn. Tous droits réservés.
+            {measuring && <> · <button type="button" onClick={openCookieChoice} className="underline underline-offset-2 hover:text-white">Cookies</button></>}
+          </p>
           <p className="font-mono">Fait en Tunisie · Livraison dans les 24 gouvernorats</p>
         </div>
       </div>

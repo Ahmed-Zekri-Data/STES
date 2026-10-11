@@ -52,6 +52,15 @@ const DEFAULTS = {
   // Pool care reminders: the default calendar until the shop changes it
   reminders: {
     calendar: DEFAULT_CALENDAR
+  },
+  // Nothing measured and no social links until the shop enters them
+  marketing: {
+    gaMeasurementId: '',
+    metaPixelId: '',
+    facebookUrl: '',
+    instagramUrl: '',
+    tiktokUrl: '',
+    googleReviewUrl: ''
   }
 };
 
@@ -80,14 +89,15 @@ const getSettings = async () => {
     },
     builder: pick(saved?.builder, DEFAULTS.builder),
     reminders: { calendar: calendarOf(saved?.reminders?.calendar) },
+    marketing: pick(saved?.marketing, DEFAULTS.marketing),
     updatedAt: saved?.updatedAt || null
   };
 };
 
 // Saves the given sections; anything not given keeps its value
-const updateSettings = async ({ contact, bank, delivery, invoice, lowStockThreshold, showcase, builder, reminders }) => {
+const updateSettings = async ({ contact, bank, delivery, invoice, lowStockThreshold, showcase, builder, reminders, marketing }) => {
   const set = {};
-  for (const [section, values] of Object.entries({ contact, bank, delivery, invoice, showcase, builder, reminders })) {
+  for (const [section, values] of Object.entries({ contact, bank, delivery, invoice, showcase, builder, reminders, marketing })) {
     for (const [key, value] of Object.entries(values || {})) {
       if (key in DEFAULTS[section]) set[`${section}.${key}`] = value;
     }
@@ -105,11 +115,12 @@ const bankTransferDetails = (bank) => (bank?.rib && bank.beneficiary
   ? { bankName: bank.bankName, beneficiary: bank.beneficiary, rib: formatRib(bank.rib), iban: ibanOf(bank.rib) }
   : null);
 
-// What the shop pages show: contact details, bank account, delivery prices
-// and the stamp duty added to orders
+// What the shop pages show: contact details, bank account, delivery prices,
+// the stamp duty added to orders, and the marketing settings (the
+// measurement ids are public anyway: browsers load them)
 const publicSettings = async () => {
-  const { contact, bank, delivery, invoice } = await getSettings();
-  return { contact, bank: bankTransferDetails(bank), delivery, stampDuty: invoice.stampDuty };
+  const { contact, bank, delivery, invoice, marketing } = await getSettings();
+  return { contact, bank: bankTransferDetails(bank), delivery, stampDuty: invoice.stampDuty, marketing };
 };
 
 module.exports = { DEFAULTS, getSettings, updateSettings, publicSettings, bankTransferDetails };

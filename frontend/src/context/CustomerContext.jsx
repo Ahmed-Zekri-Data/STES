@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { track } from '../utils/analytics';
 
 const CustomerContext = createContext();
 
@@ -75,6 +76,7 @@ export const CustomerProvider = ({ children }) => {
       setCustomer(customerData);
       setIsAuthenticated(true);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      track('sign_up');
 
       return { success: true, customer: customerData, message: response.data.message };
     } catch (error) {

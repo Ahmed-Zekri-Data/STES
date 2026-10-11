@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { User, Store, Save, CheckCircle, Waves, Ruler, Bell } from 'lucide-react';
+import { User, Store, Save, CheckCircle, Waves, Ruler, Bell, Megaphone } from 'lucide-react';
 import adminApi, { errorMessage } from '../../utils/adminApi';
 import { useAdmin } from '../../context/AdminContext';
 import HomePageSettings from './HomePageSettings';
 import PoolBuilderSettings from './PoolBuilderSettings';
 import RemindersSettings from './RemindersSettings';
+import MarketingSettings from './MarketingSettings';
 
 const MIN_PASSWORD_LENGTH = 8;
 const ROLE_LABELS = { super_admin: 'Super admin', admin: 'Admin' };
@@ -241,11 +242,11 @@ const AdminSettings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const canEditShop = hasPermission('settings');
   const requested = searchParams.get('tab');
-  const tab = canEditShop && ['shop', 'home', 'builder', 'reminders'].includes(requested) ? requested : 'account';
+  const tab = canEditShop && ['shop', 'home', 'builder', 'reminders', 'marketing'].includes(requested) ? requested : 'account';
 
   const tabs = [
     { id: 'account', label: 'My account', icon: User },
-    ...(canEditShop ? [{ id: 'shop', label: 'Shop', icon: Store }, { id: 'home', label: 'Home page', icon: Waves }, { id: 'builder', label: 'Pool builder', icon: Ruler }, { id: 'reminders', label: 'Reminders', icon: Bell }] : [])
+    ...(canEditShop ? [{ id: 'shop', label: 'Shop', icon: Store }, { id: 'home', label: 'Home page', icon: Waves }, { id: 'builder', label: 'Pool builder', icon: Ruler }, { id: 'reminders', label: 'Reminders', icon: Bell }, { id: 'marketing', label: 'Marketing', icon: Megaphone }] : [])
   ];
 
   return (
@@ -270,6 +271,7 @@ const AdminSettings = () => {
       {tab === 'home' && <HomePageSettings />}
       {tab === 'builder' && <PoolBuilderSettings />}
       {tab === 'reminders' && <RemindersSettings />}
+      {tab === 'marketing' && <MarketingSettings />}
       {tab === 'account' && <MyAccount />}
     </div>
   );

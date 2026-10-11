@@ -9,6 +9,7 @@ import ProductSearch from '../components/shop/ProductSearch';
 import { SplitWords } from '../components/fx/Motion';
 import { EASE } from '../utils/motion';
 import { PAGES, summary, usePageMeta } from '../utils/pageMeta';
+import { track } from '../utils/analytics';
 
 const EMPTY_FILTERS = {
   category: '',
@@ -201,7 +202,10 @@ const EnhancedShop = () => {
         >
           <ProductSearch
             searchQuery={filters.search}
-            onSubmit={(search) => handleFiltersChange({ search })}
+            onSubmit={(search) => {
+              handleFiltersChange({ search });
+              if (search) track('search', { term: search });
+            }}
             onPick={pickSuggestion}
             placeholder="Rechercher des produits, marques, catégories..."
           />

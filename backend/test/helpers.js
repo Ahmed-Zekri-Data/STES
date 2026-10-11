@@ -3,6 +3,10 @@
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.CUSTOMER_JWT_SECRET = '';
+// No real email from the tests, whatever a local .env says (dotenv never
+// overrides a variable already set); tests that send set them and a fake
+// transporter themselves
+for (const name of ['EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASS']) process.env[name] = '';
 
 const mongoose = require('mongoose');
 const request = require('supertest');
