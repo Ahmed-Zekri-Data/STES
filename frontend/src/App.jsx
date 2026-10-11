@@ -44,6 +44,8 @@ const PoolBuilder = lazy(() => import('./pages/PoolBuilder'));
 const Maintenance = lazy(() => import('./pages/Maintenance'));
 const MaintenanceSubscription = lazy(() => import('./pages/MaintenanceSubscription'));
 const EmailUnsubscribe = lazy(() => import('./pages/EmailUnsubscribe'));
+const Guides = lazy(() => import('./pages/Guides'));
+const Guide = lazy(() => import('./pages/Guide'));
 
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
 const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
@@ -62,6 +64,7 @@ const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
 const PromoCodes = lazy(() => import('./pages/admin/PromoCodes'));
 const Reminders = lazy(() => import('./pages/admin/Reminders'));
+const AdminGuides = lazy(() => import('./pages/admin/Guides'));
 
 // Shop pages share the header and footer; they stay in place while a page
 // that is not loaded yet is being downloaded
@@ -119,6 +122,8 @@ function App() {
                       <Route path="/entretien" element={<Maintenance />} />
                       <Route path="/entretien/mes-rappels" element={<MaintenanceSubscription />} />
                       <Route path="/emails/desinscription" element={<EmailUnsubscribe />} />
+                      <Route path="/conseils" element={<Guides />} />
+                      <Route path="/conseils/:slug" element={<Guide />} />
                       <Route path="/about" element={<About />} />
                       <Route path="/contact" element={<Contact />} />
                       <Route path="/cart" element={<Cart />} />
@@ -162,6 +167,7 @@ function App() {
                       <Route path="forms" element={<Forms />} />
                       <Route path="reminders" element={<Reminders />} />
                       <Route path="pages" element={<Pages />} />
+                      <Route path="guides" element={<AdminGuides />} />
                       <Route path="users" element={<AdminUsers />} />
                       <Route path="settings" element={<AdminSettings />} />
                     </Route>

@@ -114,6 +114,7 @@ const Footer = () => {
     { name: t('services'), href: '/services' },
     { name: 'Construire ma piscine', href: '/construire' },
     { name: 'Calendrier d’entretien', href: '/entretien' },
+    { name: 'Conseils piscine', href: '/conseils' },
     { name: t('about'), href: '/about' },
     { name: t('contact'), href: '/contact' }
   ];

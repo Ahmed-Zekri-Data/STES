@@ -35,6 +35,10 @@ export const PAGES = {
     title: 'Construire ma piscine',
     description: 'Dessinez votre piscine sur votre terrain, placez les équipements, voyez-la dans votre jardin et obtenez une estimation. Devis gratuit.'
   },
+  '/conseils': {
+    title: 'Conseils piscine',
+    description: 'Eau verte, hivernage, choix de la pompe, remise en route : les conseils pratiques des techniciens STES pour votre piscine en Tunisie.'
+  },
   '/entretien': {
     title: 'Calendrier d’entretien de piscine',
     description: 'Que faire pour votre piscine, et quand : remise en route, analyses, canicule, hivernage. Recevez gratuitement nos rappels par email ou WhatsApp.'
@@ -54,6 +58,7 @@ const PRIVATE_PAGES = [
   ['/reset-password', 'Nouveau mot de passe'],
   ['/verify-email', 'Confirmation de l’email'],
   ['/entretien/mes-rappels', 'Mes rappels d’entretien'],
+  ['/emails/desinscription', 'Désinscription des emails'],
   ['/payment/', 'Paiement'],
   ['/admin', 'Administration']
 ];
@@ -65,7 +70,7 @@ const underPrefix = (pathname, prefix) => (prefix.endsWith('/')
   : pathname === prefix || pathname.startsWith(`${prefix}/`));
 
 // Pages whose tags depend on what they show set them themselves
-export const setsOwnMeta = (pathname) => pathname === '/shop' || pathname.startsWith('/product/');
+export const setsOwnMeta = (pathname) => pathname === '/shop' || pathname.startsWith('/product/') || pathname.startsWith('/conseils/');
 
 // The tags of a page with fixed ones
 export const metaForPath = (pathname) => {

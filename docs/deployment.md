@@ -271,8 +271,11 @@ and restarts the service. The uploads disk and the database are kept.
    Then remove `DEFAULT_ADMIN_PASSWORD` from the settings. Sign in at
    `https://stes.tn/admin`, and create the other admins with their own
    permissions in Admin → Users.
-3. **Default pages:** `cd backend && npm run init:pages` creates the About
-   and Contact pages. It does not overwrite existing ones.
+3. **Default pages and guides:** `cd backend && npm run init:pages` creates the About
+   and Contact pages, and `npm run init:guides` the first five "Conseils"
+   guides **as drafts**. Neither overwrites existing ones. A technician reads
+   each guide in Admin → Guides (doses and settings), picks its products and
+   ticks "Published".
 4. **Admin → Settings:**
    - shop details and contact information;
    - the bank account for transfers;

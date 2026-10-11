@@ -168,6 +168,8 @@ const createApp = ({ frontendDir = defaultFrontendDir() } = {}) => {
   // Automatic emails: checkout drafts, cart links, unsubscribe; admin stats
   app.use('/api', require('./routes/automations').publicRouter);
   app.use('/api/admin/automations', require('./routes/automations').adminRouter);
+  app.use('/api/guides', require('./routes/guides').publicRouter);
+  app.use('/api/admin/guides', require('./routes/guides').adminRouter);
 
   // sitemap.xml and robots.txt, for search engines
   app.use(require('./routes/seo'));

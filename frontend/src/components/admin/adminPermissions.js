@@ -12,7 +12,8 @@ export const PAGE_PERMISSIONS = {
   '/admin/customers': 'users',
   '/admin/forms': 'forms',
   '/admin/reminders': 'forms',
-  '/admin/pages': 'settings'
+  '/admin/pages': 'settings',
+  '/admin/guides': 'settings'
 };
 
 // Whether the admin may open the page at this path
